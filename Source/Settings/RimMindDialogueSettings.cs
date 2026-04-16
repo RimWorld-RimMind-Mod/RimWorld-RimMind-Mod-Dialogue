@@ -17,7 +17,7 @@ namespace RimMind.Dialogue.Settings
         public bool playerDialogueEnabled = true;
 
         public float moodChangeThreshold = 3f;
-        public int autoDialogueCooldownHours = 6;
+        public int autoDialogueCooldownHours = 12;
         public int maxHistoryRounds = 6;
         public bool showThoughtNotification = false;
         public int maxConcurrentRequests = 3;
@@ -69,7 +69,7 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref playerDialogueEnabled, "playerDialogueEnabled", true);
 
             Scribe_Values.Look(ref moodChangeThreshold, "moodChangeThreshold", 3f);
-            Scribe_Values.Look(ref autoDialogueCooldownHours, "autoDialogueCooldownHours", 6);
+            Scribe_Values.Look(ref autoDialogueCooldownHours, "autoDialogueCooldownHours", 12);
             Scribe_Values.Look(ref maxHistoryRounds, "maxHistoryRounds", 6);
             Scribe_Values.Look(ref showThoughtNotification, "showThoughtNotification", false);
             Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 3);
@@ -207,7 +207,7 @@ namespace RimMind.Dialogue.Settings
                 s.autoDialogueEnabled = true;
                 s.playerDialogueEnabled = true;
                 s.moodChangeThreshold = 3f;
-                s.autoDialogueCooldownHours = 6;
+                s.autoDialogueCooldownHours = 12;
                 s.maxHistoryRounds = 6;
                 s.showThoughtNotification = false;
                 s.maxConcurrentRequests = 3;
