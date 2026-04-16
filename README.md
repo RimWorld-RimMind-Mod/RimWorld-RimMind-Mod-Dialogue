@@ -148,6 +148,20 @@ A: 可以。在模组设置中可单独开关每种触发类型。
 **Q: 对话浮窗可以移动位置吗？**
 A: 可以在模组设置中调整浮窗的位置和大小。
 
+## 致谢
+
+本项目开发过程中参考了以下优秀的 RimWorld 模组：
+
+- [RimTalk](https://github.com/jlibrary/RimTalk.git) - 对话系统参考
+- [RimTalk-ExpandActions](https://github.com/sanguodxj-byte/RimTalk-ExpandActions.git) - 动作扩展参考
+- [NewRatkin](https://github.com/solaris0115/NewRatkin.git) - 种族模组架构参考
+- [VanillaExpandedFramework](https://github.com/Vanilla-Expanded/VanillaExpandedFramework.git) - 框架设计参考
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！如果你有任何建议或发现 Bug，请通过 GitHub Issues 反馈。
+
+
 ---
 
 # RimMind - Dialogue (English)
@@ -231,3 +245,16 @@ A: Yes. Each trigger type can be toggled individually in mod settings.
 
 **Q: Can I move the dialogue overlay?**
 A: Yes. Overlay position and size can be adjusted in mod settings.
+
+## Acknowledgments
+
+This project references the following excellent RimWorld mods:
+
+- [RimTalk](https://github.com/jlibrary/RimTalk.git) - Dialogue system reference
+- [RimTalk-ExpandActions](https://github.com/sanguodxj-byte/RimTalk-ExpandActions.git) - Action expansion reference
+- [NewRatkin](https://github.com/solaris0115/NewRatkin.git) - Race mod architecture reference
+- [VanillaExpandedFramework](https://github.com/Vanilla-Expanded/VanillaExpandedFramework.git) - Framework design reference
+
+## Contributing
+
+Issues and Pull Requests are welcome! If you have any suggestions or find bugs, please feedback via GitHub Issues.
