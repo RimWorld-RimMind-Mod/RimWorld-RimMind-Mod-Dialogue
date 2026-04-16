@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <ThoughtDef>
+    <defName>RimMindDialogue_Thought</defName>
+    <thoughtClass>RimMind.Dialogue.Thought_RimMindDialogue</thoughtClass>
+    <durationDays>0.04</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>AI dialogue reaction</label>
+        <description>(AI generated)</description>
+        <baseMoodEffect>0</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>

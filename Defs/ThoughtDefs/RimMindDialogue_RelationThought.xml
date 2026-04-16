@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <ThoughtDef>
+    <defName>RimMindDialogue_RelationThought</defName>
+    <thoughtClass>RimMind.Dialogue.Thought_RelationDialogue</thoughtClass>
+    <durationDays>10</durationDays>
+    <stackLimit>10</stackLimit>
+    <lerpOpinionToZeroAfterDurationPct>0.7</lerpOpinionToZeroAfterDurationPct>
+    <stages>
+      <li>
+        <label>dialogue impression</label>
+        <description>(AI generated)</description>
+        <baseMoodEffect>0</baseMoodEffect>
+        <baseOpinionOffset>0</baseOpinionOffset>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>
