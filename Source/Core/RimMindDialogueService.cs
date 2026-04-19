@@ -66,6 +66,8 @@ namespace RimMind.Dialogue.Core
             if (!IsReady) return;
             if (_pendingPawns.Contains(pawn.thingIDNumber)) return;
 
+            if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString())) return;
+
             bool isMonologue = recipient == null;
             if (!isMonologue)
             {
@@ -102,7 +104,8 @@ namespace RimMind.Dialogue.Core
                 ModId = "Dialogue",
                 ExpireAtTicks = Find.TickManager.TicksGame + (isMonologue
                     ? RimMindDialogueSettings.Get().monologueExpireTicks
-                    : RimMindDialogueSettings.Get().dialogueExpireTicks)
+                    : RimMindDialogueSettings.Get().dialogueExpireTicks),
+                Priority = AIRequestPriority.High,
             };
 
             Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel} | Context: {context}");
@@ -156,12 +159,12 @@ namespace RimMind.Dialogue.Core
                     try
                     {
                         string memContent = replyText.Length > 60 ? replyText.Substring(0, 60) + "..." : replyText;
-                        MemoryBridge.AddMemory(
-                            $"与{recipient!.Name.ToStringShort}的对话: {memContent}",
-                            "Event", Find.TickManager.TicksGame, 0.5f, pawn.ThingID);
-                        MemoryBridge.AddMemory(
-                            $"与{pawn.Name.ToStringShort}的对话: {memContent}",
-                            "Event", Find.TickManager.TicksGame, 0.5f, recipient!.ThingID);
+                    MemoryBridge.AddMemory(
+                        "RimMind.Dialogue.Memory.WithRecipient".Translate(recipient!.Name.ToStringShort, memContent),
+                        "Event", Find.TickManager.TicksGame, 0.5f, pawn.ThingID);
+                    MemoryBridge.AddMemory(
+                        "RimMind.Dialogue.Memory.WithPawn".Translate(pawn.Name.ToStringShort, memContent),
+                        "Event", Find.TickManager.TicksGame, 0.5f, recipient!.ThingID);
                     }
                     catch (System.Exception ex)
                     {
@@ -247,7 +250,7 @@ namespace RimMind.Dialogue.Core
 
         private static bool IsDailyDialogueLimitReached(int idA, int idB)
         {
-            int limit = RimMindDialogueSettings.Get().maxHistoryRounds;
+            int limit = RimMindDialogueSettings.Get().maxDailyDialogueRounds;
             return GetDailyDialogueCount(idA, idB) >= limit;
         }
 

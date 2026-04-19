@@ -18,9 +18,8 @@ namespace RimMind.Dialogue.Settings
 
         public float moodChangeThreshold = 3f;
         public int autoDialogueCooldownHours = 12;
-        public int maxHistoryRounds = 6;
+        public int maxDailyDialogueRounds = 6;
         public bool showThoughtNotification = false;
-        public int maxConcurrentRequests = 3;
 
         public int dialogueContextRounds = 5;
         public bool enableDialogueReply = true;
@@ -70,9 +69,8 @@ namespace RimMind.Dialogue.Settings
 
             Scribe_Values.Look(ref moodChangeThreshold, "moodChangeThreshold", 3f);
             Scribe_Values.Look(ref autoDialogueCooldownHours, "autoDialogueCooldownHours", 12);
-            Scribe_Values.Look(ref maxHistoryRounds, "maxHistoryRounds", 6);
+            Scribe_Values.Look(ref maxDailyDialogueRounds, "maxDailyDialogueRounds", 6);
             Scribe_Values.Look(ref showThoughtNotification, "showThoughtNotification", false);
-            Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 3);
 
             Scribe_Values.Look(ref dialogueContextRounds, "dialogueContextRounds", 5);
             Scribe_Values.Look(ref enableDialogueReply, "enableDialogueReply", true);
@@ -140,19 +138,29 @@ namespace RimMind.Dialogue.Settings
 
             SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
             listing.Label("RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
+            GUI.color = Color.white;
             s.monologueCooldownTicks = (int)listing.Slider(s.monologueCooldownTicks, 3600f, 72000f);
             s.monologueCooldownTicks = (s.monologueCooldownTicks / 600) * 600;
 
-            listing.Label("RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxHistoryRounds));
-            s.maxHistoryRounds = (int)listing.Slider(s.maxHistoryRounds, 1f, 20f);
+            listing.Label("RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxDailyDialogueRounds));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.MaxDailyDialogues.Desc".Translate());
+            GUI.color = Color.white;
+            s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
 
             listing.Label("RimMind.Dialogue.Settings.DialogueContextRounds".Translate(s.dialogueContextRounds));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.DialogueContextRounds.Desc".Translate());
+            GUI.color = Color.white;
             s.dialogueContextRounds = (int)listing.Slider(s.dialogueContextRounds, -1f, 20f);
 
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
                 "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
 
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled);
+            listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled,
+                "RimMind.Dialogue.Settings.StartDelay.Desc".Translate());
             if (s.startDelayEnabled)
             {
                 listing.Label("  " + "RimMind.Dialogue.Settings.StartDelayValue".Translate(s.startDelaySeconds));
@@ -169,17 +177,17 @@ namespace RimMind.Dialogue.Settings
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
                 "RimMind.Dialogue.Settings.ShowOverlay.Desc".Translate());
             listing.Label("RimMind.Dialogue.Settings.OverlayOpacity".Translate($"{s.overlayOpacity:P0}"));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.OverlayOpacity.Desc".Translate());
+            GUI.color = Color.white;
             s.overlayOpacity = listing.Slider(s.overlayOpacity, 0.1f, 1f);
             listing.Label("RimMind.Dialogue.Settings.OverlayMaxMessages".Translate(s.overlayMaxMessages));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.OverlayMaxMessages.Desc".Translate());
+            GUI.color = Color.white;
             s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
 
             SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Request".Translate());
-            listing.Label("RimMind.Dialogue.Settings.MaxConcurrent".Translate(s.maxConcurrentRequests));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.MaxConcurrent.Desc".Translate());
-            GUI.color = Color.white;
-            s.maxConcurrentRequests = (int)listing.Slider(s.maxConcurrentRequests, 1f, 5f);
-
             listing.Label("RimMind.Dialogue.Settings.MonologueExpire".Translate($"{s.monologueExpireTicks / 60000f:F2}"));
             GUI.color = Color.gray;
             listing.Label("  " + "RimMind.Dialogue.Settings.MonologueExpire.Desc".Translate());
@@ -208,9 +216,8 @@ namespace RimMind.Dialogue.Settings
                 s.playerDialogueEnabled = true;
                 s.moodChangeThreshold = 3f;
                 s.autoDialogueCooldownHours = 12;
-                s.maxHistoryRounds = 6;
+                s.maxDailyDialogueRounds = 6;
                 s.showThoughtNotification = false;
-                s.maxConcurrentRequests = 3;
                 s.dialogueContextRounds = 5;
                 s.enableDialogueReply = true;
                 s.monologueCooldownTicks = 36000;
@@ -240,7 +247,7 @@ namespace RimMind.Dialogue.Settings
                 h += 24f + 32f;
             h += 24f + 80f;
             h += 24f + 24f + 24f + 24f + 32f + 24f + 32f;
-            h += 24f + 24f + 32f + 24f + 32f + 24f + 32f;
+            h += 24f + 24f + 32f + 24f + 32f;
             return h + 40f;
         }
     }

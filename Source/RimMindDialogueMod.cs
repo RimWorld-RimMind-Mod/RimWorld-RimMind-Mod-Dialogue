@@ -65,24 +65,29 @@ namespace RimMind.Dialogue
                 if (session?.Recipient == null) return null;
 
                 var recipient = session.Recipient;
-                var sb = new StringBuilder();
-                sb.AppendLine($"[与 {recipient.Name.ToStringShort} 的关系]");
+                var sb = new StringBuilder("RimMind.Dialogue.Context.RelationHeader".Translate(recipient.Name.ToStringShort));
 
                 float opinion = pawn.relations?.OpinionOf(recipient) ?? 0f;
-                string opinionLabel = opinion >= 20 ? "朋友" : opinion <= -20 ? "仇敌" : "相识";
-                sb.AppendLine($"好感度: {opinion:+0;-0} ({opinionLabel})");
+                string opinionLabel = opinion >= 20 ? "RimMind.Dialogue.Context.Opinion.Friend".Translate()
+                                    : opinion <= -20 ? "RimMind.Dialogue.Context.Opinion.Enemy".Translate()
+                                    : "RimMind.Dialogue.Context.Opinion.Acquaintance".Translate();
+                sb.AppendLine("RimMind.Dialogue.Context.OpinionLabel".Translate(opinion.ToString("+0;-0"), opinionLabel));
 
                 float compat = pawn.relations?.CompatibilityWith(recipient) ?? 0.5f;
-                string compatLabel = compat >= 0.6f ? "高，容易产生愉快交流" : compat <= 0.3f ? "低，容易产生摩擦" : "中等";
-                sb.AppendLine($"兼容性: {compat:F2} ({compatLabel})");
+                string compatLabel = compat >= 0.6f ? "RimMind.Dialogue.Context.Compat.High".Translate()
+                                    : compat <= 0.3f ? "RimMind.Dialogue.Context.Compat.Low".Translate()
+                                    : "RimMind.Dialogue.Context.Compat.Medium".Translate();
+                sb.AppendLine("RimMind.Dialogue.Context.CompatLabel".Translate($"{compat:F2}", compatLabel));
 
                 float romance = pawn.relations?.SecondaryRomanceChanceFactor(recipient) ?? 0f;
-                string romanceLabel = romance >= 0.5f ? "高" : romance >= 0.15f ? "中等" : "低";
-                sb.AppendLine($"吸引力: {romance:F2} ({romanceLabel}，不太可能发展浪漫关系)");
+                string romanceLabel = romance >= 0.5f ? "RimMind.Dialogue.Context.Romance.High".Translate()
+                                     : romance >= 0.15f ? "RimMind.Dialogue.Context.Romance.Medium".Translate()
+                                     : "RimMind.Dialogue.Context.Romance.Low".Translate();
+                sb.AppendLine("RimMind.Dialogue.Context.RomanceLabel".Translate($"{romance:F2}", romanceLabel, "RimMind.Dialogue.Context.Romance.Unlikely".Translate()));
 
                 var directRel = pawn.relations?.DirectRelations?.FirstOrDefault(r => r.otherPawn == recipient);
                 if (directRel != null)
-                    sb.AppendLine($"关系: {directRel.def.label}");
+                    sb.AppendLine("RimMind.Dialogue.Context.DirectRelation".Translate(directRel.def.label));
 
                 return sb.ToString().TrimEnd();
             });

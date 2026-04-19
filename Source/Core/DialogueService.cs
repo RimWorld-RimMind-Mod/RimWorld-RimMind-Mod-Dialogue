@@ -30,7 +30,8 @@ namespace RimMind.Dialogue.Core
                 UseJsonMode = true,
                 RequestId = $"RimMindDialogue_Player_{session.Pawn.thingIDNumber}_{Find.TickManager.TicksGame}",
                 ModId = "Dialogue",
-                ExpireAtTicks = Find.TickManager.TicksGame + RimMindDialogueSettings.Get().dialogueExpireTicks
+                ExpireAtTicks = Find.TickManager.TicksGame + RimMindDialogueSettings.Get().dialogueExpireTicks,
+                Priority = AIRequestPriority.High,
             };
 
             RimMindAPI.RequestImmediate(request, response =>

@@ -84,6 +84,8 @@ namespace RimMind.Dialogue.Patches
 
         private static void AddTalkOption(List<FloatMenuOption> result, Pawn initiator, Pawn target)
         {
+            if (RimMindAPI.ShouldSkipFloatMenu()) return;
+
             result.Add(new FloatMenuOption(
                 "RimMind.Dialogue.UI.FloatMenu.ChatWith".Translate(target.LabelShortCap),
                 delegate
@@ -107,7 +109,7 @@ namespace RimMind.Dialogue.Patches
                         return;
                     }
                     int count = RimMindDialogueService.GetDailyDialogueCount(initiator.thingIDNumber, target.thingIDNumber);
-                    if (count >= RimMindDialogueSettings.Get().maxHistoryRounds)
+                    if (count >= RimMindDialogueSettings.Get().maxDailyDialogueRounds)
                     {
                         Messages.Message("RimMind.Dialogue.UI.FloatMenu.DailyLimitReached".Translate(),
                             MessageTypeDefOf.RejectInput, false);
