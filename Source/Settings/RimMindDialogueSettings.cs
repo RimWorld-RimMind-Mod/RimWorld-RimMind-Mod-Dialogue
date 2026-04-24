@@ -89,7 +89,7 @@ namespace RimMind.Dialogue.Settings
             var s = Get();
 
             Rect contentArea = SettingsUIHelper.SplitContentArea(inRect);
-            Rect bottomBar  = SettingsUIHelper.SplitBottomBar(inRect);
+            Rect bottomBar = SettingsUIHelper.SplitBottomBar(inRect);
 
             float contentH = EstimateSettingsHeight();
             Rect viewRect = new Rect(0f, 0f, contentArea.width - 16f, contentH);

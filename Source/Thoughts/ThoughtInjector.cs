@@ -36,13 +36,13 @@ namespace RimMind.Dialogue
         {
             switch (tag.ToUpperInvariant())
             {
-                case "ENCOURAGED":  return +1f;
-                case "HURT":        return -1f;
-                case "VALUED":      return +2f;
-                case "CONNECTED":   return +2f;
-                case "STRESSED":    return -2f;
-                case "IRRITATED":   return -1f;
-                default:            return 0f;
+                case "ENCOURAGED": return +1f;
+                case "HURT": return -1f;
+                case "VALUED": return +2f;
+                case "CONNECTED": return +2f;
+                case "STRESSED": return -2f;
+                case "IRRITATED": return -1f;
+                default: return 0f;
             }
         }
 
@@ -50,13 +50,13 @@ namespace RimMind.Dialogue
         {
             switch (tag.ToUpperInvariant())
             {
-                case "ENCOURAGED":  return "RimMind.Dialogue.Thought.ENCOURAGED".Translate();
-                case "HURT":        return "RimMind.Dialogue.Thought.HURT".Translate();
-                case "VALUED":      return "RimMind.Dialogue.Thought.VALUED".Translate();
-                case "CONNECTED":   return "RimMind.Dialogue.Thought.CONNECTED".Translate();
-                case "STRESSED":    return "RimMind.Dialogue.Thought.STRESSED".Translate();
-                case "IRRITATED":   return "RimMind.Dialogue.Thought.IRRITATED".Translate();
-                default:            return tag;
+                case "ENCOURAGED": return "RimMind.Dialogue.Thought.ENCOURAGED".Translate();
+                case "HURT": return "RimMind.Dialogue.Thought.HURT".Translate();
+                case "VALUED": return "RimMind.Dialogue.Thought.VALUED".Translate();
+                case "CONNECTED": return "RimMind.Dialogue.Thought.CONNECTED".Translate();
+                case "STRESSED": return "RimMind.Dialogue.Thought.STRESSED".Translate();
+                case "IRRITATED": return "RimMind.Dialogue.Thought.IRRITATED".Translate();
+                default: return tag;
             }
         }
 
