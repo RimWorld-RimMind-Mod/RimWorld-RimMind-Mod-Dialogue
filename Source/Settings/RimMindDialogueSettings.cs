@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using Verse;
 using RimMind.Core.UI;
@@ -25,8 +24,6 @@ namespace RimMind.Dialogue.Settings
         public bool enableDialogueReply = true;
 
         public int monologueCooldownTicks = 36000;
-        [Obsolete("Use monologueCooldownTicks directly")]
-        public int MonologueCooldownTicks => monologueCooldownTicks;
 
         public bool startDelayEnabled = true;
         public int startDelaySeconds = 10;
@@ -41,9 +38,6 @@ namespace RimMind.Dialogue.Settings
         public float overlayH = 220f;
 
         public string dialogueCustomPrompt = "";
-
-        public int monologueExpireTicks = 15000;
-        public int dialogueExpireTicks = 60000;
 
         public int AutoDialogueCooldownTicks => autoDialogueCooldownHours * 2500;
 
@@ -86,8 +80,6 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref overlayW, "overlayW", 420f);
             Scribe_Values.Look(ref overlayH, "overlayH", 220f);
             Scribe_Values.Look(ref dialogueCustomPrompt, "dialogueCustomPrompt", "");
-            Scribe_Values.Look(ref monologueExpireTicks, "monologueExpireTicks", 15000);
-            Scribe_Values.Look(ref dialogueExpireTicks, "dialogueExpireTicks", 60000);
         }
 
         private static Vector2 _settingsScrollPos = Vector2.zero;
@@ -187,21 +179,6 @@ namespace RimMind.Dialogue.Settings
             GUI.color = Color.white;
             s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Request".Translate());
-            listing.Label("RimMind.Dialogue.Settings.MonologueExpire".Translate($"{s.monologueExpireTicks / 60000f:F2}"));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.MonologueExpire.Desc".Translate());
-            GUI.color = Color.white;
-            s.monologueExpireTicks = (int)listing.Slider(s.monologueExpireTicks, 3600f, 120000f);
-            s.monologueExpireTicks = (s.monologueExpireTicks / 1500) * 1500;
-
-            listing.Label("RimMind.Dialogue.Settings.DialogueExpire".Translate($"{s.dialogueExpireTicks / 60000f:F2}"));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.DialogueExpire.Desc".Translate());
-            GUI.color = Color.white;
-            s.dialogueExpireTicks = (int)listing.Slider(s.dialogueExpireTicks, 3600f, 120000f);
-            s.dialogueExpireTicks = (s.dialogueExpireTicks / 1500) * 1500;
-
             listing.End();
             Widgets.EndScrollView();
 
@@ -227,6 +204,10 @@ namespace RimMind.Dialogue.Settings
                 s.overlayOpacity = 0.75f;
                 s.overlayMaxMessages = 8;
                 s.dialogueCustomPrompt = "";
+                s.overlayX = 20f;
+                s.overlayY = 20f;
+                s.overlayW = 420f;
+                s.overlayH = 220f;
             });
 
             Get().Write();
@@ -247,7 +228,6 @@ namespace RimMind.Dialogue.Settings
                 h += 24f + 32f;
             h += 24f + 80f;
             h += 24f + 24f + 24f + 24f + 32f + 24f + 32f;
-            h += 24f + 24f + 32f + 24f + 32f;
             return h + 40f;
         }
     }

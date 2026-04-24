@@ -117,11 +117,6 @@
     <RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>浮窗同时显示的最大对话条数。超出后旧消息会被隐藏。</RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>
     <RimMind.Dialogue.Settings.Section.Behavior>行为设置</RimMind.Dialogue.Settings.Section.Behavior>
     <RimMind.Dialogue.Settings.Section.Display>显示</RimMind.Dialogue.Settings.Section.Display>
-    <RimMind.Dialogue.Settings.Section.Request>请求设置</RimMind.Dialogue.Settings.Section.Request>
-    <RimMind.Dialogue.Settings.MonologueExpire>独白请求过期：{0} 游戏天</RimMind.Dialogue.Settings.MonologueExpire>
-    <RimMind.Dialogue.Settings.MonologueExpire.Desc>独白请求超过此时间未获得响应则自动取消。</RimMind.Dialogue.Settings.MonologueExpire.Desc>
-    <RimMind.Dialogue.Settings.DialogueExpire>对话请求过期：{0} 游戏天</RimMind.Dialogue.Settings.DialogueExpire>
-    <RimMind.Dialogue.Settings.DialogueExpire.Desc>对话请求超过此时间未获得响应则自动取消。</RimMind.Dialogue.Settings.DialogueExpire.Desc>
 
     <!-- DialogueOverlay.cs -->
     <RimMind.Dialogue.UI.Overlay.Title>RimMind 对话</RimMind.Dialogue.UI.Overlay.Title>

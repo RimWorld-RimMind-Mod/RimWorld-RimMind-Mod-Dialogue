@@ -32,7 +32,7 @@ namespace RimMind.Dialogue
 
             RimMindAPI.RegisterDialogueTrigger((pawn, context, recipient) =>
             {
-                RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Chitchat, recipient, isImmediate: true);
+                RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Chitchat, recipient);
             });
 
             Log.Message("[RimMind-Dialogue] Initialized.");
@@ -61,10 +61,9 @@ namespace RimMind.Dialogue
 
             RimMindAPI.RegisterPawnContextProvider("dialogue_relation", pawn =>
             {
-                var session = DialogueSessionManager.GetOrCreate(pawn);
-                if (session?.Recipient == null) return null;
+                var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
+                if (recipient == null) return null;
 
-                var recipient = session.Recipient;
                 var sb = new StringBuilder("RimMind.Dialogue.Context.RelationHeader".Translate(recipient.Name.ToStringShort));
 
                 float opinion = pawn.relations?.OpinionOf(recipient) ?? 0f;

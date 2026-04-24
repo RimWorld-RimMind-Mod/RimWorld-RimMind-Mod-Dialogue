@@ -117,11 +117,6 @@
     <RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>Maximum number of dialogue lines shown simultaneously in the overlay. Older messages are hidden when exceeded.</RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>
     <RimMind.Dialogue.Settings.Section.Behavior>Behavior Settings</RimMind.Dialogue.Settings.Section.Behavior>
     <RimMind.Dialogue.Settings.Section.Display>Display</RimMind.Dialogue.Settings.Section.Display>
-    <RimMind.Dialogue.Settings.Section.Request>Request Settings</RimMind.Dialogue.Settings.Section.Request>
-    <RimMind.Dialogue.Settings.MonologueExpire>Monologue request expiry: {0} game days</RimMind.Dialogue.Settings.MonologueExpire>
-    <RimMind.Dialogue.Settings.MonologueExpire.Desc>Monologue requests that don't receive a response within this time are automatically cancelled.</RimMind.Dialogue.Settings.MonologueExpire.Desc>
-    <RimMind.Dialogue.Settings.DialogueExpire>Dialogue request expiry: {0} game days</RimMind.Dialogue.Settings.DialogueExpire>
-    <RimMind.Dialogue.Settings.DialogueExpire.Desc>Dialogue requests that don't receive a response within this time are automatically cancelled.</RimMind.Dialogue.Settings.DialogueExpire.Desc>
 
     <!-- DialogueOverlay.cs -->
     <RimMind.Dialogue.UI.Overlay.Title>RimMind Dialogue</RimMind.Dialogue.UI.Overlay.Title>
