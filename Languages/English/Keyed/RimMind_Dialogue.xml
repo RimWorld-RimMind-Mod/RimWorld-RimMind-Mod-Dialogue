@@ -89,6 +89,7 @@
   <RimMind.Dialogue.UI.Thinking>● Thinking...</RimMind.Dialogue.UI.Thinking>
   <RimMind.Dialogue.UI.Send>Send</RimMind.Dialogue.UI.Send>
   <RimMind.Dialogue.UI.PlayerPrefix>You: </RimMind.Dialogue.UI.PlayerPrefix>
+  <RimMind.Dialogue.Speaker.Player>Player</RimMind.Dialogue.Speaker.Player>
   <RimMind.Dialogue.UI.PawnPrefix>{0}: </RimMind.Dialogue.UI.PawnPrefix>
   <!-- Window_DialogueLog.cs -->
   <RimMind.Dialogue.UI.Log.Title>Dialogue Log</RimMind.Dialogue.UI.Log.Title>

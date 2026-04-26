@@ -111,6 +111,7 @@ namespace RimMind.Dialogue.Core
                     : "RimMind.Dialogue.Prompt.AutoTrigger".Translate(),
                 MaxTokens = 400,
                 Temperature = 0.8f,
+                SpeakerName = recipient?.Name?.ToStringShort,
             };
 
             RimMindAPI.Chat(request).ContinueWith(task =>

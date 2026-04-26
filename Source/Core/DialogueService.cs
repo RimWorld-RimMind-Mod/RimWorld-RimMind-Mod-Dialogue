@@ -24,6 +24,7 @@ namespace RimMind.Dialogue.Core
                 CurrentQuery = playerMessage,
                 MaxTokens = 400,
                 Temperature = 0.85f,
+                SpeakerName = initiator?.Name?.ToStringShort ?? "RimMind.Dialogue.Speaker.Player".Translate(),
             };
 
             RimMindAPI.Chat(request).ContinueWith(task =>
