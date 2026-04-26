@@ -15,6 +15,7 @@ namespace RimMind.Dialogue.Overlay
     {
         private bool _isDragging;
         private bool _isResizing;
+        private bool _positionDirty;
         private Vector2 _dragStartOffset;
         private Rect _windowRect;
         private bool _cacheDirty = true;
@@ -62,7 +63,11 @@ namespace RimMind.Dialogue.Overlay
 
             GUI.EndGroup();
 
-            SavePositionToSettings();
+            if (_positionDirty)
+            {
+                SavePositionToSettings();
+                _positionDirty = false;
+            }
         }
 
         private void DrawMessages(Rect inRect)
@@ -168,6 +173,8 @@ namespace RimMind.Dialogue.Overlay
             }
             else if (currentEvent.type == EventType.MouseUp && currentEvent.button == 0)
             {
+                if (_isDragging || _isResizing)
+                    _positionDirty = true;
                 _isDragging = false;
                 _isResizing = false;
             }

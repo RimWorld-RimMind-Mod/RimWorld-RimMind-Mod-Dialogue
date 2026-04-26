@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HarmonyLib;
 using RimMind.Core;
+using RimMind.Core.Context;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using Verse;
@@ -32,7 +34,7 @@ namespace RimMind.Dialogue
 
             RimMindAPI.RegisterDialogueTrigger((pawn, context, recipient) =>
             {
-                RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Chitchat, recipient, isImmediate: true);
+                RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Chitchat, recipient);
             });
 
             Log.Message("[RimMind-Dialogue] Initialized.");
@@ -61,10 +63,9 @@ namespace RimMind.Dialogue
 
             RimMindAPI.RegisterPawnContextProvider("dialogue_relation", pawn =>
             {
-                var session = DialogueSessionManager.GetOrCreate(pawn);
-                if (session?.Recipient == null) return null;
+                var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
+                if (recipient == null) return null;
 
-                var recipient = session.Recipient;
                 var sb = new StringBuilder("RimMind.Dialogue.Context.RelationHeader".Translate(recipient.Name.ToStringShort));
 
                 float opinion = pawn.relations?.OpinionOf(recipient) ?? 0f;
@@ -91,6 +92,13 @@ namespace RimMind.Dialogue
 
                 return sb.ToString().TrimEnd();
             });
+
+            ContextKeyRegistry.Register("dialogue_task", ContextLayer.L0_Static, 0.95f,
+                pawn =>
+                {
+                    if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
+                    return new List<ContextEntry> { new ContextEntry("RimMind.Dialogue.Prompt.TaskInstruction".Translate()) };
+                }, "RimMind.Dialogue");
         }
 
         public override string SettingsCategory() => "RimMind - Dialogue";

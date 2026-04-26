@@ -51,8 +51,6 @@ cd RimWorld-RimMind-Mod-Dialogue
 3. 安装 RimMind-Dialogue
 4. 在模组管理器中确保加载顺序：Harmony → Core → Dialogue
 
-<!-- ![安装步骤](images/install-steps.png) -->
-
 ## 快速开始
 
 ### 填写 API Key
@@ -68,14 +66,6 @@ cd RimWorld-RimMind-Mod-Dialogue
 - **自动对话**：殖民者受伤、技能升级、心情变化时会自动生成内心独白
 - **主动对话**：右键点击其他殖民者，选择"对话"选项；或点击殖民者身上的 Gizmo 按钮
 - **对话浮窗**：屏幕角落实时显示最近对话
-
-<!-- ![对话窗口](images/screenshot-dialogue-window.png) -->
-
-## 截图展示
-
-<!-- ![对话浮窗](images/screenshot-dialogue-overlay.png) -->
-<!-- ![对话日志](images/screenshot-dialogue-log.png) -->
-<!-- ![Thought注入](images/screenshot-dialogue-thought.png) -->
 
 ## 核心功能
 
@@ -153,8 +143,6 @@ cd RimWorld-RimMind-Mod-Dialogue
 | 显示对话浮窗 | 开启 | 屏幕角落实时对话 |
 | 浮窗透明度 | 75% | 浮窗不透明度 |
 | 浮窗最大消息数 | 8 | 浮窗同时显示的最大对话条数 |
-| 独白请求过期 | 0.25 游戏天 | 独白请求超时自动取消 |
-| 对话请求过期 | 1 游戏天 | 对话请求超时自动取消 |
 
 ## 常见问题
 

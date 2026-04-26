@@ -16,6 +16,7 @@ namespace RimMind.Dialogue.Comps
 
         public override void CompTick()
         {
+            if (!Pawn.IsColonist) return;
             if (!Pawn.IsHashIntervalTick(1000)) return;
             if (!RimMindDialogueSettings.Get().autoDialogueEnabled) return;
             if (!RimMindAPI.IsConfigured()) return;

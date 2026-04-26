@@ -1,45 +1,111 @@
-[h1]RimMind - Dialogue[/h1]
-让殖民者开口说话，为游戏事件注入生动的 AI 生成对话。拦截游戏事件生成上下文 AI 对话，支持玩家主动发起对话。
+RimMind - Dialogue：让殖民者真正"活"起来
 
-[h2] RimMind 是什么 [/h2]
-RimMind 是一套 AI 驱动的 RimWorld 模组套件，通过接入大语言模型 (LLM)，让殖民者拥有人格、记忆、对话和自主决策能力。
+你有没有想过，你的殖民者在想什么？
 
-[h2] 子模组列表与依赖关系 [/h2]
-[table][tr][td][b] 模组 [/b][/td][td][b] 职责 [/b][/td][td][b] 依赖 [/b][/td][td][b] GitHub [/b][/td][/tr][tr][td] RimMind-Core [/td][td] API 客户端、请求调度、上下文打包 [/td][td] Harmony [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Core] 链接 [/url][/td][/tr][tr][td] RimMind-Actions [/td][td] AI 控制小人的动作执行库 [/td][td] Core [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Actions] 链接 [/url][/td][/tr][tr][td] RimMind-Advisor [/td][td] AI 扮演小人做出工作决策 [/td][td] Core, Actions [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Advisor] 链接 [/url][/td][/tr][tr][td][b] RimMind-Dialogue [/b][/td][td] AI 驱动的对话系统 [/td][td] Core [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Dialogue] 链接 [/url][/td][/tr][tr][td] RimMind-Memory [/td][td] 记忆采集与上下文注入 [/td][td] Core [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Memory] 链接 [/url][/td][/tr][tr][td] RimMind-Personality [/td][td] AI 生成人格与想法 [/td][td] Core [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Personality] 链接 [/url][/td][/tr][tr][td] RimMind-Storyteller [/td][td] AI 叙事者，智能选择事件 [/td][td] Core [/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Storyteller] 链接 [/url][/td][/tr][/table]
-[code]Core ── Actions ── Advisor
-  ├── Dialogue
-  ├── Memory
-  ├── Personality
-  └── Storyteller[/code]
+他们在冰冷的矿洞里挥镐时，心里在嘀咕什么？受伤躺在病床上时，嘴边在念叨什么？技能终于升级的那一刻，会不会忍不住跟旁边的人炫耀？
 
-[h2] 核心能力 [/h2]
-[b] 事件响应对话 [/b] - 当殖民者受伤、技能升级、心情显著变化时，自动生成符合情境的内心独白或对话。拦截原生 Chitchat/DeepTalk 交互，替换为 AI 生成的对话。
-[b] 玩家主动对话 [/b] - 通过殖民者身上的 Gizmo 按钮或右键菜单发起对话，支持多轮聊天，了解他们的想法和感受。
-[b] 对话回复链 [/b] - A 对话后自动触发 B 的回复，形成双向对话，让社交互动自然流动。
-[b] 对话上下文记忆 [/b] - 自动对话携带历史上下文（默认最近 5 轮），玩家对话保留会话历史（默认最近 6 轮），让对话有连贯性。
-[b] 思想注入系统 [/b] - AI 生成的对话以 Thought 形式注入游戏，影响殖民者心情；对话还可改变小人间好感度，让对话有实际游戏效果。
-[b] 角色约束 [/b] - 根据小人身份（囚犯/奴隶/敌人/访客）自动添加语气约束，让不同角色的对话风格各异。
-[b] 对话浮窗 [/b] - 屏幕角落实时显示最近对话，支持拖拽移动和缩放，不错过任何精彩瞬间。
-[b] 对话日志 [/b] - 分类查看所有对话记录（殖民者独白/对话、非殖民者独白/对话、玩家对话），对话以双栏视图展示。
+RimMind-Dialogue 给了他们一个开口的机会。
 
-[h2] 触发场景 [/h2]
-[table][tr][td][b] 触发来源 [/b][/td][td][b] 说明 [/b][/td][td][b] 类型 [/b][/td][/tr][tr][td] 社交互动 [/td][td] 拦截原生 Chitchat/DeepTalk [/td][td] 对话（有对象） [/td][/tr][tr][td] 健康变化 [/td][td] 受伤或患病时 [/td][td] 独白 [/td][/tr][tr][td] 技能升级 [/td][td] 技能等级提升时 [/td][td] 独白 [/td][/tr][tr][td] 心情波动 [/td][td] 心情变化超过阈值时 [/td][td] 独白 [/td][/tr][tr][td] 空闲自动 [/td][td] 空闲时按间隔触发 [/td][td] 独白 [/td][/tr][tr][td] 玩家主动 [/td][td] Gizmo 按钮或右键菜单 [/td][td] 对话（有对象） [/td][/tr][/table]
+━━━━━━━━━━━━━━━━━━━━
 
-[h2] Thought 标签与心情值 [/h2]
-[table][tr][td][b] 标签 [/b][/td][td][b] 心情值 [/b][/td][td][b] 说明 [/b][/td][/tr][tr][td] ENCOURAGED [/td][td] +1 [/td][td] 受到鼓励 [/td][/tr][tr][td] HURT [/td][td] -1 [/td][td] 感到受伤 [/td][/tr][tr][td] VALUED [/td][td] +2 [/td][td] 感到被重视 [/td][/tr][tr][td] CONNECTED [/td][td] +2 [/td][td] 感到亲近 [/td][/tr][tr][td] STRESSED [/td][td] -2 [/td][td] 感到压力 [/td][/tr][tr][td] IRRITATED [/td][td] -1 [/td][td] 感到烦躁 [/td][/tr][/table]
+他们会对发生的事做出反应
 
-[h2] 设置项 [/h2]
-[table][tr][td][b] 设置 [/b][/td][td][b] 默认值 [/b][/td][td][b] 说明 [/b][/td][/tr][tr][td] 启用对话系统 [/td][td] 开启 [/td][td] 总开关 [/td][/tr][tr][td] 拦截原生闲聊 [/td][td] 开启 [/td][td] 将 Chitchat/DeepTalk 替换为 AI 对话 [/td][/tr][tr][td] 健康变化反应 [/td][td] 开启 [/td][td] 受伤/生病时触发独白 [/td][/tr][tr][td] 技能升级反应 [/td][td] 开启 [/td][td] 技能提升时触发独白 [/td][/tr][tr][td] 心情变化反应 [/td][td] 开启 [/td][td] 心情波动超过阈值时触发独白 [/td][/tr][tr][td] 心情变化阈值 [/td][td] 3 [/td][td] 触发独白的最小心情变化绝对值 [/td][/tr][tr][td] 空闲自动独白 [/td][td] 开启 [/td][td] 空闲时按间隔触发独白 [/td][/tr][tr][td] 空闲自动独白间隔 [/td][td] 12 游戏小时 [/td][td] 自动独白的最小间隔 [/td][/tr][tr][td] 玩家主动对话 [/td][td] 开启 [/td][td] Gizmo 按钮 + 右键菜单对话选项 [/td][/tr][tr][td] 独白冷却 [/td][td] 10 游戏小时 [/td][td] 同一小人同类型独白的最小间隔 [/td][/tr][tr][td] 每日每对最大对话轮数 [/td][td] 6 [/td][td] 每对殖民者每天最多对话轮数 [/td][/tr][tr][td] 对话上下文轮数 [/td][td] 5 [/td][td] 发送给 AI 的历史对话轮数（-1=全部） [/td][/tr][tr][td] 启用对话回复 [/td][td] 开启 [/td][td] 收到对话后自动生成回复 [/td][/tr][tr][td] 游戏开始延迟 [/td][td] 10 秒 [/td][td] 加载存档后暂不触发对话 [/td][/tr][tr][td] 自定义对话 Prompt [/td][td] 空 [/td][td] 追加在系统 Prompt 末尾 [/td][/tr][tr][td][b] 注入 Thought 时显示通知 [/b][/td][td] 关闭 [/td][td] 注入心情 Thought 时屏幕通知 [/td][/tr][tr][td][b] 显示对话浮窗 [/td][td] 开启 [/td][td] 屏幕角落实时对话 [/td][/tr][tr][td] 浮窗透明度 [/td][td] 75% [/td][td] 浮窗不透明度 [/td][/tr][tr][td] 浮窗最大消息数 [/td][td] 8 [/td][td] 浮窗同时显示的最大对话条数 [/td][/tr][tr][td] 独白请求过期 [/td][td] 0.25 游戏天 [/td][td] 独白请求超时自动取消 [/td][/tr][tr][td] 对话请求过期 [/td][td] 1 游戏天 [/td][td] 对话请求超时自动取消 [/td][/tr][/table]
+殖民者不再是沉默的棋子。当游戏里发生值得注意的事，他们会用自己的话表达感受：
 
-[h2] 常见问题 [/h2]
-[b] Q: 对话会影响游戏性能吗？ [/b]
-A: 不会。所有 AI 请求异步执行，并发数有上限控制，各类触发均有冷却机制。
+受伤了——"嘶……这伤口比看起来深多了。"
+技能升级——"等等，我刚才是不是一锤就把那块钢 slag 敲碎了？"
+心情跌到谷底——"我已经不记得上一次吃饱是什么时候了……"
+跟别人闲聊——"嘿，你有没有觉得最近守夜特别冷？"
 
-[b] Q: 配合 Memory 模组效果更好吗？ [/b]
-A: 是的。安装 RimMind-Memory 后，对话内容会自动写入记忆系统，让 AI 在后续对话中参考历史。
+每句话都是 AI 根据当前游戏状态实时生成的。同样的事件，不同的殖民者会有完全不同的反应——因为他们的心情、健康、性格、人际关系都不一样。
 
-[b] Q: 可以只开启部分触发类型吗？ [/b]
-A: 可以。在模组设置中可单独开关每种触发类型。
+━━━━━━━━━━━━━━━━━━━━
 
-[b] Q: 对话浮窗可以移动位置吗？ [/b]
-A: 可以。浮窗支持拖拽移动和缩放，位置和大小可在设置中调整。
+你可以直接跟他们说话
+
+右键点击任何一个殖民者，选择"对话"，一个聊天窗口就会弹出来。你可以问他们任何问题，安慰他们，或者跟他们吵架。
+
+他们不只是机械地回复。他们会记住你说了什么，会根据你们的关系好坏调整语气。对一个心情低落的殖民者说一句关心的话，他可能会真的被触动——游戏里他的心情值会上升。
+
+这就是 Thought 注入系统：对话不只是文字，它会实际影响殖民者的心情和人际关系。
+
+━━━━━━━━━━━━━━━━━━━━
+
+对话会改变他们的关系
+
+两个殖民者聊天时，AI 可能会决定这次对话让他们的关系变好或变差。一次愉快的闲聊可能让好感度 +2，一场争吵可能让关系 -3。
+
+这些变化以 Thought 的形式注入游戏，持续影响殖民者之间的互动。你可能会发现，经常一起聊天的两个人渐渐成了朋友，而一次不愉快的对话可能埋下日后冲突的种子。
+
+━━━━━━━━━━━━━━━━━━━━
+
+对话会自动发生
+
+你不需要手动触发每一次对话。殖民者在日常生活中会自然而然地产生对话和独白：
+
+社交互动——当两个殖民者进行 Chitchat 或 Deep Talk 时，原生的社交互动会被替换为 AI 生成的对话，内容更丰富、更有个性。
+
+空闲独白——当一个殖民者闲着没事做时，他可能会自言自语。这些独白让你能窥探到他们内心的想法。
+
+所有触发类型都可以在设置中单独开关，你可以只保留你喜欢的部分。
+
+━━━━━━━━━━━━━━━━━━━━
+
+屏幕角落的对话浮窗
+
+不想错过任何精彩瞬间？开启对话浮窗，最近的对话内容会实时显示在屏幕角落。你可以拖动它到任何位置，调整大小和透明度。
+
+想看完整的对话记录？点击浮窗上的"详细"按钮，打开对话日志窗口。日志按类型分类——殖民者独白、殖民者对话、玩家对话、非殖民者对话——对话以双栏视图展示，像聊天记录一样清晰。
+
+━━━━━━━━━━━━━━━━━━━━
+
+不同身份，不同语气
+
+这个模组不只是给殖民者用的。囚犯、奴隶、敌人、访客——每个人都有自己的说话方式：
+
+囚犯说话时会带着警惕和犹豫，偶尔乞求或讨价还价。
+奴隶说话时恐惧而顺从，称呼殖民者为"主人"。
+敌人说话时充满敌意，用简短的命令或威胁。
+访客说话时礼貌而好奇，对殖民地的一切充满新鲜感。
+
+这让你的殖民地里的每个人都不再是千篇一律的 NPC。
+
+━━━━━━━━━━━━━━━━━━━━
+
+配合其他 RimMind 模组效果更好
+
+RimMind-Dialogue 是 RimMind 套件的一部分。安装更多模组，体验会更丰富：
+
+RimMind-Memory——对话内容会自动写入记忆系统。下次对话时，AI 会记得之前聊过什么，让对话更有连贯性。
+RimMind-Personality——AI 生成的人格档案会影响对话风格，让每个殖民者的说话方式更加独特。
+RimMind-Actions——AI 可以在对话中触发实际的游戏动作，让对话不只是说说而已。
+
+━━━━━━━━━━━━━━━━━━━━
+
+高度可定制
+
+每个触发类型都可以单独开关。觉得空闲独白太频繁？关掉它。只想保留玩家主动对话？没问题。
+
+你还可以调整：
+独白冷却时间——控制同一殖民者多久才能再次独白
+每日对话上限——控制每对殖民者每天最多对话几次
+心情变化阈值——只有心情变化足够大时才触发对话
+游戏开始延迟——加载存档后多久才开始触发对话，避免启动时请求过多
+自定义 Prompt——追加你自己的提示词，微调 AI 的对话风格
+
+━━━━━━━━━━━━━━━━━━━━
+
+性能友好
+
+所有 AI 请求都是异步执行的，不会卡住游戏。并发请求数有上限控制，各类触发都有冷却机制防止过度请求。对话浮窗使用隔帧绘制，对帧率几乎无影响。
+
+━━━━━━━━━━━━━━━━━━━━
+
+开始使用
+
+1. 安装 Harmony 和 RimMind-Core
+2. 安装 RimMind-Dialogue
+3. 在 RimMind-Core 设置中填写你的 API Key 和模型
+4. 开始游戏，观察你的殖民者开始说话
+
+就是这么简单。一旦他们开口，你会发现 RimWorld 从来没有这么热闹过。

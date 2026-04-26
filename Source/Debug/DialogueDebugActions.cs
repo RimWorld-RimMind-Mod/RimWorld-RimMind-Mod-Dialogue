@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using LudeonTK;
 using RimMind.Dialogue;
@@ -89,6 +90,114 @@ namespace RimMind.Dialogue.Debug
                 if (p != exclude) return p;
             }
             return null;
+        }
+
+        [DebugAction("RimMind-Dialogue", "Force LevelUp Trigger (selected)", actionType = DebugActionType.Action)]
+        private static void ForceLevelUpTrigger()
+        {
+            var pawn = Find.Selector.SingleSelectedThing as Pawn;
+            if (pawn == null) { Log.Message("[RimMind-Dialogue] No pawn selected."); return; }
+
+            RimMindDialogueService.HandleTrigger(pawn, "[Debug] Skill level up", DialogueTriggerType.LevelUp, null);
+        }
+
+        [DebugAction("RimMind-Dialogue", "Force Thought Trigger (selected)", actionType = DebugActionType.Action)]
+        private static void ForceThoughtTrigger()
+        {
+            var pawn = Find.Selector.SingleSelectedThing as Pawn;
+            if (pawn == null) { Log.Message("[RimMind-Dialogue] No pawn selected."); return; }
+
+            RimMindDialogueService.HandleTrigger(pawn, "[Debug] Mood thought change", DialogueTriggerType.Thought, null);
+        }
+
+        [DebugAction("RimMind-Dialogue", "Show Dialogue Service State", actionType = DebugActionType.Action)]
+        private static void ShowDialogueServiceState()
+        {
+            var sb = new StringBuilder("[RimMind-Dialogue] Service State:\n");
+            sb.AppendLine($"  IsReady: {RimMindDialogueService.IsReady}");
+            sb.AppendLine($"  LogEntries.Count: {RimMindDialogueService.LogEntries.Count}");
+
+            var flags = BindingFlags.NonPublic | BindingFlags.Static;
+
+            var recentField = typeof(RimMindDialogueService).GetField("_recentTriggers", flags);
+            if (recentField != null)
+            {
+                var recent = recentField.GetValue(null) as System.Collections.IList;
+                sb.AppendLine($"  _recentTriggers.Count: {recent?.Count.ToString() ?? "N/A"}");
+            }
+
+            var pendingField = typeof(RimMindDialogueService).GetField("_pendingPawns", flags);
+            if (pendingField != null)
+            {
+                var pending = pendingField.GetValue(null);
+                var countProp = pending?.GetType().GetProperty("Count");
+                sb.AppendLine($"  _pendingPawns.Count: {countProp?.GetValue(pending)?.ToString() ?? "N/A"}");
+            }
+
+            var pairsField = typeof(RimMindDialogueService).GetField("_pendingDialoguePairs", flags);
+            if (pairsField != null)
+            {
+                var pairs = pairsField.GetValue(null);
+                var countProp = pairs?.GetType().GetProperty("Count");
+                sb.AppendLine($"  _pendingDialoguePairs.Count: {countProp?.GetValue(pairs)?.ToString() ?? "N/A"}");
+            }
+
+            var dailyField = typeof(RimMindDialogueService).GetField("_dailyDialogueCounts", flags);
+            if (dailyField != null)
+            {
+                var daily = dailyField.GetValue(null) as System.Collections.IDictionary;
+                sb.AppendLine($"  _dailyDialogueCounts.Count: {daily?.Count.ToString() ?? "N/A"}");
+            }
+
+            sb.AppendLine("[RimMind-Dialogue] Settings:");
+            var s = RimMindDialogueSettings.Get();
+            sb.AppendLine($"  enabled: {s.enabled}");
+            sb.AppendLine($"  monologueCooldownTicks: {s.monologueCooldownTicks}");
+            sb.AppendLine($"  maxDailyDialogueRounds: {s.maxDailyDialogueRounds}");
+            sb.AppendLine($"  autoDialogueCooldownHours: {s.autoDialogueCooldownHours}");
+            sb.AppendLine($"  moodChangeThreshold: {s.moodChangeThreshold}");
+            sb.AppendLine($"  startDelayEnabled: {s.startDelayEnabled}");
+            sb.AppendLine($"  startDelaySeconds: {s.startDelaySeconds}");
+            sb.AppendLine($"  enableDialogueReply: {s.enableDialogueReply}");
+            sb.AppendLine($"  overlayEnabled: {s.overlayEnabled}");
+
+            Log.Message(sb.ToString());
+        }
+
+        [DebugAction("RimMind-Dialogue", "Clear All Dialogue Cooldowns", actionType = DebugActionType.Action)]
+        private static void ClearAllDialogueCooldowns()
+        {
+            int clearedRecent = 0;
+            int clearedDaily = 0;
+
+            var flags = BindingFlags.NonPublic | BindingFlags.Static;
+
+            var recentField = typeof(RimMindDialogueService).GetField("_recentTriggers", flags);
+            if (recentField != null)
+            {
+                var recent = recentField.GetValue(null) as System.Collections.IList;
+                if (recent != null)
+                {
+                    clearedRecent = recent.Count;
+                    recent.Clear();
+                }
+            }
+
+            var dailyField = typeof(RimMindDialogueService).GetField("_dailyDialogueCounts", flags);
+            if (dailyField != null)
+            {
+                var daily = dailyField.GetValue(null) as System.Collections.IDictionary;
+                if (daily != null)
+                {
+                    clearedDaily = daily.Count;
+                    daily.Clear();
+                }
+            }
+
+            if (clearedRecent > 0 || clearedDaily > 0)
+                Log.Message($"[RimMind-Dialogue] Cleared cooldowns: _recentTriggers={clearedRecent}, _dailyDialogueCounts={clearedDaily}");
+            else
+                Log.Message("[RimMind-Dialogue] No cooldowns to clear (or fields inaccessible). Adjust monologueCooldownTicks in settings if needed.");
         }
     }
 }
