@@ -4,6 +4,7 @@ using System.Text;
 using HarmonyLib;
 using RimMind.Core;
 using RimMind.Core.Context;
+using RimMind.Core.Prompt;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using Verse;
@@ -97,7 +98,17 @@ namespace RimMind.Dialogue
                 pawn =>
                 {
                     if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
-                    return new List<ContextEntry> { new ContextEntry("RimMind.Dialogue.Prompt.TaskInstruction".Translate()) };
+                    return new List<ContextEntry> { new ContextEntry(TaskInstructionBuilder.Build("RimMind.Dialogue.Prompt.TaskInstruction",
+                        "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback",
+                        "GoalDialogue", "GoalMonologue", "JsonTemplate", "TriggerReason", "RelationDelta")) };
+                }, "RimMind.Dialogue");
+
+            ContextKeyRegistry.Register("player_dialogue_task", ContextLayer.L0_Static, 0.95f,
+                pawn =>
+                {
+                    if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
+                    return new List<ContextEntry> { new ContextEntry(TaskInstructionBuilder.Build("RimMind.Dialogue.Prompt.PlayerTaskInstruction",
+                        "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback", "InitiatorConstraint")) };
                 }, "RimMind.Dialogue");
         }
 
