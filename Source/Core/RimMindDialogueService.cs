@@ -109,7 +109,7 @@ namespace RimMind.Dialogue.Core
                 CurrentQuery = type == DialogueTriggerType.PlayerInput
                     ? context
                     : "RimMind.Dialogue.Prompt.AutoTrigger".Translate(),
-                MaxTokens = 200,
+                MaxTokens = 400,
                 Temperature = 0.8f,
             };
 

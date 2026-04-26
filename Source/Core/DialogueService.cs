@@ -22,7 +22,7 @@ namespace RimMind.Dialogue.Core
                 NpcId = npcId,
                 Scenario = ScenarioIds.Dialogue,
                 CurrentQuery = playerMessage,
-                MaxTokens = 300,
+                MaxTokens = 400,
                 Temperature = 0.85f,
             };
 
