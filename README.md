@@ -120,6 +120,17 @@ cd RimWorld-RimMind-Mod-Dialogue
 - 对话以双栏视图展示，独白以列表视图展示
 - 浮窗覆盖：屏幕角落实时显示最近对话，支持拖拽和缩放
 
+## Mod 开发者 API
+
+RimMind-Dialogue 提供以下公共 API 供其他 mod 集成：
+
+| API | 说明 |
+|-----|------|
+| `RimMindDialogueService.OnDialogueCompleted` | 对话完成事件，签名 `(Pawn, Pawn?, string, string?)` |
+| `RimMindDialogueService.GetDialogueHistory(pawnId, maxCount)` | 查询指定小人的对话历史 |
+| `RimMindDialogueService.RegisterTriggerType(typeId, labelKey)` | 注册自定义触发类型标签翻译 |
+| `ThoughtInjector.RegisterThoughtTag(tag, moodOffset, labelKey)` | 注册自定义 Thought 标签及心情映射 |
+
 ## 设置项
 
 | 设置 | 默认值 | 说明 |
@@ -244,6 +255,17 @@ cd RimWorld-RimMind-Mod-Dialogue
 - **Player-Initiated Dialogue**: Gizmo button + right-click context menu, with multi-turn history
 - **Dialogue Reply Chain**: Automatic reply generation creates two-way conversations
 - **Dialogue Log**: Categorized log with dual-column dialogue view and real-time overlay
+
+## Mod Developer API
+
+RimMind-Dialogue provides public APIs for other mods to integrate:
+
+| API | Description |
+|-----|-------------|
+| `RimMindDialogueService.OnDialogueCompleted` | Dialogue completion event, signature `(Pawn, Pawn?, string, string?)` |
+| `RimMindDialogueService.GetDialogueHistory(pawnId, maxCount)` | Query dialogue history for a specific pawn |
+| `RimMindDialogueService.RegisterTriggerType(typeId, labelKey)` | Register custom trigger type label translation |
+| `ThoughtInjector.RegisterThoughtTag(tag, moodOffset, labelKey)` | Register custom Thought tag with mood mapping |
 
 ## FAQ
 
