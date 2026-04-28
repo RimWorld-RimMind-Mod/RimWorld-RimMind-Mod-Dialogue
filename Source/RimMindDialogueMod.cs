@@ -43,56 +43,58 @@ namespace RimMind.Dialogue
 
         private static void RegisterContextProviders()
         {
-            RimMindAPI.RegisterPawnContextProvider("dialogue_state", pawn =>
-            {
-                var memories = pawn.needs?.mood?.thoughts?.memories?.Memories;
-                if (memories == null) return null;
-
-                var sb = new StringBuilder("RimMind.Dialogue.Context.StateHeader".Translate());
-                bool any = false;
-                foreach (var t in memories)
+            ContextKeyRegistry.Register("dialogue_state", ContextLayer.L3_State, 0.2f,
+                pawn =>
                 {
-                    if (t.def.defName != "RimMindDialogue_Thought") continue;
+                    var memories = pawn.needs?.mood?.thoughts?.memories?.Memories;
+                    if (memories == null) return new List<ContextEntry>();
 
-                    string desc = (t as Thought_RimMindDialogue)?.aiDescription ?? t.def.label;
-                    float hours = t.DurationTicks / 2500f;
-                    sb.AppendLine("RimMind.Dialogue.Context.ThoughtRemaining".Translate(desc, $"{hours:F1}"));
-                    any = true;
-                }
-                return any ? sb.ToString().TrimEnd() : null;
-            });
+                    var sb = new StringBuilder("RimMind.Dialogue.Context.StateHeader".Translate());
+                    bool any = false;
+                    foreach (var t in memories)
+                    {
+                        if (t.def.defName != "RimMindDialogue_Thought") continue;
 
-            RimMindAPI.RegisterPawnContextProvider("dialogue_relation", pawn =>
-            {
-                var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
-                if (recipient == null) return null;
+                        string desc = (t as Thought_RimMindDialogue)?.aiDescription ?? t.def.label;
+                        float hours = t.DurationTicks / 2500f;
+                        sb.AppendLine("RimMind.Dialogue.Context.ThoughtRemaining".Translate(desc, $"{hours:F1}"));
+                        any = true;
+                    }
+                    return any ? new List<ContextEntry> { new ContextEntry(sb.ToString().TrimEnd()) } : new List<ContextEntry>();
+                }, "RimMind.Dialogue");
 
-                var sb = new StringBuilder("RimMind.Dialogue.Context.RelationHeader".Translate(recipient.Name.ToStringShort));
+            ContextKeyRegistry.Register("dialogue_relation", ContextLayer.L3_State, 0.15f,
+                pawn =>
+                {
+                    var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
+                    if (recipient == null) return new List<ContextEntry>();
 
-                float opinion = pawn.relations?.OpinionOf(recipient) ?? 0f;
-                string opinionLabel = opinion >= 20 ? "RimMind.Dialogue.Context.Opinion.Friend".Translate()
-                                    : opinion <= -20 ? "RimMind.Dialogue.Context.Opinion.Enemy".Translate()
-                                    : "RimMind.Dialogue.Context.Opinion.Acquaintance".Translate();
-                sb.AppendLine("RimMind.Dialogue.Context.OpinionLabel".Translate(opinion.ToString("+0;-0"), opinionLabel));
+                    var sb = new StringBuilder("RimMind.Dialogue.Context.RelationHeader".Translate(recipient.Name.ToStringShort));
 
-                float compat = pawn.relations?.CompatibilityWith(recipient) ?? 0.5f;
-                string compatLabel = compat >= 0.6f ? "RimMind.Dialogue.Context.Compat.High".Translate()
-                                    : compat <= 0.3f ? "RimMind.Dialogue.Context.Compat.Low".Translate()
-                                    : "RimMind.Dialogue.Context.Compat.Medium".Translate();
-                sb.AppendLine("RimMind.Dialogue.Context.CompatLabel".Translate($"{compat:F2}", compatLabel));
+                    float opinion = pawn.relations?.OpinionOf(recipient) ?? 0f;
+                    string opinionLabel = opinion >= 20 ? "RimMind.Dialogue.Context.Opinion.Friend".Translate()
+                                        : opinion <= -20 ? "RimMind.Dialogue.Context.Opinion.Enemy".Translate()
+                                        : "RimMind.Dialogue.Context.Opinion.Acquaintance".Translate();
+                    sb.AppendLine("RimMind.Dialogue.Context.OpinionLabel".Translate(opinion.ToString("+0;-0"), opinionLabel));
 
-                float romance = pawn.relations?.SecondaryRomanceChanceFactor(recipient) ?? 0f;
-                string romanceLabel = romance >= 0.5f ? "RimMind.Dialogue.Context.Romance.High".Translate()
-                                     : romance >= 0.15f ? "RimMind.Dialogue.Context.Romance.Medium".Translate()
-                                     : "RimMind.Dialogue.Context.Romance.Low".Translate();
-                sb.AppendLine("RimMind.Dialogue.Context.RomanceLabel".Translate($"{romance:F2}", romanceLabel, "RimMind.Dialogue.Context.Romance.Unlikely".Translate()));
+                    float compat = pawn.relations?.CompatibilityWith(recipient) ?? 0.5f;
+                    string compatLabel = compat >= 0.6f ? "RimMind.Dialogue.Context.Compat.High".Translate()
+                                        : compat <= 0.3f ? "RimMind.Dialogue.Context.Compat.Low".Translate()
+                                        : "RimMind.Dialogue.Context.Compat.Medium".Translate();
+                    sb.AppendLine("RimMind.Dialogue.Context.CompatLabel".Translate($"{compat:F2}", compatLabel));
 
-                var directRel = pawn.relations?.DirectRelations?.FirstOrDefault(r => r.otherPawn == recipient);
-                if (directRel != null)
-                    sb.AppendLine("RimMind.Dialogue.Context.DirectRelation".Translate(directRel.def.label));
+                    float romance = pawn.relations?.SecondaryRomanceChanceFactor(recipient) ?? 0f;
+                    string romanceLabel = romance >= 0.5f ? "RimMind.Dialogue.Context.Romance.High".Translate()
+                                         : romance >= 0.15f ? "RimMind.Dialogue.Context.Romance.Medium".Translate()
+                                         : "RimMind.Dialogue.Context.Romance.Low".Translate();
+                    sb.AppendLine("RimMind.Dialogue.Context.RomanceLabel".Translate($"{romance:F2}", romanceLabel, "RimMind.Dialogue.Context.Romance.Unlikely".Translate()));
 
-                return sb.ToString().TrimEnd();
-            });
+                    var directRel = pawn.relations?.DirectRelations?.FirstOrDefault(r => r.otherPawn == recipient);
+                    if (directRel != null)
+                        sb.AppendLine("RimMind.Dialogue.Context.DirectRelation".Translate(directRel.def.label));
+
+                    return new List<ContextEntry> { new ContextEntry(sb.ToString().TrimEnd()) };
+                }, "RimMind.Dialogue");
 
             ContextKeyRegistry.Register("dialogue_task", ContextLayer.L0_Static, 0.95f,
                 pawn =>

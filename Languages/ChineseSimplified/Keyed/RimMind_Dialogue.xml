@@ -157,14 +157,11 @@
   <RimMind.Dialogue.Prompt.Role.Slave>角色约束：此人是奴隶。语气应恐惧、顺从，提及强制劳动和疲惫，称呼殖民者为"主人"。</RimMind.Dialogue.Prompt.Role.Slave>
   <RimMind.Dialogue.Prompt.Role.Enemy>角色约束：此人是敌人。语气应敌对、攻击性，使用简短的命令或威胁。</RimMind.Dialogue.Prompt.Role.Enemy>
   <RimMind.Dialogue.Prompt.Role.Visitor>角色约束：此人是访客。语气应礼貌、好奇、恭敬，将同行的其他访客视为同伴。</RimMind.Dialogue.Prompt.Role.Visitor>
-  <RimMind.Dialogue.Prompt.System.RecipientRole>对话对象角色：{0}</RimMind.Dialogue.Prompt.System.RecipientRole>
   <RimMind.Dialogue.Prompt.Context.Chitchat>[触发原因: 闲聊] {0}</RimMind.Dialogue.Prompt.Context.Chitchat>
   <RimMind.Dialogue.Prompt.Context.Recipient>[对象] {0}</RimMind.Dialogue.Prompt.Context.Recipient>
   <RimMind.Dialogue.Prompt.Context.Hediff>[触发原因: 健康变化] {0}</RimMind.Dialogue.Prompt.Context.Hediff>
   <RimMind.Dialogue.Prompt.Context.LevelUp>[触发原因: 技能升级] {0}</RimMind.Dialogue.Prompt.Context.LevelUp>
   <RimMind.Dialogue.Prompt.Context.Thought>[触发原因: 情绪变化] {0}</RimMind.Dialogue.Prompt.Context.Thought>
   <RimMind.Dialogue.Prompt.Context.Auto>[触发原因: 自动触发] {0}</RimMind.Dialogue.Prompt.Context.Auto>
-  <RimMind.Dialogue.Prompt.Context.DialogueHistory>[之前的对话记录]</RimMind.Dialogue.Prompt.Context.DialogueHistory>
-  <RimMind.Dialogue.Prompt.Context.HistoryCompressed>（更早的对话已省略）</RimMind.Dialogue.Prompt.Context.HistoryCompressed>
   <RimMind.Dialogue.Prompt.AutoTrigger>请根据你当前的状态和周围环境，自然地做出回应。</RimMind.Dialogue.Prompt.AutoTrigger>
 </LanguageData>

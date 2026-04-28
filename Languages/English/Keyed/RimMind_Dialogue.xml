@@ -157,14 +157,11 @@ Output: {"reply":"Yeah... a bit tired, been mining all night. But thanks for you
   <RimMind.Dialogue.Prompt.Role.Slave>Role constraint: This person is a slave. Tone should be fearful, submissive, mentioning forced labor and exhaustion, referring to colonists as "master".</RimMind.Dialogue.Prompt.Role.Slave>
   <RimMind.Dialogue.Prompt.Role.Enemy>Role constraint: This person is an enemy. Tone should be hostile, aggressive, using short commands or threats.</RimMind.Dialogue.Prompt.Role.Enemy>
   <RimMind.Dialogue.Prompt.Role.Visitor>Role constraint: This person is a visitor. Tone should be polite, curious, respectful, treating fellow visitors as companions.</RimMind.Dialogue.Prompt.Role.Visitor>
-  <RimMind.Dialogue.Prompt.System.RecipientRole>Dialogue recipient role: {0}</RimMind.Dialogue.Prompt.System.RecipientRole>
   <RimMind.Dialogue.Prompt.Context.Chitchat>[Trigger: Chitchat] {0}</RimMind.Dialogue.Prompt.Context.Chitchat>
   <RimMind.Dialogue.Prompt.Context.Recipient>[Recipient] {0}</RimMind.Dialogue.Prompt.Context.Recipient>
   <RimMind.Dialogue.Prompt.Context.Hediff>[Trigger: Health Change] {0}</RimMind.Dialogue.Prompt.Context.Hediff>
   <RimMind.Dialogue.Prompt.Context.LevelUp>[Trigger: Skill Level Up] {0}</RimMind.Dialogue.Prompt.Context.LevelUp>
   <RimMind.Dialogue.Prompt.Context.Thought>[Trigger: Mood Change] {0}</RimMind.Dialogue.Prompt.Context.Thought>
   <RimMind.Dialogue.Prompt.Context.Auto>[Trigger: Auto] {0}</RimMind.Dialogue.Prompt.Context.Auto>
-  <RimMind.Dialogue.Prompt.Context.DialogueHistory>[Previous Dialogue History]</RimMind.Dialogue.Prompt.Context.DialogueHistory>
-  <RimMind.Dialogue.Prompt.Context.HistoryCompressed>(Earlier conversations omitted)</RimMind.Dialogue.Prompt.Context.HistoryCompressed>
   <RimMind.Dialogue.Prompt.AutoTrigger>Based on your current state and surroundings, respond naturally.</RimMind.Dialogue.Prompt.AutoTrigger>
 </LanguageData>

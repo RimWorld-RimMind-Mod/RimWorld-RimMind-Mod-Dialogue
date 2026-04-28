@@ -16,6 +16,8 @@ namespace RimMind.Dialogue.Core
         public static void Handle(NpcChatResult result, Pawn pawn, Pawn? recipient,
             string context, DialogueTriggerType type)
         {
+            if (pawn.Dead || pawn.Destroyed) return;
+
             if (result.Error != null)
             {
                 Log.Warning($"[RimMind] NpcChat error for {pawn.LabelShort}: {result.Error}");
@@ -35,7 +37,7 @@ namespace RimMind.Dialogue.Core
                 return;
             }
 
-            bool isMonologue = recipient == null;
+            bool isMonologue = recipient == null && type != DialogueTriggerType.PlayerInput;
 
             // 显示气泡
             RimMindDialogueService.DisplayInteraction(pawn, recipient, replyText);
@@ -88,8 +90,16 @@ namespace RimMind.Dialogue.Core
             // 日志记录
             RimMindDialogueService.AddLogEntry(pawn, recipient, type, context, replyText, thoughtTag, thoughtDesc);
 
+            // Broadcast dialogue completion for other mods
+            try
+            {
+                string summary = replyText.Length > 80 ? replyText.Substring(0, 80) + "..." : replyText;
+                RimMind.Core.RimMindAPI.PublishPerception(pawn.thingIDNumber, "dialogue_completed", summary, 0.4f);
+            }
+            catch { }
+
             // 记忆记录
-            if (!isMonologue && Verse.ModsConfig.IsActive("mcocdaa.RimMindMemory"))
+            if (!isMonologue && recipient != null && Verse.ModsConfig.IsActive("mcocdaa.RimMindMemory"))
             {
                 try
                 {
@@ -108,8 +118,8 @@ namespace RimMind.Dialogue.Core
             }
 
             // 每日对话计数
-            if (!isMonologue)
-                RimMindDialogueService.RecordDailyDialogue(pawn.thingIDNumber, recipient!.thingIDNumber);
+            if (!isMonologue && recipient != null)
+                RimMindDialogueService.RecordDailyDialogue(pawn.thingIDNumber, recipient.thingIDNumber);
 
             // Thought 通知
             if (RimMindDialogueSettings.Get().showThoughtNotification && thoughtTag != "NONE" && !thoughtTag.NullOrEmpty())
@@ -125,6 +135,8 @@ namespace RimMind.Dialogue.Core
             {
                 RimMindDialogueService.TryTriggerReply(pawn, recipient!, replyText);
             }
+
+            RimMindDialogueService.RaiseOnDialogueCompleted(pawn, recipient, replyText, thoughtTag);
         }
 
         private static void ExecuteCommand(NpcCommandResult cmd, Pawn pawn, Pawn? recipient)

@@ -30,6 +30,9 @@ namespace RimMind.Dialogue.Core
         private static ConcurrentBag<DialogueLogEntry> _logEntries = new ConcurrentBag<DialogueLogEntry>();
         private const int MaxLogEntries = 500;
 
+        private static List<DialogueLogEntry>? _cachedLogEntries;
+        private static bool _logDirty = true;
+
         private static readonly ConcurrentDictionary<(int, int), List<int>> _dailyDialogueCounts
             = new ConcurrentDictionary<(int, int), List<int>>();
         private static int _lastCountDay = -1;
@@ -40,7 +43,16 @@ namespace RimMind.Dialogue.Core
         private static Dictionary<int, Pawn> _pawnCache = new Dictionary<int, Pawn>();
         private static int _pawnCacheTick = -1;
 
+        private static readonly Dictionary<string, string> RegisteredTriggerLabels = new Dictionary<string, string>();
+
         public static event Action? OnLogUpdated;
+
+        public static event Action<Pawn, Pawn?, string, string?>? OnDialogueCompleted;
+
+        public static void RaiseOnDialogueCompleted(Pawn pawn, Pawn? recipient, string replyText, string? thoughtTag)
+        {
+            OnDialogueCompleted?.Invoke(pawn, recipient, replyText, thoughtTag);
+        }
 
         public static bool IsReady
         {
@@ -53,9 +65,22 @@ namespace RimMind.Dialogue.Core
             }
         }
 
-        public static IReadOnlyList<DialogueLogEntry> LogEntries => _logEntries.ToList();
+        public static IReadOnlyList<DialogueLogEntry> LogEntries
+        {
+            get
+            {
+                if (!_logDirty && _cachedLogEntries != null) return _cachedLogEntries;
+                _cachedLogEntries = _logEntries.ToList();
+                _logDirty = false;
+                return _cachedLogEntries;
+            }
+        }
 
-        public static void ClearLog() => Interlocked.Exchange(ref _logEntries, new ConcurrentBag<DialogueLogEntry>());
+        public static void ClearLog()
+        {
+            Interlocked.Exchange(ref _logEntries, new ConcurrentBag<DialogueLogEntry>());
+            _logDirty = true;
+        }
 
         public static void NotifyGameLoaded()
         {
@@ -184,8 +209,16 @@ namespace RimMind.Dialogue.Core
             }
         }
 
+        public static void RegisterTriggerType(string typeId, string labelKey)
+        {
+            RegisteredTriggerLabels[typeId] = labelKey;
+        }
+
         public static string GetTriggerLabel(DialogueTriggerType type)
         {
+            string typeStr = type.ToString();
+            if (RegisteredTriggerLabels.TryGetValue(typeStr, out var label))
+                return label.Translate();
             return type switch
             {
                 DialogueTriggerType.Chitchat => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
@@ -194,7 +227,7 @@ namespace RimMind.Dialogue.Core
                 DialogueTriggerType.Thought => "RimMind.Dialogue.Trigger.Thought".Translate(),
                 DialogueTriggerType.Auto => "RimMind.Dialogue.Trigger.Auto".Translate(),
                 DialogueTriggerType.PlayerInput => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
-                _ => type.ToString()
+                _ => typeStr
             };
         }
 
@@ -210,7 +243,7 @@ namespace RimMind.Dialogue.Core
                 recipientName = recipient?.Name.ToStringShort,
                 recipientId = recipient?.thingIDNumber ?? -1,
                 recipientIsColonist = recipient?.IsColonist ?? false,
-                category = GetCategory(pawn, recipient),
+                category = GetCategory(pawn, recipient, triggerType),
                 trigger = triggerType.ToString(),
                 context = context,
                 reply = reply,
@@ -227,6 +260,7 @@ namespace RimMind.Dialogue.Core
             }
 
             OnLogUpdated?.Invoke();
+            _logDirty = true;
         }
 
         public static void RecordDailyDialogue(int idA, int idB)
@@ -288,8 +322,20 @@ namespace RimMind.Dialogue.Core
             return _pendingDialoguePairs.ContainsKey(MakePairKey(pawnIdA, pawnIdB));
         }
 
-        public static DialogueCategory GetCategory(Pawn initiator, Pawn? recipient)
+        public static List<DialogueLogEntry> GetDialogueHistory(int pawnId, int maxCount = 20)
         {
+            return _logEntries
+                .Where(e => e.initiatorId == pawnId || e.recipientId == pawnId)
+                .OrderByDescending(e => e.tick)
+                .Take(maxCount)
+                .ToList();
+        }
+
+        public static DialogueCategory GetCategory(Pawn initiator, Pawn? recipient, DialogueTriggerType triggerType)
+        {
+            if (triggerType == DialogueTriggerType.PlayerInput)
+                return DialogueCategory.PlayerDialogue;
+
             if (recipient == null)
             {
                 return initiator.IsColonist ? DialogueCategory.ColonistMonologue : DialogueCategory.NonColonistMonologue;
