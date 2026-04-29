@@ -18,6 +18,8 @@ namespace RimMind.Dialogue.Settings
         public float moodChangeThreshold = 3f;
         public int autoDialogueCooldownHours = 12;
         public int maxDailyDialogueRounds = 6;
+        public int maxHistoryRounds = 20;
+        public int globalConcurrency = 3;
         public bool showThoughtNotification = false;
 
         public bool enableDialogueReply = true;
@@ -61,6 +63,8 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref moodChangeThreshold, "moodChangeThreshold", 3f);
             Scribe_Values.Look(ref autoDialogueCooldownHours, "autoDialogueCooldownHours", 12);
             Scribe_Values.Look(ref maxDailyDialogueRounds, "maxDailyDialogueRounds", 6);
+            Scribe_Values.Look(ref maxHistoryRounds, "maxHistoryRounds", 20);
+            Scribe_Values.Look(ref globalConcurrency, "globalConcurrency", 3);
             Scribe_Values.Look(ref showThoughtNotification, "showThoughtNotification", false);
 
             Scribe_Values.Look(ref enableDialogueReply, "enableDialogueReply", true);
@@ -137,6 +141,18 @@ namespace RimMind.Dialogue.Settings
             GUI.color = Color.white;
             s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
 
+            listing.Label("RimMind.Dialogue.Settings.MaxHistoryRounds".Translate(s.maxHistoryRounds));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.MaxHistoryRounds.Desc".Translate());
+            GUI.color = Color.white;
+            s.maxHistoryRounds = (int)listing.Slider(s.maxHistoryRounds, 5f, 50f);
+
+            listing.Label("RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency));
+            GUI.color = Color.gray;
+            listing.Label("  " + "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
+            GUI.color = Color.white;
+            s.globalConcurrency = (int)listing.Slider(s.globalConcurrency, 1f, 10f);
+
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
                 "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
 
@@ -179,6 +195,8 @@ namespace RimMind.Dialogue.Settings
                 s.moodChangeThreshold = 3f;
                 s.autoDialogueCooldownHours = 12;
                 s.maxDailyDialogueRounds = 6;
+                s.maxHistoryRounds = 20;
+                s.globalConcurrency = 3;
                 s.showThoughtNotification = false;
                 s.enableDialogueReply = true;
                 s.monologueCooldownTicks = 36000;
@@ -206,7 +224,9 @@ namespace RimMind.Dialogue.Settings
                 h += 24f + 32f;
             if (s.autoDialogueEnabled)
                 h += 24f + 24f + 32f;
-            h += 24f + 24f + 32f + 24f + 32f + 24f + 24f;
+            h += 24f + 24f + 32f + 24f + 32f;
+            h += 24f + 24f + 32f + 24f + 32f;
+            h += 24f + 24f;
             if (s.startDelayEnabled)
                 h += 24f + 32f;
             h += 24f + 24f + 24f + 24f + 32f + 24f + 32f;

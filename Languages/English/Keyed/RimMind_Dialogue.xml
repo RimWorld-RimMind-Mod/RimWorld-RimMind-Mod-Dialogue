@@ -64,6 +64,10 @@
   <RimMind.Dialogue.Settings.AutoInterval>Auto monologue interval: {0} game hours</RimMind.Dialogue.Settings.AutoInterval>
   <RimMind.Dialogue.Settings.MaxDailyDialogues>Max daily dialogue rounds per pair: {0}</RimMind.Dialogue.Settings.MaxDailyDialogues>
   <RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>Maximum dialogue rounds per colonist pair per day. Higher values produce more dialogues but increase API costs.</RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds>Max AI dialogue history rounds: {0}</RimMind.Dialogue.Settings.MaxHistoryRounds>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>Number of dialogue rounds retained as AI conversation context. Higher values improve coherence but increase token usage.</RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>
+  <RimMind.Dialogue.Settings.GlobalConcurrency>Global dialogue concurrency limit: {0}</RimMind.Dialogue.Settings.GlobalConcurrency>
+  <RimMind.Dialogue.Settings.GlobalConcurrency.Desc>Maximum number of simultaneous AI dialogue requests. Lower values reduce API pressure but may cause dialogue delays.</RimMind.Dialogue.Settings.GlobalConcurrency.Desc>
   <RimMind.Dialogue.Settings.EnableDialogueReply>Enable Dialogue Reply</RimMind.Dialogue.Settings.EnableDialogueReply>
   <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>Automatically generate a reply when receiving dialogue, creating two-way conversations.</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
   <RimMind.Dialogue.Settings.StartDelay>Game start delay</RimMind.Dialogue.Settings.StartDelay>

@@ -298,6 +298,9 @@ namespace RimMind.Dialogue.UI
 
         private static string TranslateTrigger(string triggerKey)
         {
+            if (RimMindDialogueService.RegisteredTriggerLabels.TryGetValue(triggerKey, out var labelKey))
+                return labelKey.Translate();
+
             return triggerKey switch
             {
                 "Chitchat" => "RimMind.Dialogue.Trigger.Chitchat".Translate(),

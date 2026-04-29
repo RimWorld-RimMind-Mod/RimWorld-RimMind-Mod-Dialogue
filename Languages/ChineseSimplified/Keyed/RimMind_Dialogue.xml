@@ -64,6 +64,10 @@
   <RimMind.Dialogue.Settings.AutoInterval>空闲自动独白间隔：{0} 游戏小时</RimMind.Dialogue.Settings.AutoInterval>
   <RimMind.Dialogue.Settings.MaxDailyDialogues>每日每对最大对话轮数：{0}</RimMind.Dialogue.Settings.MaxDailyDialogues>
   <RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>每对殖民者每天最多产生的对话轮数。增大可产生更多对话但增加 API 费用。</RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds>AI对话历史保留轮数：{0}</RimMind.Dialogue.Settings.MaxHistoryRounds>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>保留作为 AI 对话上下文的对话轮数。提高可增强连贯性但增加 token 消耗。</RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>
+  <RimMind.Dialogue.Settings.GlobalConcurrency>全局对话并发上限：{0}</RimMind.Dialogue.Settings.GlobalConcurrency>
+  <RimMind.Dialogue.Settings.GlobalConcurrency.Desc>同时进行的 AI 对话请求最大数量。降低可减少 API 压力但可能导致对话延迟。</RimMind.Dialogue.Settings.GlobalConcurrency.Desc>
   <RimMind.Dialogue.Settings.EnableDialogueReply>启用对话回复</RimMind.Dialogue.Settings.EnableDialogueReply>
   <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>收到他人对话后自动生成回复，形成双向对话。</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
   <RimMind.Dialogue.Settings.StartDelay>游戏开始延迟</RimMind.Dialogue.Settings.StartDelay>
