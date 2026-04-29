@@ -96,7 +96,7 @@ namespace RimMind.Dialogue.Core
                 string summary = replyText.Length > 80 ? replyText.Substring(0, 80) + "..." : replyText;
                 RimMind.Core.RimMindAPI.PublishPerception(pawn.thingIDNumber, "dialogue_completed", summary, 0.4f);
             }
-            catch { }
+            catch (Exception ex) { Log.Warning($"[RimMind] PublishPerception dialogue_completed failed: {ex.Message}"); }
 
             // 记忆记录
             if (!isMonologue && recipient != null && Verse.ModsConfig.IsActive("mcocdaa.RimMindMemory"))

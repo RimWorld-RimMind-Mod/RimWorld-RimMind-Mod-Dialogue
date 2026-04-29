@@ -156,6 +156,8 @@ namespace RimMind.Dialogue.Core
                 SpeakerName = recipient?.Name?.ToStringShort,
             };
 
+            ContextKeyRegistry.CurrentSpeakerName = request.SpeakerName;
+
             RimMindAPI.Chat(request).ContinueWith(task =>
             {
                 LongEventHandler.ExecuteWhenFinished(() =>
@@ -429,7 +431,7 @@ namespace RimMind.Dialogue.Core
         public string thoughtTag = "NONE";
         public string thoughtDesc = string.Empty;
 
-        public bool IsMonologue => recipientName == null;
+        public bool IsMonologue => category == DialogueCategory.ColonistMonologue || category == DialogueCategory.NonColonistMonologue;
 
         public string PairKey
         {

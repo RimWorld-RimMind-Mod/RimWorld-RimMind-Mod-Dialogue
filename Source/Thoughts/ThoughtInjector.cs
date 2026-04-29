@@ -23,12 +23,12 @@ namespace RimMind.Dialogue
 
         private static readonly Dictionary<string, string> LabelMap = new Dictionary<string, string>
         {
-            { "ENCOURAGED", "RimMind.Dialogue.Thought.Encouraged" },
-            { "HURT", "RimMind.Dialogue.Thought.Hurt" },
-            { "VALUED", "RimMind.Dialogue.Thought.Valued" },
-            { "CONNECTED", "RimMind.Dialogue.Thought.Connected" },
-            { "STRESSED", "RimMind.Dialogue.Thought.Stressed" },
-            { "IRRITATED", "RimMind.Dialogue.Thought.Irritated" },
+            { "ENCOURAGED", "RimMind.Dialogue.Thought.ENCOURAGED" },
+            { "HURT", "RimMind.Dialogue.Thought.HURT" },
+            { "VALUED", "RimMind.Dialogue.Thought.VALUED" },
+            { "CONNECTED", "RimMind.Dialogue.Thought.CONNECTED" },
+            { "STRESSED", "RimMind.Dialogue.Thought.STRESSED" },
+            { "IRRITATED", "RimMind.Dialogue.Thought.IRRITATED" },
         };
 
         public static void Inject(Pawn pawn, Pawn? recipient, string tag, string? description)

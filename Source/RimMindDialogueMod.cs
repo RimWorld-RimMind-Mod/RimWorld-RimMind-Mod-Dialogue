@@ -100,15 +100,18 @@ namespace RimMind.Dialogue
                 pawn =>
                 {
                     if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
+                    bool isMonologue = string.IsNullOrEmpty(ContextKeyRegistry.CurrentSpeakerName);
                     return new List<ContextEntry> { new ContextEntry(TaskInstructionBuilder.Build("RimMind.Dialogue.Prompt.TaskInstruction",
                         "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback",
-                        "GoalDialogue", "GoalMonologue", "JsonTemplate", "TriggerReason", "RelationDelta")) };
+                        isMonologue ? "GoalMonologue" : "GoalDialogue", "JsonTemplate", "TriggerReason",
+                        isMonologue ? "Fallback" : "RelationDelta")) };
                 }, "RimMind.Dialogue");
 
             ContextKeyRegistry.Register("player_dialogue_task", ContextLayer.L0_Static, 0.95f,
                 pawn =>
                 {
                     if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
+                    if (string.IsNullOrEmpty(ContextKeyRegistry.CurrentSpeakerName)) return new List<ContextEntry>();
                     return new List<ContextEntry> { new ContextEntry(TaskInstructionBuilder.Build("RimMind.Dialogue.Prompt.PlayerTaskInstruction",
                         "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback", "InitiatorConstraint")) };
                 }, "RimMind.Dialogue");
