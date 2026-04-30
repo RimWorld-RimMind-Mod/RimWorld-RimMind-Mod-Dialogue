@@ -127,7 +127,7 @@
   <RimMind.Dialogue.Relation.Negative>unpleasant conversation with {0}</RimMind.Dialogue.Relation.Negative>
   <RimMind.Dialogue.Prompt.TaskInstruction.Role>You are roleplaying as a RimWorld colonist. Generate natural dialogue or monologue based on your current state.</RimMind.Dialogue.Prompt.TaskInstruction.Role>
   <RimMind.Dialogue.Prompt.TaskInstruction.Goal>Respond in first person based on your current state.</RimMind.Dialogue.Prompt.TaskInstruction.Goal>
-  <RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>Speak a dialogue line with {0} in first person (15~40 characters).</RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>Speak a dialogue line in first person (15~40 characters).</RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>
   <RimMind.Dialogue.Prompt.TaskInstruction.GoalMonologue>Speak an inner monologue in first person (15~40 characters).</RimMind.Dialogue.Prompt.TaskInstruction.GoalMonologue>
   <RimMind.Dialogue.Prompt.TaskInstruction.Process>1. Perceive current state (mood, health, environment)
 2. Consider the trigger reason
@@ -135,16 +135,26 @@
 4. Evaluate emotional impact of dialogue</RimMind.Dialogue.Prompt.TaskInstruction.Process>
   <RimMind.Dialogue.Prompt.TaskInstruction.Constraint>Maintain character consistency; do not break the fourth wall; dialogue 15~40 chars, monologue 15~40 chars</RimMind.Dialogue.Prompt.TaskInstruction.Constraint>
   <RimMind.Dialogue.Prompt.TaskInstruction.Example>Monologue input: pawn mood 35%, mining
-Monologue output: {"reply":"This mine is so cold... I wonder how much longer I have to dig.","thought":{"tag":"STRESSED","description":"Tired from heavy labor"},"relation_delta":0}
+Monologue output: {"reply":"This mine is so cold... I wonder how much longer I have to dig.","thought":{"tag":"STRESSED","description":"Tired from heavy labor"}}
 Dialogue input: chatting with Alex
 Dialogue output: {"reply":"Alex, you seem to be in a good mood today?","thought":{"tag":"CONNECTED","description":"Wants to bond with companion"},"relation_delta":1}</RimMind.Dialogue.Prompt.TaskInstruction.Example>
   <RimMind.Dialogue.Prompt.TaskInstruction.Output>Return only the following JSON format:
-{"reply":"dialogue/monologue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.Output>
+Monologue: {"reply":"monologue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}
+Dialogue: {"reply":"dialogue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.Output>
   <RimMind.Dialogue.Prompt.TaskInstruction.Fallback>If unable to generate, return {"reply":"...","thought":{"tag":"NONE","description":"No special emotion"}}.</RimMind.Dialogue.Prompt.TaskInstruction.Fallback>
   <RimMind.Dialogue.Prompt.TaskInstruction.JsonTemplate>{"reply": "dialogue/monologue text", "thought": {"tag": "ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE", "description": "≤15 chars"}, "relation_delta": 0}</RimMind.Dialogue.Prompt.TaskInstruction.JsonTemplate>
-  <RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>Trigger reason: {0}</RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>
+  <RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>Trigger reason is provided in context.</RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>
   <RimMind.Dialogue.Prompt.TaskInstruction.RelationDelta>You can use the relation_delta field to change the relationship between dialogue participants. Range -5 to +5, positive increases affinity, negative decreases it. Decide based on dialogue content and current relationship: friendly conversation may add +1~+3, arguments may deduct -2~-5. Do not include this field if the dialogue content does not involve relationship changes.</RimMind.Dialogue.Prompt.TaskInstruction.RelationDelta>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>You are roleplaying as RimWorld colonist {0}.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ExampleMonologue>Monologue input: pawn mood 35%, mining
+Monologue output: {"reply":"This mine is so cold... I wonder how much longer I have to dig.","thought":{"tag":"STRESSED","description":"Tired from heavy labor"}}</RimMind.Dialogue.Prompt.TaskInstruction.ExampleMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ExampleDialogue>Dialogue input: chatting with Alex
+Dialogue output: {"reply":"Alex, you seem to be in a good mood today?","thought":{"tag":"CONNECTED","description":"Wants to bond with companion"},"relation_delta":1}</RimMind.Dialogue.Prompt.TaskInstruction.ExampleDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>Return only JSON:
+{"reply":"monologue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}</RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>Return only JSON:
+{"reply":"dialogue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>thought.tag selection: mood<40%→STRESSED; injured→HURT; feeling cared for→VALUED; caring for others→CONNECTED; hearing encouragement→ENCOURAGED; offended→IRRITATED; no special emotion→NONE.</RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>You are roleplaying as this RimWorld colonist.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>Based on your current state and personality, naturally respond to the player's dialogue in first person.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>1. Review your current state (mood, health, what you are doing)
 2. Consider relationship with the player and past conversations
@@ -156,7 +166,7 @@ Output: {"reply":"Yeah... a bit tired, been mining all night. But thanks for you
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>Return only the following JSON format, nothing else:
 {"reply":"dialogue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>If unable to generate dialogue, return {"reply":"...","thought":{"tag":"NONE","description":"No special emotion"}}.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>[Initiator] You are speaking with {0}. Respond based on your relationship with them and their current state.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>[Initiator] Information about the person speaking to you is in context. Respond based on your relationship with them and their current state.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>
   <RimMind.Dialogue.Prompt.Role.Prisoner>Role constraint: This person is a prisoner. Tone should be wary, hesitant, mentioning imprisonment, possibly begging or bargaining.</RimMind.Dialogue.Prompt.Role.Prisoner>
   <RimMind.Dialogue.Prompt.Role.Slave>Role constraint: This person is a slave. Tone should be fearful, submissive, mentioning forced labor and exhaustion, referring to colonists as "master".</RimMind.Dialogue.Prompt.Role.Slave>
   <RimMind.Dialogue.Prompt.Role.Enemy>Role constraint: This person is an enemy. Tone should be hostile, aggressive, using short commands or threats.</RimMind.Dialogue.Prompt.Role.Enemy>

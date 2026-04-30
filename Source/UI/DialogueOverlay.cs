@@ -19,6 +19,8 @@ namespace RimMind.Dialogue.Overlay
         private Vector2 _dragStartOffset;
         private Rect _windowRect;
         private bool _cacheDirty = true;
+        private bool _temporarilyClosed;
+        private bool _lastEnabledState;
         private List<DialogueLogEntry> _cachedEntries = new List<DialogueLogEntry>();
 
         private const float OptionsBarHeight = 24f;
@@ -36,9 +38,14 @@ namespace RimMind.Dialogue.Overlay
         public override void MapComponentOnGUI()
         {
             if (Current.ProgramState != ProgramState.Playing) return;
-            if (!RimMindDialogueSettings.Get().overlayEnabled) return;
 
             var settings = RimMindDialogueSettings.Get();
+            bool currentlyEnabled = settings.overlayEnabled;
+            if (currentlyEnabled && !_lastEnabledState)
+                _temporarilyClosed = false;
+            _lastEnabledState = currentlyEnabled;
+
+            if (!currentlyEnabled || _temporarilyClosed) return;
 
             HandleInput();
 
@@ -136,6 +143,11 @@ namespace RimMind.Dialogue.Overlay
             Text.Anchor = TextAnchor.UpperLeft;
 
             var openBtnRect = new Rect(barRect.xMax - 60f, barRect.y + 2f, 56f, barRect.height - 4f);
+            var closeBtnRect = new Rect(barRect.xMax - 82f, barRect.y + 2f, 20f, barRect.height - 4f);
+            if (Widgets.ButtonText(closeBtnRect, "X"))
+            {
+                _temporarilyClosed = true;
+            }
             if (Widgets.ButtonText(openBtnRect, "RimMind.Dialogue.UI.Overlay.Details".Translate()))
             {
                 Find.WindowStack.Add(new Window_DialogueLog());
@@ -151,6 +163,9 @@ namespace RimMind.Dialogue.Overlay
                 var openBtnScreenRect = new Rect(
                     _windowRect.xMax - 60f, _windowRect.y + 2f, 56f, OptionsBarHeight - 4f);
 
+                var closeBtnScreenRect = new Rect(
+                    _windowRect.xMax - 82f, _windowRect.y + 2f, 20f, OptionsBarHeight - 4f);
+
                 var resizeScreenRect = new Rect(
                     _windowRect.xMax - ResizeHandleSize, _windowRect.yMax - ResizeHandleSize,
                     ResizeHandleSize, ResizeHandleSize);
@@ -160,7 +175,8 @@ namespace RimMind.Dialogue.Overlay
                     _isResizing = true;
                     currentEvent.Use();
                 }
-                else if (!openBtnScreenRect.Contains(currentEvent.mousePosition))
+                else if (!openBtnScreenRect.Contains(currentEvent.mousePosition)
+                    && !closeBtnScreenRect.Contains(currentEvent.mousePosition))
                 {
                     var dragRect = new Rect(_windowRect.x, _windowRect.y, _windowRect.width, OptionsBarHeight);
                     if (dragRect.Contains(currentEvent.mousePosition))

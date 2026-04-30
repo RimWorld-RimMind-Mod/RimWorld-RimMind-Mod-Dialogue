@@ -39,53 +39,22 @@ namespace RimMind.Dialogue.Core
 
             bool isMonologue = recipient == null && type != DialogueTriggerType.PlayerInput;
 
-            // 显示气泡
-            RimMindDialogueService.DisplayInteraction(pawn, recipient, replyText);
-
-            // 解析命令
             string? thoughtTag = null;
             string? thoughtDesc = null;
+            int relationDelta = 0;
 
-            if (result.Commands != null)
-            {
-                foreach (var cmd in result.Commands)
-                {
-                    switch (cmd.Name)
-                    {
-                        case "express_emotion":
-                            try
-                            {
-                                var args = JsonConvert.DeserializeObject<Dictionary<string, string>>(cmd.Arguments ?? "{}");
-                                thoughtTag = args?.GetValueOrDefault("emotion");
-                                thoughtDesc = replyText;
-                            }
-                            catch (Exception ex) { Log.Warning($"[RimMind] NpcResponseHandler express_emotion parse failed: {ex.Message}"); }
-                            break;
-                        case "change_relationship":
-                            if (recipient != null)
-                            {
-                                try
-                                {
-                                    var args = JsonConvert.DeserializeObject<Dictionary<string, string>>(cmd.Arguments ?? "{}");
-                                    if (args != null && args.TryGetValue("delta", out var deltaStr) && float.TryParse(deltaStr, out var delta))
-                                    {
-                                        if (Mathf.Abs(delta) >= 0.01f)
-                                            ThoughtInjector.InjectRelationDelta(pawn, recipient, delta);
-                                    }
-                                }
-                                catch (Exception ex) { Log.Warning($"[RimMind] NpcResponseHandler change_relationship parse failed: {ex.Message}"); }
-                            }
-                            break;
-                        default:
-                            ExecuteCommand(cmd, pawn, recipient);
-                            break;
-                    }
-                }
-            }
+            TryParseResponseJson(result.Message, isMonologue, ref replyText, ref thoughtTag, ref thoughtDesc, ref relationDelta);
+
+            // 显示气泡
+            RimMindDialogueService.DisplayInteraction(pawn, recipient, replyText);
 
             // 注入 Thought
             if (!thoughtTag.NullOrEmpty() && thoughtTag != "NONE")
                 ThoughtInjector.Inject(pawn, recipient, thoughtTag!, thoughtDesc);
+
+            // 注入 RelationDelta (only for dialogue)
+            if (!isMonologue && recipient != null && relationDelta != 0)
+                ThoughtInjector.InjectRelationDelta(pawn, recipient, relationDelta);
 
             // 日志记录
             RimMindDialogueService.AddLogEntry(pawn, recipient, type, context, replyText, thoughtTag, thoughtDesc);
@@ -137,6 +106,36 @@ namespace RimMind.Dialogue.Core
             }
 
             RimMindDialogueService.RaiseOnDialogueCompleted(pawn, recipient, replyText, thoughtTag);
+        }
+
+        private static void TryParseResponseJson(string? rawResponse, bool isMonologue,
+            ref string replyText, ref string? thoughtTag, ref string? thoughtDesc, ref int relationDelta)
+        {
+            if (string.IsNullOrEmpty(rawResponse) || !rawResponse.TrimStart().StartsWith("{")) return;
+            try
+            {
+                var obj = JsonConvert.DeserializeObject<Dictionary<string, object>>(rawResponse);
+                if (obj == null) return;
+
+                if (obj.TryGetValue("reply", out var replyObj) && replyObj is string replyStr && !string.IsNullOrEmpty(replyStr))
+                    replyText = replyStr;
+
+                if (obj.TryGetValue("thought", out var thoughtObj) && thoughtObj is Newtonsoft.Json.Linq.JObject thoughtJObj)
+                {
+                    thoughtTag = thoughtJObj.Value<string>("tag");
+                    thoughtDesc = thoughtJObj.Value<string>("description");
+                }
+
+                if (!isMonologue && obj.TryGetValue("relation_delta", out var relObj))
+                {
+                    if (relObj is long relLong) relationDelta = (int)relLong;
+                    else if (relObj is int relInt) relationDelta = relInt;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[RimMind] TryParseResponseJson failed: {ex.Message}");
+            }
         }
 
         private static void ExecuteCommand(NpcCommandResult cmd, Pawn pawn, Pawn? recipient)

@@ -94,11 +94,22 @@ namespace RimMind.Dialogue.Core
             if (!RimMindDialogueSettings.Get().enabled) return;
             if (!RimMindAPI.IsConfigured()) return;
             if (!IsReady) return;
-            if (_pendingPawns.ContainsKey(pawn.thingIDNumber)) return;
-
-            if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString())) return;
 
             bool isMonologue = recipient == null;
+
+            if (_pendingPawns.ContainsKey(pawn.thingIDNumber))
+            {
+                if (isMonologue) Log.Message($"[RimMind-Dialogue] Monologue SKIPPED for {pawn.LabelShort}: pending request exists");
+                else Log.Message($"[RimMind-Dialogue] Dialogue SKIPPED for {pawn.LabelShort}: pending request exists");
+                return;
+            }
+
+            if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString()))
+            {
+                Log.Message($"[RimMind-Dialogue] {(isMonologue ? "Monologue" : "Dialogue")} SKIPPED for {pawn.LabelShort} ({type}): AI condition not met");
+                return;
+            }
+
             if (!isMonologue)
             {
                 var pairKey = MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber);
