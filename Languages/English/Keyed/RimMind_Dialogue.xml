@@ -1,183 +1,181 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-    <!-- CompRimMindDialogue.cs -->
-    <RimMind.Dialogue.Context.IdleState>The colonist is currently idle</RimMind.Dialogue.Context.IdleState>
-    <RimMind.Dialogue.UI.Gizmo.ChatWith>Chat with {0}</RimMind.Dialogue.UI.Gizmo.ChatWith>
-
-    <!-- DialogueService.cs - Player Dialogue Five-section -->
-    <RimMind.Dialogue.Prompt.PlayerSystem.Role>[Role] You are role-playing as a RimWorld colonist {0}.</RimMind.Dialogue.Prompt.PlayerSystem.Role>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Goal>[Goal] Based on current state and personality, respond naturally to the player's dialogue in first person.</RimMind.Dialogue.Prompt.PlayerSystem.Goal>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Process>[Process]\n1. Review your current state (mood, health, current activity)\n2. Consider your relationship with the player and past conversations\n3. Generate a reply consistent with your personality\n4. Evaluate the emotional impact of the conversation</RimMind.Dialogue.Prompt.PlayerSystem.Process>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Constraint>[Constraint]\n- Maintain character consistency, do not break from current state\n- Reply length 20~60 characters\n- Do not break the fourth wall\n- Do not mention game mechanics</RimMind.Dialogue.Prompt.PlayerSystem.Constraint>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Example>[Example]\nInput: Player says "Are you okay? You look tired today"\nOutput: {{"reply":"Yeah... a bit tired actually, been mining all night. But thanks for asking.","thought":{{"tag":"VALUED","description":"Felt warmth from being cared for"}}}}</RimMind.Dialogue.Prompt.PlayerSystem.Example>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Output>[Output] Only return the following JSON format, do not output anything else:\n{{"reply":"dialogue text","thought":{{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}}}</RimMind.Dialogue.Prompt.PlayerSystem.Output>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Fallback>[Fallback] If unable to generate dialogue, return {{"reply":"...","thought":{{"tag":"NONE","description":"No particular emotion"}}}}.</RimMind.Dialogue.Prompt.PlayerSystem.Fallback>
-    <RimMind.Dialogue.Prompt.PlayerSystem.InitiatorConstraint>[Initiator] You are talking with {0}. Respond based on your relationship and their current state.</RimMind.Dialogue.Prompt.PlayerSystem.InitiatorConstraint>
-
-    <!-- RimMindDialogueService.cs - Auto Dialogue Five-section -->
-    <RimMind.Dialogue.Prompt.System.Role>[Role] You are role-playing as a RimWorld colonist, generating natural dialogue or monologue based on current state.</RimMind.Dialogue.Prompt.System.Role>
-    <RimMind.Dialogue.Prompt.System.GoalDialogue>[Goal] Based on current state, speak in first person a dialogue with {0} (15~40 characters).</RimMind.Dialogue.Prompt.System.GoalDialogue>
-    <RimMind.Dialogue.Prompt.System.GoalMonologue>[Goal] Based on current state, speak an inner monologue in first person (15~40 characters).</RimMind.Dialogue.Prompt.System.GoalMonologue>
-    <RimMind.Dialogue.Prompt.System.Process>[Process]\n1. Perceive current state (mood, health, environment)\n2. Consider the trigger reason\n3. Generate dialogue/monologue consistent with personality\n4. Evaluate the emotional impact</RimMind.Dialogue.Prompt.System.Process>
-    <RimMind.Dialogue.Prompt.System.Constraint>[Constraint]\n- Maintain character consistency\n- Do not break the fourth wall\n- Dialogue 15~40 characters, monologue 15~40 characters</RimMind.Dialogue.Prompt.System.Constraint>
-    <RimMind.Dialogue.Prompt.System.Example>[Example]\nMonologue input: Mood 35%, mining\nMonologue output: {{"reply":"It's so cold in this mine... how much longer?","thought":{{"tag":"STRESSED","description":"Exhausted from heavy labor"}},"relation_delta":0}}\nDialogue input: Chitchat with Alex\nDialogue output: {{"reply":"Alex, you seem in a good mood today?","thought":{{"tag":"CONNECTED","description":"Wanting to get closer"}},"relation_delta":1}}</RimMind.Dialogue.Prompt.System.Example>
-    <RimMind.Dialogue.Prompt.System.Output>[Output] Only return the following JSON format:\n{{"reply":"dialogue/monologue text","thought":{{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}},"relation_delta":0}}</RimMind.Dialogue.Prompt.System.Output>
-    <RimMind.Dialogue.Prompt.System.Fallback>[Fallback] If unable to generate, return {{"reply":"...","thought":{{"tag":"NONE","description":"No particular emotion"}}}}.</RimMind.Dialogue.Prompt.System.Fallback>
-    <RimMind.Dialogue.Prompt.System.TriggerReason>Trigger reason: {0}</RimMind.Dialogue.Prompt.System.TriggerReason>
-    <RimMind.Dialogue.Prompt.System.JsonTemplate>{{&quot;reply&quot;: &quot;dialogue/monologue text&quot;, &quot;thought&quot;: {{&quot;tag&quot;: &quot;ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE&quot;, &quot;description&quot;: &quot;≤15 chars&quot;}}, &quot;relation_delta&quot;: 0}}</RimMind.Dialogue.Prompt.System.JsonTemplate>
-    <RimMind.Dialogue.Prompt.Context.Chitchat>[Trigger: Chitchat] {0}</RimMind.Dialogue.Prompt.Context.Chitchat>
-    <RimMind.Dialogue.Prompt.Context.Recipient>[Target] {0}</RimMind.Dialogue.Prompt.Context.Recipient>
-    <RimMind.Dialogue.Prompt.Context.Hediff>[Trigger: Health Change] {0}</RimMind.Dialogue.Prompt.Context.Hediff>
-    <RimMind.Dialogue.Prompt.Context.LevelUp>[Trigger: Skill Level Up] {0}</RimMind.Dialogue.Prompt.Context.LevelUp>
-    <RimMind.Dialogue.Prompt.Context.Thought>[Trigger: Mood Change] {0}</RimMind.Dialogue.Prompt.Context.Thought>
-    <RimMind.Dialogue.Prompt.Context.Auto>[Trigger: Auto] {0}</RimMind.Dialogue.Prompt.Context.Auto>
-    <RimMind.Dialogue.Prompt.Context.DialogueHistory>[Previous Dialogue History]</RimMind.Dialogue.Prompt.Context.DialogueHistory>
-    <RimMind.Dialogue.Prompt.Context.HistoryCompressed>(Earlier dialogue omitted)</RimMind.Dialogue.Prompt.Context.HistoryCompressed>
-    <RimMind.Dialogue.Context.ReplyTrigger>{0} said to you: {1}</RimMind.Dialogue.Context.ReplyTrigger>
-    <RimMind.Dialogue.UI.TimeFormat>Day {0} {1}h</RimMind.Dialogue.UI.TimeFormat>
-
-    <!-- RimMindDialogueService.cs - Memory Bridge -->
-    <RimMind.Dialogue.Memory.WithRecipient>Conversation with {0}: {1}</RimMind.Dialogue.Memory.WithRecipient>
-    <RimMind.Dialogue.Memory.WithPawn>Conversation with {0}: {1}</RimMind.Dialogue.Memory.WithPawn>
-
-    <!-- Trigger Labels -->
-    <RimMind.Dialogue.Trigger.Chitchat>Chitchat</RimMind.Dialogue.Trigger.Chitchat>
-    <RimMind.Dialogue.Trigger.Hediff>Health Change</RimMind.Dialogue.Trigger.Hediff>
-    <RimMind.Dialogue.Trigger.LevelUp>Skill Level Up</RimMind.Dialogue.Trigger.LevelUp>
-    <RimMind.Dialogue.Trigger.Thought>Mood Change</RimMind.Dialogue.Trigger.Thought>
-    <RimMind.Dialogue.Trigger.Auto>Auto Trigger</RimMind.Dialogue.Trigger.Auto>
-    <RimMind.Dialogue.Trigger.PlayerInput>Player Dialogue</RimMind.Dialogue.Trigger.PlayerInput>
-
-    <!-- ThoughtInjector.cs -->
-    <RimMind.Dialogue.Thought.ENCOURAGED>Encouraged</RimMind.Dialogue.Thought.ENCOURAGED>
-    <RimMind.Dialogue.Thought.HURT>Hurt</RimMind.Dialogue.Thought.HURT>
-    <RimMind.Dialogue.Thought.VALUED>Valued</RimMind.Dialogue.Thought.VALUED>
-    <RimMind.Dialogue.Thought.CONNECTED>Connected</RimMind.Dialogue.Thought.CONNECTED>
-    <RimMind.Dialogue.Thought.STRESSED>Stressed</RimMind.Dialogue.Thought.STRESSED>
-    <RimMind.Dialogue.Thought.IRRITATED>Irritated</RimMind.Dialogue.Thought.IRRITATED>
-
-    <!-- RimMindDialogueMod.cs -->
-    <RimMind.Dialogue.Settings.TabLabel>Dialogue</RimMind.Dialogue.Settings.TabLabel>
-    <RimMind.Dialogue.Context.StateHeader>[Current Dialogue State]\n</RimMind.Dialogue.Context.StateHeader>
-    <RimMind.Dialogue.Context.ThoughtRemaining>- {0} ({1} game hours remaining)</RimMind.Dialogue.Context.ThoughtRemaining>
-    <RimMind.Dialogue.Context.RelationHeader>[Relation with {0}]</RimMind.Dialogue.Context.RelationHeader>
-    <RimMind.Dialogue.Context.Opinion.Friend>Friend</RimMind.Dialogue.Context.Opinion.Friend>
-    <RimMind.Dialogue.Context.Opinion.Enemy>Enemy</RimMind.Dialogue.Context.Opinion.Enemy>
-    <RimMind.Dialogue.Context.Opinion.Acquaintance>Acquaintance</RimMind.Dialogue.Context.Opinion.Acquaintance>
-    <RimMind.Dialogue.Context.OpinionLabel>Opinion: {0} ({1})</RimMind.Dialogue.Context.OpinionLabel>
-    <RimMind.Dialogue.Context.Compat.High>High, prone to pleasant exchanges</RimMind.Dialogue.Context.Compat.High>
-    <RimMind.Dialogue.Context.Compat.Low>Low, prone to friction</RimMind.Dialogue.Context.Compat.Low>
-    <RimMind.Dialogue.Context.Compat.Medium>Medium</RimMind.Dialogue.Context.Compat.Medium>
-    <RimMind.Dialogue.Context.CompatLabel>Compatibility: {0} ({1})</RimMind.Dialogue.Context.CompatLabel>
-    <RimMind.Dialogue.Context.Romance.High>High</RimMind.Dialogue.Context.Romance.High>
-    <RimMind.Dialogue.Context.Romance.Medium>Medium</RimMind.Dialogue.Context.Romance.Medium>
-    <RimMind.Dialogue.Context.Romance.Low>Low</RimMind.Dialogue.Context.Romance.Low>
-    <RimMind.Dialogue.Context.RomanceLabel>Attraction: {0} ({1}, {2})</RimMind.Dialogue.Context.RomanceLabel>
-    <RimMind.Dialogue.Context.Romance.Unlikely>unlikely to develop romance</RimMind.Dialogue.Context.Romance.Unlikely>
-    <RimMind.Dialogue.Context.DirectRelation>Relation: {0}</RimMind.Dialogue.Context.DirectRelation>
-
-    <!-- RimMindDialogueSettings.cs -->
-    <RimMind.Dialogue.Settings.Enable>Enable AI Dialogue System</RimMind.Dialogue.Settings.Enable>
-    <RimMind.Dialogue.Settings.Enable.Desc>When enabled, colonists will generate dialogues and monologues based on game events and their state.</RimMind.Dialogue.Settings.Enable.Desc>
-    <RimMind.Dialogue.Settings.TriggerSources>Trigger Sources</RimMind.Dialogue.Settings.TriggerSources>
-    <RimMind.Dialogue.Settings.ChitchatIntercept>Intercept Chitchat</RimMind.Dialogue.Settings.ChitchatIntercept>
-    <RimMind.Dialogue.Settings.ChitchatIntercept.Desc>Replace vanilla Chitchat/DeepTalk interactions with AI-generated dialogue.</RimMind.Dialogue.Settings.ChitchatIntercept.Desc>
-    <RimMind.Dialogue.Settings.HediffReaction>Health Change Reaction</RimMind.Dialogue.Settings.HediffReaction>
-    <RimMind.Dialogue.Settings.HediffReaction.Desc>When a colonist is injured or falls ill, AI generates a dialogue reaction.</RimMind.Dialogue.Settings.HediffReaction.Desc>
-    <RimMind.Dialogue.Settings.LevelUpReaction>Skill Level Up Reaction</RimMind.Dialogue.Settings.LevelUpReaction>
-    <RimMind.Dialogue.Settings.LevelUpReaction.Desc>When a colonist levels up a skill, AI generates a dialogue reaction.</RimMind.Dialogue.Settings.LevelUpReaction.Desc>
-    <RimMind.Dialogue.Settings.ThoughtReaction>Mood Change Reaction</RimMind.Dialogue.Settings.ThoughtReaction>
-    <RimMind.Dialogue.Settings.ThoughtReaction.Desc>When a colonist's mood changes significantly, AI generates a dialogue reaction.</RimMind.Dialogue.Settings.ThoughtReaction.Desc>
-    <RimMind.Dialogue.Settings.AutoMonologue>Auto Monologue on Idle</RimMind.Dialogue.Settings.AutoMonologue>
-    <RimMind.Dialogue.Settings.AutoMonologue.Desc>When a colonist is idle, automatically trigger an inner monologue. Monologues enter context just like dialogues.</RimMind.Dialogue.Settings.AutoMonologue.Desc>
-    <RimMind.Dialogue.Settings.AutoMonologueDesc>When a colonist is idle, automatically trigger an inner monologue. Monologues enter context just like dialogues.</RimMind.Dialogue.Settings.AutoMonologueDesc>
-    <RimMind.Dialogue.Settings.PlayerDialogueGizmo>Player Initiated Dialogue</RimMind.Dialogue.Settings.PlayerDialogueGizmo>
-    <RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>Show a chat button on colonists and a right-click dialogue option, allowing the player to initiate conversations.</RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>
-    <RimMind.Dialogue.Settings.MonologueCooldown>Monologue Cooldown: {0} game hours ({1} ticks)</RimMind.Dialogue.Settings.MonologueCooldown>
-    <RimMind.Dialogue.Settings.MonologueCooldown.Desc>Minimum interval between same-type monologues for the same colonist. Increase to reduce repetitive monologues.</RimMind.Dialogue.Settings.MonologueCooldown.Desc>
-    <RimMind.Dialogue.Settings.MoodThreshold>Mood change threshold: {0} (triggers when |moodEffect| ≥ this value)</RimMind.Dialogue.Settings.MoodThreshold>
-    <RimMind.Dialogue.Settings.AutoInterval>Auto monologue interval: {0} game hours</RimMind.Dialogue.Settings.AutoInterval>
-    <RimMind.Dialogue.Settings.MaxDailyDialogues>Max daily dialogue rounds per pair: {0}</RimMind.Dialogue.Settings.MaxDailyDialogues>
-    <RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>Maximum dialogue rounds per colonist pair per day. Higher values produce more dialogues but increase API costs.</RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>
-    <RimMind.Dialogue.Settings.DialogueContextRounds>Dialogue context rounds (-1=all): {0}</RimMind.Dialogue.Settings.DialogueContextRounds>
-    <RimMind.Dialogue.Settings.DialogueContextRounds.Desc>Number of history dialogue rounds sent to AI. -1 sends all history; smaller values save tokens.</RimMind.Dialogue.Settings.DialogueContextRounds.Desc>
-    <RimMind.Dialogue.Settings.EnableDialogueReply>Enable Dialogue Reply</RimMind.Dialogue.Settings.EnableDialogueReply>
-    <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>Automatically generate a reply when receiving dialogue, creating two-way conversations.</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
-    <RimMind.Dialogue.Settings.CustomPrompt>Custom Dialogue Prompt (appended to system prompt end, leave empty to skip):</RimMind.Dialogue.Settings.CustomPrompt>
-    <RimMind.Dialogue.Settings.StartDelay>Game start delay</RimMind.Dialogue.Settings.StartDelay>
-    <RimMind.Dialogue.Settings.StartDelay.Desc>No dialogue is triggered for a period after loading a save or starting a new game, avoiding excessive requests at startup.</RimMind.Dialogue.Settings.StartDelay.Desc>
-    <RimMind.Dialogue.Settings.StartDelayValue>Start delay: {0}s</RimMind.Dialogue.Settings.StartDelayValue>
-    <RimMind.Dialogue.Settings.ShowNotification>Show notification when Thought is injected</RimMind.Dialogue.Settings.ShowNotification>
-    <RimMind.Dialogue.Settings.ShowNotification.Desc>Display a notification on screen when the dialogue system injects a mood Thought into a colonist.</RimMind.Dialogue.Settings.ShowNotification.Desc>
-    <RimMind.Dialogue.Settings.ShowOverlay>Show dialogue overlay</RimMind.Dialogue.Settings.ShowOverlay>
-    <RimMind.Dialogue.Settings.ShowOverlay.Desc>Display a floating panel on screen showing recent dialogue content.</RimMind.Dialogue.Settings.ShowOverlay.Desc>
-    <RimMind.Dialogue.Settings.OverlayOpacity>Overlay opacity: {0}</RimMind.Dialogue.Settings.OverlayOpacity>
-    <RimMind.Dialogue.Settings.OverlayOpacity.Desc>Opacity of the dialogue overlay. 1.0 is fully opaque, 0.1 is nearly transparent.</RimMind.Dialogue.Settings.OverlayOpacity.Desc>
-    <RimMind.Dialogue.Settings.OverlayMaxMessages>Overlay max messages: {0}</RimMind.Dialogue.Settings.OverlayMaxMessages>
-    <RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>Maximum number of dialogue lines shown simultaneously in the overlay. Older messages are hidden when exceeded.</RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>
-    <RimMind.Dialogue.Settings.Section.Behavior>Behavior Settings</RimMind.Dialogue.Settings.Section.Behavior>
-    <RimMind.Dialogue.Settings.Section.Display>Display</RimMind.Dialogue.Settings.Section.Display>
-    <RimMind.Dialogue.Settings.Section.Request>Request Settings</RimMind.Dialogue.Settings.Section.Request>
-    <RimMind.Dialogue.Settings.MonologueExpire>Monologue request expiry: {0} game days</RimMind.Dialogue.Settings.MonologueExpire>
-    <RimMind.Dialogue.Settings.MonologueExpire.Desc>Monologue requests that don't receive a response within this time are automatically cancelled.</RimMind.Dialogue.Settings.MonologueExpire.Desc>
-    <RimMind.Dialogue.Settings.DialogueExpire>Dialogue request expiry: {0} game days</RimMind.Dialogue.Settings.DialogueExpire>
-    <RimMind.Dialogue.Settings.DialogueExpire.Desc>Dialogue requests that don't receive a response within this time are automatically cancelled.</RimMind.Dialogue.Settings.DialogueExpire.Desc>
-
-    <!-- DialogueOverlay.cs -->
-    <RimMind.Dialogue.UI.Overlay.Title>RimMind Dialogue</RimMind.Dialogue.UI.Overlay.Title>
-    <RimMind.Dialogue.UI.Overlay.Details>Details</RimMind.Dialogue.UI.Overlay.Details>
-    <RimMind.Dialogue.UI.Overlay.DragResize>Drag to resize</RimMind.Dialogue.UI.Overlay.DragResize>
-
-    <!-- Window_Dialogue.cs -->
-    <RimMind.Dialogue.UI.ChatTitle>Chat with {0}</RimMind.Dialogue.UI.ChatTitle>
-    <RimMind.Dialogue.UI.ChatTitleWithInitiator>{0} chatting with {1}</RimMind.Dialogue.UI.ChatTitleWithInitiator>
-    <RimMind.Dialogue.UI.Thinking>● Thinking...</RimMind.Dialogue.UI.Thinking>
-    <RimMind.Dialogue.UI.Send>Send</RimMind.Dialogue.UI.Send>
-    <RimMind.Dialogue.UI.PlayerPrefix>You: </RimMind.Dialogue.UI.PlayerPrefix>
-    <RimMind.Dialogue.UI.PawnPrefix>{0}: </RimMind.Dialogue.UI.PawnPrefix>
-
-    <!-- Window_DialogueLog.cs -->
-    <RimMind.Dialogue.UI.Log.Title>Dialogue Log</RimMind.Dialogue.UI.Log.Title>
-    <RimMind.Dialogue.UI.Log.NoRecords>No records</RimMind.Dialogue.UI.Log.NoRecords>
-    <RimMind.Dialogue.UI.Log.SelectTab>Select a tab to view dialogue</RimMind.Dialogue.UI.Log.SelectTab>
-    <RimMind.Dialogue.UI.Log.ColonistMonologue>Colonist Monologue</RimMind.Dialogue.UI.Log.ColonistMonologue>
-    <RimMind.Dialogue.UI.Log.ColonistDialogue>Colonist Dialogue</RimMind.Dialogue.UI.Log.ColonistDialogue>
-    <RimMind.Dialogue.UI.Log.PlayerDialogue>Player Dialogue</RimMind.Dialogue.UI.Log.PlayerDialogue>
-    <RimMind.Dialogue.UI.Log.NonColonistMonologue>Non-Colonist Monologue</RimMind.Dialogue.UI.Log.NonColonistMonologue>
-    <RimMind.Dialogue.UI.Log.NonColonistDialogue>Non-Colonist Dialogue</RimMind.Dialogue.UI.Log.NonColonistDialogue>
-
-    <!-- FloatMenuPatch.cs -->
-    <RimMind.Dialogue.UI.FloatMenu.ChatWith>Chat with {0}</RimMind.Dialogue.UI.FloatMenu.ChatWith>
-    <RimMind.Dialogue.UI.FloatMenu.APINotConfigured>API not configured, cannot dialogue</RimMind.Dialogue.UI.FloatMenu.APINotConfigured>
-    <RimMind.Dialogue.UI.FloatMenu.NotReady>Dialogue system not ready, please try again later</RimMind.Dialogue.UI.FloatMenu.NotReady>
-    <RimMind.Dialogue.UI.FloatMenu.Pending>Dialogue request in progress, please wait</RimMind.Dialogue.UI.FloatMenu.Pending>
-    <RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>Daily dialogue limit reached</RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>
-    <RimMind.Dialogue.UI.FloatMenu.RequestFailed>Dialogue request for {0} failed</RimMind.Dialogue.UI.FloatMenu.RequestFailed>
-    <RimMind.Dialogue.Context.PlayerInitiate>{0} initiates conversation with {1}</RimMind.Dialogue.Context.PlayerInitiate>
-
-    <!-- BubblePatch.cs -->
-    <RimMind.Dialogue.Context.InteractionContext>[{0}] Talking with {1}</RimMind.Dialogue.Context.InteractionContext>
-
-    <!-- HediffPatch.cs -->
-    <RimMind.Dialogue.Context.HediffOccurred>Just experienced {0}</RimMind.Dialogue.Context.HediffOccurred>
-
-    <!-- SkillLearnPatch.cs -->
-    <RimMind.Dialogue.Context.SkillLevelUp>{0} skill reached level {1}</RimMind.Dialogue.Context.SkillLevelUp>
-
-    <!-- ThoughtPatch.cs -->
-    <RimMind.Dialogue.Context.MoodChanged>Mood changed: {0} ({1} mood)</RimMind.Dialogue.Context.MoodChanged>
-
-    <!-- DialogueDebugActions.cs -->
-    <RimMind.Dialogue.Debug.ChitchatContext>[Chitchat] Talking with {0}</RimMind.Dialogue.Debug.ChitchatContext>
-    <RimMind.Dialogue.Debug.HediffContext>Just took damage</RimMind.Dialogue.Debug.HediffContext>
-
-    <!-- RelationDelta -->
-    <RimMind.Dialogue.Prompt.System.RelationDelta>You can change the opinion between dialogue partners via the relation_delta field. Range -5 to +5, positive improves opinion, negative reduces it. Decide based on dialogue content and current relationship: friendly chat may be +1~+3, argument may be -2~-5. If the dialogue doesn't involve relationship change, do not output this field.</RimMind.Dialogue.Prompt.System.RelationDelta>
-    <RimMind.Dialogue.Prompt.Role.Prisoner>Role constraint: This person is a prisoner. Tone should be wary and hesitant; mention confinement; plead or bargain.</RimMind.Dialogue.Prompt.Role.Prisoner>
-    <RimMind.Dialogue.Prompt.Role.Slave>Role constraint: This person is a slave. Tone should be fearful and obedient; reference forced labor and exhaustion; call colonists "master".</RimMind.Dialogue.Prompt.Role.Slave>
-    <RimMind.Dialogue.Prompt.Role.Enemy>Role constraint: This person is an enemy. Tone should be hostile and aggressive; use terse commands or threats.</RimMind.Dialogue.Prompt.Role.Enemy>
-    <RimMind.Dialogue.Prompt.Role.Visitor>Role constraint: This person is a visitor. Tone should be polite, curious, and deferential; treat other visitors in the same group as companions.</RimMind.Dialogue.Prompt.Role.Visitor>
-    <RimMind.Dialogue.Prompt.System.RecipientRole>Dialogue partner role: {0}</RimMind.Dialogue.Prompt.System.RecipientRole>
-    <RimMind.Dialogue.Relation.Positive>pleasant conversation with {0}</RimMind.Dialogue.Relation.Positive>
-    <RimMind.Dialogue.Relation.Negative>unpleasant conversation with {0}</RimMind.Dialogue.Relation.Negative>
+  <!-- CompRimMindDialogue.cs -->
+  <RimMind.Dialogue.Context.IdleState>The colonist is currently idle</RimMind.Dialogue.Context.IdleState>
+  <RimMind.Dialogue.UI.Gizmo.ChatWith>Chat with {0}</RimMind.Dialogue.UI.Gizmo.ChatWith>
+  <RimMind.Dialogue.Context.ReplyTrigger>{0} said to you: {1}</RimMind.Dialogue.Context.ReplyTrigger>
+  <RimMind.Dialogue.UI.TimeFormat>Day {0} {1}h</RimMind.Dialogue.UI.TimeFormat>
+  <!-- RimMindDialogueService.cs - Memory Bridge -->
+  <RimMind.Dialogue.Memory.WithRecipient>Conversation with {0}: {1}</RimMind.Dialogue.Memory.WithRecipient>
+  <RimMind.Dialogue.Memory.WithPawn>Conversation with {0}: {1}</RimMind.Dialogue.Memory.WithPawn>
+  <!-- Trigger Labels -->
+  <RimMind.Dialogue.Trigger.Chitchat>Chitchat</RimMind.Dialogue.Trigger.Chitchat>
+  <RimMind.Dialogue.Trigger.Hediff>Health Change</RimMind.Dialogue.Trigger.Hediff>
+  <RimMind.Dialogue.Trigger.LevelUp>Skill Level Up</RimMind.Dialogue.Trigger.LevelUp>
+  <RimMind.Dialogue.Trigger.Thought>Mood Change</RimMind.Dialogue.Trigger.Thought>
+  <RimMind.Dialogue.Trigger.Auto>Auto Trigger</RimMind.Dialogue.Trigger.Auto>
+  <RimMind.Dialogue.Trigger.PlayerInput>Player Dialogue</RimMind.Dialogue.Trigger.PlayerInput>
+  <!-- ThoughtInjector.cs -->
+  <RimMind.Dialogue.Thought.ENCOURAGED>Encouraged</RimMind.Dialogue.Thought.ENCOURAGED>
+  <RimMind.Dialogue.Thought.HURT>Hurt</RimMind.Dialogue.Thought.HURT>
+  <RimMind.Dialogue.Thought.VALUED>Valued</RimMind.Dialogue.Thought.VALUED>
+  <RimMind.Dialogue.Thought.CONNECTED>Connected</RimMind.Dialogue.Thought.CONNECTED>
+  <RimMind.Dialogue.Thought.STRESSED>Stressed</RimMind.Dialogue.Thought.STRESSED>
+  <RimMind.Dialogue.Thought.IRRITATED>Irritated</RimMind.Dialogue.Thought.IRRITATED>
+  <!-- RimMindDialogueMod.cs -->
+  <RimMind.Dialogue.Settings.TabLabel>Dialogue</RimMind.Dialogue.Settings.TabLabel>
+  <RimMind.Dialogue.Context.StateHeader>[Current Dialogue State]\n</RimMind.Dialogue.Context.StateHeader>
+  <RimMind.Dialogue.Context.ThoughtRemaining>- {0} ({1} game hours remaining)</RimMind.Dialogue.Context.ThoughtRemaining>
+  <RimMind.Dialogue.Context.RelationHeader>[Relation with {0}]</RimMind.Dialogue.Context.RelationHeader>
+  <RimMind.Dialogue.Context.Opinion.Friend>Friend</RimMind.Dialogue.Context.Opinion.Friend>
+  <RimMind.Dialogue.Context.Opinion.Enemy>Enemy</RimMind.Dialogue.Context.Opinion.Enemy>
+  <RimMind.Dialogue.Context.Opinion.Acquaintance>Acquaintance</RimMind.Dialogue.Context.Opinion.Acquaintance>
+  <RimMind.Dialogue.Context.OpinionLabel>Opinion: {0} ({1})</RimMind.Dialogue.Context.OpinionLabel>
+  <RimMind.Dialogue.Context.Compat.High>High, prone to pleasant exchanges</RimMind.Dialogue.Context.Compat.High>
+  <RimMind.Dialogue.Context.Compat.Low>Low, prone to friction</RimMind.Dialogue.Context.Compat.Low>
+  <RimMind.Dialogue.Context.Compat.Medium>Medium</RimMind.Dialogue.Context.Compat.Medium>
+  <RimMind.Dialogue.Context.CompatLabel>Compatibility: {0} ({1})</RimMind.Dialogue.Context.CompatLabel>
+  <RimMind.Dialogue.Context.Romance.High>High</RimMind.Dialogue.Context.Romance.High>
+  <RimMind.Dialogue.Context.Romance.Medium>Medium</RimMind.Dialogue.Context.Romance.Medium>
+  <RimMind.Dialogue.Context.Romance.Low>Low</RimMind.Dialogue.Context.Romance.Low>
+  <RimMind.Dialogue.Context.RomanceLabel>Attraction: {0} ({1}, {2})</RimMind.Dialogue.Context.RomanceLabel>
+  <RimMind.Dialogue.Context.Romance.Unlikely>unlikely to develop romance</RimMind.Dialogue.Context.Romance.Unlikely>
+  <RimMind.Dialogue.Context.DirectRelation>Relation: {0}</RimMind.Dialogue.Context.DirectRelation>
+  <!-- RimMindDialogueSettings.cs -->
+  <RimMind.Dialogue.Settings.Enable>Enable AI Dialogue System</RimMind.Dialogue.Settings.Enable>
+  <RimMind.Dialogue.Settings.Enable.Desc>When enabled, colonists will generate dialogues and monologues based on game events and their state.</RimMind.Dialogue.Settings.Enable.Desc>
+  <RimMind.Dialogue.Settings.TriggerSources>Trigger Sources</RimMind.Dialogue.Settings.TriggerSources>
+  <RimMind.Dialogue.Settings.ChitchatIntercept>Intercept Chitchat</RimMind.Dialogue.Settings.ChitchatIntercept>
+  <RimMind.Dialogue.Settings.ChitchatIntercept.Desc>Replace vanilla Chitchat/DeepTalk interactions with AI-generated dialogue.</RimMind.Dialogue.Settings.ChitchatIntercept.Desc>
+  <RimMind.Dialogue.Settings.HediffReaction>Health Change Reaction</RimMind.Dialogue.Settings.HediffReaction>
+  <RimMind.Dialogue.Settings.HediffReaction.Desc>When a colonist is injured or falls ill, AI generates a dialogue reaction.</RimMind.Dialogue.Settings.HediffReaction.Desc>
+  <RimMind.Dialogue.Settings.LevelUpReaction>Skill Level Up Reaction</RimMind.Dialogue.Settings.LevelUpReaction>
+  <RimMind.Dialogue.Settings.LevelUpReaction.Desc>When a colonist levels up a skill, AI generates a dialogue reaction.</RimMind.Dialogue.Settings.LevelUpReaction.Desc>
+  <RimMind.Dialogue.Settings.ThoughtReaction>Mood Change Reaction</RimMind.Dialogue.Settings.ThoughtReaction>
+  <RimMind.Dialogue.Settings.ThoughtReaction.Desc>When a colonist's mood changes significantly, AI generates a dialogue reaction.</RimMind.Dialogue.Settings.ThoughtReaction.Desc>
+  <RimMind.Dialogue.Settings.AutoMonologue>Auto Monologue on Idle</RimMind.Dialogue.Settings.AutoMonologue>
+  <RimMind.Dialogue.Settings.AutoMonologue.Desc>When a colonist is idle, automatically trigger an inner monologue. Monologues enter context just like dialogues.</RimMind.Dialogue.Settings.AutoMonologue.Desc>
+  <RimMind.Dialogue.Settings.AutoMonologueDesc>When a colonist is idle, automatically trigger an inner monologue. Monologues enter context just like dialogues.</RimMind.Dialogue.Settings.AutoMonologueDesc>
+  <RimMind.Dialogue.Settings.PlayerDialogueGizmo>Player Initiated Dialogue</RimMind.Dialogue.Settings.PlayerDialogueGizmo>
+  <RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>Show a chat button on colonists and a right-click dialogue option, allowing the player to initiate conversations.</RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>
+  <RimMind.Dialogue.Settings.MonologueCooldown>Monologue Cooldown: {0} game hours ({1} ticks)</RimMind.Dialogue.Settings.MonologueCooldown>
+  <RimMind.Dialogue.Settings.MonologueCooldown.Desc>Minimum interval between same-type monologues for the same colonist. Increase to reduce repetitive monologues.</RimMind.Dialogue.Settings.MonologueCooldown.Desc>
+  <RimMind.Dialogue.Settings.MoodThreshold>Mood change threshold: {0} (triggers when |moodEffect| ≥ this value)</RimMind.Dialogue.Settings.MoodThreshold>
+  <RimMind.Dialogue.Settings.AutoInterval>Auto monologue interval: {0} game hours</RimMind.Dialogue.Settings.AutoInterval>
+  <RimMind.Dialogue.Settings.MaxDailyDialogues>Max daily dialogue rounds per pair: {0}</RimMind.Dialogue.Settings.MaxDailyDialogues>
+  <RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>Maximum dialogue rounds per colonist pair per day. Higher values produce more dialogues but increase API costs.</RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds>Max AI dialogue history rounds: {0}</RimMind.Dialogue.Settings.MaxHistoryRounds>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>Number of dialogue rounds retained as AI conversation context. Higher values improve coherence but increase token usage.</RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>
+  <RimMind.Dialogue.Settings.GlobalConcurrency>Global dialogue concurrency limit: {0}</RimMind.Dialogue.Settings.GlobalConcurrency>
+  <RimMind.Dialogue.Settings.GlobalConcurrency.Desc>Maximum number of simultaneous AI dialogue requests. Lower values reduce API pressure but may cause dialogue delays.</RimMind.Dialogue.Settings.GlobalConcurrency.Desc>
+  <RimMind.Dialogue.Settings.EnableDialogueReply>Enable Dialogue Reply</RimMind.Dialogue.Settings.EnableDialogueReply>
+  <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>Automatically generate a reply when receiving dialogue, creating two-way conversations.</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
+  <RimMind.Dialogue.Settings.StartDelay>Game start delay</RimMind.Dialogue.Settings.StartDelay>
+  <RimMind.Dialogue.Settings.StartDelay.Desc>No dialogue is triggered for a period after loading a save or starting a new game, avoiding excessive requests at startup.</RimMind.Dialogue.Settings.StartDelay.Desc>
+  <RimMind.Dialogue.Settings.StartDelayValue>Start delay: {0}s</RimMind.Dialogue.Settings.StartDelayValue>
+  <RimMind.Dialogue.Settings.ShowNotification>Show notification when Thought is injected</RimMind.Dialogue.Settings.ShowNotification>
+  <RimMind.Dialogue.Settings.ShowNotification.Desc>Display a notification on screen when the dialogue system injects a mood Thought into a colonist.</RimMind.Dialogue.Settings.ShowNotification.Desc>
+  <RimMind.Dialogue.Settings.ShowOverlay>Show dialogue overlay</RimMind.Dialogue.Settings.ShowOverlay>
+  <RimMind.Dialogue.Settings.ShowOverlay.Desc>Display a floating panel on screen showing recent dialogue content.</RimMind.Dialogue.Settings.ShowOverlay.Desc>
+  <RimMind.Dialogue.Settings.OverlayOpacity>Overlay opacity: {0}</RimMind.Dialogue.Settings.OverlayOpacity>
+  <RimMind.Dialogue.Settings.OverlayOpacity.Desc>Opacity of the dialogue overlay. 1.0 is fully opaque, 0.1 is nearly transparent.</RimMind.Dialogue.Settings.OverlayOpacity.Desc>
+  <RimMind.Dialogue.Settings.OverlayMaxMessages>Overlay max messages: {0}</RimMind.Dialogue.Settings.OverlayMaxMessages>
+  <RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>Maximum number of dialogue lines shown simultaneously in the overlay. Older messages are hidden when exceeded.</RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>
+  <RimMind.Dialogue.Settings.Section.Behavior>Behavior Settings</RimMind.Dialogue.Settings.Section.Behavior>
+  <RimMind.Dialogue.Settings.Section.Display>Display</RimMind.Dialogue.Settings.Section.Display>
+  <!-- DialogueOverlay.cs -->
+  <RimMind.Dialogue.UI.Overlay.Title>RimMind Dialogue</RimMind.Dialogue.UI.Overlay.Title>
+  <RimMind.Dialogue.UI.Overlay.Details>Details</RimMind.Dialogue.UI.Overlay.Details>
+  <RimMind.Dialogue.UI.Overlay.DragResize>Drag to resize</RimMind.Dialogue.UI.Overlay.DragResize>
+  <!-- Window_Dialogue.cs -->
+  <RimMind.Dialogue.UI.ChatTitle>Chat with {0}</RimMind.Dialogue.UI.ChatTitle>
+  <RimMind.Dialogue.UI.ChatTitleWithInitiator>{0} chatting with {1}</RimMind.Dialogue.UI.ChatTitleWithInitiator>
+  <RimMind.Dialogue.UI.Thinking>● Thinking...</RimMind.Dialogue.UI.Thinking>
+  <RimMind.Dialogue.UI.Send>Send</RimMind.Dialogue.UI.Send>
+  <RimMind.Dialogue.UI.PlayerPrefix>You: </RimMind.Dialogue.UI.PlayerPrefix>
+  <RimMind.Dialogue.Speaker.Player>Player</RimMind.Dialogue.Speaker.Player>
+  <RimMind.Dialogue.UI.PawnPrefix>{0}: </RimMind.Dialogue.UI.PawnPrefix>
+  <!-- Window_DialogueLog.cs -->
+  <RimMind.Dialogue.UI.Log.Title>Dialogue Log</RimMind.Dialogue.UI.Log.Title>
+  <RimMind.Dialogue.UI.Log.NoRecords>No records</RimMind.Dialogue.UI.Log.NoRecords>
+  <RimMind.Dialogue.UI.Log.SelectTab>Select a tab to view dialogue</RimMind.Dialogue.UI.Log.SelectTab>
+  <RimMind.Dialogue.UI.Log.ColonistMonologue>Colonist Monologue</RimMind.Dialogue.UI.Log.ColonistMonologue>
+  <RimMind.Dialogue.UI.Log.ColonistDialogue>Colonist Dialogue</RimMind.Dialogue.UI.Log.ColonistDialogue>
+  <RimMind.Dialogue.UI.Log.PlayerDialogue>Player Dialogue</RimMind.Dialogue.UI.Log.PlayerDialogue>
+  <RimMind.Dialogue.UI.Log.NonColonistMonologue>Non-Colonist Monologue</RimMind.Dialogue.UI.Log.NonColonistMonologue>
+  <RimMind.Dialogue.UI.Log.NonColonistDialogue>Non-Colonist Dialogue</RimMind.Dialogue.UI.Log.NonColonistDialogue>
+  <!-- FloatMenuPatch.cs -->
+  <RimMind.Dialogue.UI.FloatMenu.ChatWith>Chat with {0}</RimMind.Dialogue.UI.FloatMenu.ChatWith>
+  <RimMind.Dialogue.UI.FloatMenu.APINotConfigured>API not configured, cannot dialogue</RimMind.Dialogue.UI.FloatMenu.APINotConfigured>
+  <RimMind.Dialogue.UI.FloatMenu.NotReady>Dialogue system not ready, please try again later</RimMind.Dialogue.UI.FloatMenu.NotReady>
+  <RimMind.Dialogue.UI.FloatMenu.Pending>Dialogue request in progress, please wait</RimMind.Dialogue.UI.FloatMenu.Pending>
+  <RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>Daily dialogue limit reached</RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>
+  <RimMind.Dialogue.UI.FloatMenu.RequestFailed>Dialogue request for {0} failed</RimMind.Dialogue.UI.FloatMenu.RequestFailed>
+  <RimMind.Dialogue.Context.PlayerInitiate>{0} initiates conversation with {1}</RimMind.Dialogue.Context.PlayerInitiate>
+  <!-- BubblePatch.cs -->
+  <RimMind.Dialogue.Context.InteractionContext>[{0}] Talking with {1}</RimMind.Dialogue.Context.InteractionContext>
+  <!-- HediffPatch.cs -->
+  <RimMind.Dialogue.Context.HediffOccurred>Just experienced {0}</RimMind.Dialogue.Context.HediffOccurred>
+  <!-- SkillLearnPatch.cs -->
+  <RimMind.Dialogue.Context.SkillLevelUp>{0} skill reached level {1}</RimMind.Dialogue.Context.SkillLevelUp>
+  <!-- ThoughtPatch.cs -->
+  <RimMind.Dialogue.Context.MoodChanged>Mood changed: {0} ({1} mood)</RimMind.Dialogue.Context.MoodChanged>
+  <!-- DialogueDebugActions.cs -->
+  <RimMind.Dialogue.Debug.ChitchatContext>[Chitchat] Talking with {0}</RimMind.Dialogue.Debug.ChitchatContext>
+  <RimMind.Dialogue.Debug.HediffContext>Just took damage</RimMind.Dialogue.Debug.HediffContext>
+  <RimMind.Dialogue.Relation.Positive>pleasant conversation with {0}</RimMind.Dialogue.Relation.Positive>
+  <RimMind.Dialogue.Relation.Negative>unpleasant conversation with {0}</RimMind.Dialogue.Relation.Negative>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Role>You are roleplaying as a RimWorld colonist. Generate natural dialogue or monologue based on your current state.</RimMind.Dialogue.Prompt.TaskInstruction.Role>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Goal>Respond in first person based on your current state.</RimMind.Dialogue.Prompt.TaskInstruction.Goal>
+  <RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>Speak a dialogue line in first person (15~40 characters).</RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.GoalMonologue>Speak an inner monologue in first person (15~40 characters).</RimMind.Dialogue.Prompt.TaskInstruction.GoalMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Process>1. Perceive current state (mood, health, environment)
+2. Consider the trigger reason
+3. Generate dialogue/monologue matching character personality
+4. Evaluate emotional impact of dialogue</RimMind.Dialogue.Prompt.TaskInstruction.Process>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Constraint>Maintain character consistency; do not break the fourth wall; dialogue 15~40 chars, monologue 15~40 chars</RimMind.Dialogue.Prompt.TaskInstruction.Constraint>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Example>Monologue input: pawn mood 35%, mining
+Monologue output: {"reply":"This mine is so cold... I wonder how much longer I have to dig.","thought":{"tag":"STRESSED","description":"Tired from heavy labor"}}
+Dialogue input: chatting with Alex
+Dialogue output: {"reply":"Alex, you seem to be in a good mood today?","thought":{"tag":"CONNECTED","description":"Wants to bond with companion"},"relation_delta":1}</RimMind.Dialogue.Prompt.TaskInstruction.Example>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Output>Return only the following JSON format:
+Monologue: {"reply":"monologue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}
+Dialogue: {"reply":"dialogue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.Output>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Fallback>If unable to generate, return {"reply":"...","thought":{"tag":"NONE","description":"No special emotion"}}.</RimMind.Dialogue.Prompt.TaskInstruction.Fallback>
+  <RimMind.Dialogue.Prompt.TaskInstruction.JsonTemplate>{"reply": "dialogue/monologue text", "thought": {"tag": "ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE", "description": "≤15 chars"}, "relation_delta": 0}</RimMind.Dialogue.Prompt.TaskInstruction.JsonTemplate>
+  <RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>Trigger reason is provided in context.</RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>
+  <RimMind.Dialogue.Prompt.TaskInstruction.RelationDelta>You can use the relation_delta field to change the relationship between dialogue participants. Range -5 to +5, positive increases affinity, negative decreases it. Decide based on dialogue content and current relationship: friendly conversation may add +1~+3, arguments may deduct -2~-5. Do not include this field if the dialogue content does not involve relationship changes.</RimMind.Dialogue.Prompt.TaskInstruction.RelationDelta>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ExampleMonologue>Monologue input: pawn mood 35%, mining
+Monologue output: {"reply":"This mine is so cold... I wonder how much longer I have to dig.","thought":{"tag":"STRESSED","description":"Tired from heavy labor"}}</RimMind.Dialogue.Prompt.TaskInstruction.ExampleMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ExampleDialogue>Dialogue input: chatting with Alex
+Dialogue output: {"reply":"Alex, you seem to be in a good mood today?","thought":{"tag":"CONNECTED","description":"Wants to bond with companion"},"relation_delta":1}</RimMind.Dialogue.Prompt.TaskInstruction.ExampleDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>Return only JSON:
+{"reply":"monologue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}</RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>Return only JSON:
+{"reply":"dialogue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>thought.tag selection: mood<40%→STRESSED; injured→HURT; feeling cared for→VALUED; caring for others→CONNECTED; hearing encouragement→ENCOURAGED; offended→IRRITATED; no special emotion→NONE.</RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>You are roleplaying as this RimWorld colonist.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>Based on your current state and personality, naturally respond to the player's dialogue in first person.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>1. Review your current state (mood, health, what you are doing)
+2. Consider relationship with the player and past conversations
+3. Generate a reply matching your character personality
+4. Evaluate emotional impact of the conversation</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Constraint>Maintain character consistency, do not deviate from current state; reply length 20~60 characters; do not break the fourth wall; do not mention game mechanics</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Constraint>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Example>Input: Player says "Are you okay? You look tired today."
+Output: {"reply":"Yeah... a bit tired, been mining all night. But thanks for your concern.","thought":{"tag":"VALUED","description":"Feels warm being cared for"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Example>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>Return only the following JSON format, nothing else:
+{"reply":"dialogue text","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15 chars"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>If unable to generate dialogue, return {"reply":"...","thought":{"tag":"NONE","description":"No special emotion"}}.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>[Initiator] Information about the person speaking to you is in context. Respond based on your relationship with them and their current state.</RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>
+  <RimMind.Dialogue.Prompt.Role.Prisoner>Role constraint: This person is a prisoner. Tone should be wary, hesitant, mentioning imprisonment, possibly begging or bargaining.</RimMind.Dialogue.Prompt.Role.Prisoner>
+  <RimMind.Dialogue.Prompt.Role.Slave>Role constraint: This person is a slave. Tone should be fearful, submissive, mentioning forced labor and exhaustion, referring to colonists as "master".</RimMind.Dialogue.Prompt.Role.Slave>
+  <RimMind.Dialogue.Prompt.Role.Enemy>Role constraint: This person is an enemy. Tone should be hostile, aggressive, using short commands or threats.</RimMind.Dialogue.Prompt.Role.Enemy>
+  <RimMind.Dialogue.Prompt.Role.Visitor>Role constraint: This person is a visitor. Tone should be polite, curious, respectful, treating fellow visitors as companions.</RimMind.Dialogue.Prompt.Role.Visitor>
+  <RimMind.Dialogue.Prompt.Context.Chitchat>[Trigger: Chitchat] {0}</RimMind.Dialogue.Prompt.Context.Chitchat>
+  <RimMind.Dialogue.Prompt.Context.Recipient>[Recipient] {0}</RimMind.Dialogue.Prompt.Context.Recipient>
+  <RimMind.Dialogue.Prompt.Context.Hediff>[Trigger: Health Change] {0}</RimMind.Dialogue.Prompt.Context.Hediff>
+  <RimMind.Dialogue.Prompt.Context.LevelUp>[Trigger: Skill Level Up] {0}</RimMind.Dialogue.Prompt.Context.LevelUp>
+  <RimMind.Dialogue.Prompt.Context.Thought>[Trigger: Mood Change] {0}</RimMind.Dialogue.Prompt.Context.Thought>
+  <RimMind.Dialogue.Prompt.Context.Auto>[Trigger: Auto] {0}</RimMind.Dialogue.Prompt.Context.Auto>
+  <RimMind.Dialogue.Prompt.AutoTrigger>Based on your current state and surroundings, respond naturally.</RimMind.Dialogue.Prompt.AutoTrigger>
 </LanguageData>

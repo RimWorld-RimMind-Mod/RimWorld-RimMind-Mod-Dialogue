@@ -259,11 +259,11 @@ namespace RimMind.Dialogue.UI
             if (category == DialogueCategory.PlayerDialogue)
             {
                 return RimMindDialogueService.LogEntries
-                    .Where(e => e.trigger == "RimMind.Dialogue.Trigger.PlayerInput".Translate())
+                    .Where(e => e.trigger == "PlayerInput")
                     .ToList();
             }
             return RimMindDialogueService.LogEntries
-                .Where(e => e.category == category && e.trigger != "RimMind.Dialogue.Trigger.PlayerInput".Translate())
+                .Where(e => e.category == category && e.trigger != "PlayerInput")
                 .ToList();
         }
 
@@ -289,21 +289,42 @@ namespace RimMind.Dialogue.UI
 
         private static string FormatEntry(DialogueLogEntry entry)
         {
-            string result = $"[{entry.TimeStr}] ({entry.trigger}) {entry.reply}";
+            string triggerLabel = TranslateTrigger(entry.trigger);
+            string result = $"[{entry.TimeStr}] ({triggerLabel}) {entry.reply}";
             if (entry.thoughtTag != "NONE")
                 result += $" [{entry.thoughtTag}]";
             return result;
         }
 
+        private static string TranslateTrigger(string triggerKey)
+        {
+            if (RimMindDialogueService.RegisteredTriggerLabels.TryGetValue(triggerKey, out var labelKey))
+                return labelKey.Translate();
+
+            return triggerKey switch
+            {
+                "Chitchat" => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
+                "Hediff" => "RimMind.Dialogue.Trigger.Hediff".Translate(),
+                "LevelUp" => "RimMind.Dialogue.Trigger.LevelUp".Translate(),
+                "Thought" => "RimMind.Dialogue.Trigger.Thought".Translate(),
+                "Auto" => "RimMind.Dialogue.Trigger.Auto".Translate(),
+                "PlayerInput" => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
+                _ => triggerKey,
+            };
+        }
+
         private static Color GetTriggerColor(string trigger)
         {
-            if (trigger == "RimMind.Dialogue.Trigger.Chitchat".Translate()) return new Color(0.7f, 0.85f, 1f);
-            if (trigger == "RimMind.Dialogue.Trigger.Hediff".Translate()) return new Color(1f, 0.6f, 0.6f);
-            if (trigger == "RimMind.Dialogue.Trigger.LevelUp".Translate()) return new Color(0.6f, 1f, 0.6f);
-            if (trigger == "RimMind.Dialogue.Trigger.Thought".Translate()) return new Color(1f, 0.95f, 0.6f);
-            if (trigger == "RimMind.Dialogue.Trigger.Auto".Translate()) return new Color(0.8f, 0.8f, 0.8f);
-            if (trigger == "RimMind.Dialogue.Trigger.PlayerInput".Translate()) return new Color(0.85f, 0.7f, 1f);
-            return Color.white;
+            return trigger switch
+            {
+                "Chitchat" => new Color(0.7f, 0.85f, 1f),
+                "Hediff" => new Color(1f, 0.6f, 0.6f),
+                "LevelUp" => new Color(0.6f, 1f, 0.6f),
+                "Thought" => new Color(1f, 0.95f, 0.6f),
+                "Auto" => new Color(0.8f, 0.8f, 0.8f),
+                "PlayerInput" => new Color(0.85f, 0.7f, 1f),
+                _ => Color.white,
+            };
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -9,6 +10,26 @@ namespace RimMind.Dialogue
     {
         private const string ThoughtDefName = "RimMindDialogue_Thought";
         private const string RelationThoughtDefName = "RimMindDialogue_RelationThought";
+
+        private static readonly Dictionary<string, int> MoodOffsetMap = new Dictionary<string, int>
+        {
+            { "ENCOURAGED", 1 },
+            { "HURT", -1 },
+            { "VALUED", 2 },
+            { "CONNECTED", 2 },
+            { "STRESSED", -2 },
+            { "IRRITATED", -1 },
+        };
+
+        private static readonly Dictionary<string, string> LabelMap = new Dictionary<string, string>
+        {
+            { "ENCOURAGED", "RimMind.Dialogue.Thought.ENCOURAGED" },
+            { "HURT", "RimMind.Dialogue.Thought.HURT" },
+            { "VALUED", "RimMind.Dialogue.Thought.VALUED" },
+            { "CONNECTED", "RimMind.Dialogue.Thought.CONNECTED" },
+            { "STRESSED", "RimMind.Dialogue.Thought.STRESSED" },
+            { "IRRITATED", "RimMind.Dialogue.Thought.IRRITATED" },
+        };
 
         public static void Inject(Pawn pawn, Pawn? recipient, string tag, string? description)
         {
@@ -32,32 +53,20 @@ namespace RimMind.Dialogue
             pawn.needs?.mood?.thoughts?.memories?.TryGainMemory(thought);
         }
 
-        private static float MapTagToMoodOffset(string tag)
+        public static int MapTagToMoodOffset(string tag)
         {
-            switch (tag.ToUpperInvariant())
-            {
-                case "ENCOURAGED":  return +1f;
-                case "HURT":        return -1f;
-                case "VALUED":      return +2f;
-                case "CONNECTED":   return +2f;
-                case "STRESSED":    return -2f;
-                case "IRRITATED":   return -1f;
-                default:            return 0f;
-            }
+            return MoodOffsetMap.TryGetValue(tag.ToUpperInvariant(), out int v) ? v : 0;
         }
 
-        private static string MapTagToLabel(string tag)
+        public static string MapTagToLabel(string tag)
         {
-            switch (tag.ToUpperInvariant())
-            {
-                case "ENCOURAGED":  return "RimMind.Dialogue.Thought.ENCOURAGED".Translate();
-                case "HURT":        return "RimMind.Dialogue.Thought.HURT".Translate();
-                case "VALUED":      return "RimMind.Dialogue.Thought.VALUED".Translate();
-                case "CONNECTED":   return "RimMind.Dialogue.Thought.CONNECTED".Translate();
-                case "STRESSED":    return "RimMind.Dialogue.Thought.STRESSED".Translate();
-                case "IRRITATED":   return "RimMind.Dialogue.Thought.IRRITATED".Translate();
-                default:            return tag;
-            }
+            return LabelMap.TryGetValue(tag.ToUpperInvariant(), out string? v) ? v.Translate() : tag;
+        }
+
+        public static void RegisterThoughtTag(string tag, int moodOffset, string labelKey)
+        {
+            MoodOffsetMap[tag.ToUpperInvariant()] = moodOffset;
+            LabelMap[tag.ToUpperInvariant()] = labelKey;
         }
 
         public static void InjectRelationDelta(Pawn pawn, Pawn recipient, float delta)

@@ -1,183 +1,181 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-    <!-- CompRimMindDialogue.cs -->
-    <RimMind.Dialogue.Context.IdleState>小人目前处于空闲状态</RimMind.Dialogue.Context.IdleState>
-    <RimMind.Dialogue.UI.Gizmo.ChatWith>与 {0} 对话</RimMind.Dialogue.UI.Gizmo.ChatWith>
-
-    <!-- DialogueService.cs - Player Dialogue Five-section -->
-    <RimMind.Dialogue.Prompt.PlayerSystem.Role>[角色] 你正在扮演 RimWorld 殖民者 {0}。</RimMind.Dialogue.Prompt.PlayerSystem.Role>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Goal>[目标] 根据当前状态和性格，用第一人称自然地回应玩家的对话。</RimMind.Dialogue.Prompt.PlayerSystem.Goal>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Process>[流程]\n1. 回顾自己的当前状态（心情、健康、正在做的事）\n2. 结合与玩家的关系和过往对话\n3. 生成符合角色性格的回复\n4. 评估对话对自己情绪的影响</RimMind.Dialogue.Prompt.PlayerSystem.Process>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Constraint>[约束]\n- 保持角色一致性，不要脱离当前状态\n- 回复长度 20~60 字\n- 不要打破第四面墙\n- 不要提及游戏机制</RimMind.Dialogue.Prompt.PlayerSystem.Constraint>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Example>[示例]\n输入：玩家说"你还好吗？今天看起来很累"\n输出：{{"reply":"嗯...确实有点累，昨晚一直在采矿。不过谢谢你的关心。","thought":{{"tag":"VALUED","description":"被关心感到温暖"}}}}</RimMind.Dialogue.Prompt.PlayerSystem.Example>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Output>[输出] 只返回以下 JSON 格式，不要输出其他内容：\n{{"reply":"对话文本","thought":{{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}}}}</RimMind.Dialogue.Prompt.PlayerSystem.Output>
-    <RimMind.Dialogue.Prompt.PlayerSystem.Fallback>[兜底] 如果无法生成对话，返回 {{"reply":"...","thought":{{"tag":"NONE","description":"无特殊情绪"}}}}。</RimMind.Dialogue.Prompt.PlayerSystem.Fallback>
-    <RimMind.Dialogue.Prompt.PlayerSystem.InitiatorConstraint>[对话发起者] 与你对话的是 {0}，请根据你们之间的关系和对方的状态来回应。</RimMind.Dialogue.Prompt.PlayerSystem.InitiatorConstraint>
-
-    <!-- RimMindDialogueService.cs - Auto Dialogue Five-section -->
-    <RimMind.Dialogue.Prompt.System.Role>[角色] 你正在扮演 RimWorld 殖民者，根据当前状态生成自然的对话或独白。</RimMind.Dialogue.Prompt.System.Role>
-    <RimMind.Dialogue.Prompt.System.GoalDialogue>[目标] 根据当前状态用第一人称说出与 {0} 的对话（15~40字）。</RimMind.Dialogue.Prompt.System.GoalDialogue>
-    <RimMind.Dialogue.Prompt.System.GoalMonologue>[目标] 根据当前状态用第一人称说出一句内心独白（15~40字）。</RimMind.Dialogue.Prompt.System.GoalMonologue>
-    <RimMind.Dialogue.Prompt.System.Process>[流程]\n1. 感知当前状态（心情、健康、环境）\n2. 结合触发原因\n3. 生成符合角色性格的对话/独白\n4. 评估对话对情绪的影响</RimMind.Dialogue.Prompt.System.Process>
-    <RimMind.Dialogue.Prompt.System.Constraint>[约束]\n- 保持角色一致性\n- 不要打破第四面墙\n- 对话15~40字，独白15~40字</RimMind.Dialogue.Prompt.System.Constraint>
-    <RimMind.Dialogue.Prompt.System.Example>[示例]\n独白输入：小人心情35%，正在采矿\n独白输出：{{"reply":"这矿洞真冷……不知道还要挖多久。","thought":{{"tag":"STRESSED","description":"对繁重劳动感到疲惫"}},"relation_delta":0}}\n对话输入：与Alex闲聊\n对话输出：{{"reply":"Alex，你今天看起来心情不错？","thought":{{"tag":"CONNECTED","description":"想与同伴亲近"}},"relation_delta":1}}</RimMind.Dialogue.Prompt.System.Example>
-    <RimMind.Dialogue.Prompt.System.Output>[输出] 只返回以下 JSON 格式：\n{{"reply":"对话/独白文本","thought":{{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}},"relation_delta":0}}</RimMind.Dialogue.Prompt.System.Output>
-    <RimMind.Dialogue.Prompt.System.Fallback>[兜底] 如果无法生成，返回 {{"reply":"...","thought":{{"tag":"NONE","description":"无特殊情绪"}}}}。</RimMind.Dialogue.Prompt.System.Fallback>
-    <RimMind.Dialogue.Prompt.System.TriggerReason>触发原因：{0}</RimMind.Dialogue.Prompt.System.TriggerReason>
-    <RimMind.Dialogue.Prompt.System.JsonTemplate>{{&quot;reply&quot;: &quot;对话/独白文本&quot;, &quot;thought&quot;: {{&quot;tag&quot;: &quot;ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE&quot;, &quot;description&quot;: &quot;≤15字&quot;}}, &quot;relation_delta&quot;: 0}}</RimMind.Dialogue.Prompt.System.JsonTemplate>
-    <RimMind.Dialogue.Prompt.Context.Chitchat>[触发原因: 闲聊] {0}</RimMind.Dialogue.Prompt.Context.Chitchat>
-    <RimMind.Dialogue.Prompt.Context.Recipient>[对象] {0}</RimMind.Dialogue.Prompt.Context.Recipient>
-    <RimMind.Dialogue.Prompt.Context.Hediff>[触发原因: 健康变化] {0}</RimMind.Dialogue.Prompt.Context.Hediff>
-    <RimMind.Dialogue.Prompt.Context.LevelUp>[触发原因: 技能升级] {0}</RimMind.Dialogue.Prompt.Context.LevelUp>
-    <RimMind.Dialogue.Prompt.Context.Thought>[触发原因: 情绪变化] {0}</RimMind.Dialogue.Prompt.Context.Thought>
-    <RimMind.Dialogue.Prompt.Context.Auto>[触发原因: 自动触发] {0}</RimMind.Dialogue.Prompt.Context.Auto>
-    <RimMind.Dialogue.Prompt.Context.DialogueHistory>[之前的对话记录]</RimMind.Dialogue.Prompt.Context.DialogueHistory>
-    <RimMind.Dialogue.Prompt.Context.HistoryCompressed>（更早的对话已省略）</RimMind.Dialogue.Prompt.Context.HistoryCompressed>
-    <RimMind.Dialogue.Context.ReplyTrigger>{0} 对你说：{1}</RimMind.Dialogue.Context.ReplyTrigger>
-    <RimMind.Dialogue.UI.TimeFormat>第{0}天 {1}时</RimMind.Dialogue.UI.TimeFormat>
-
-    <!-- RimMindDialogueService.cs - Memory Bridge -->
-    <RimMind.Dialogue.Memory.WithRecipient>与{0}的对话: {1}</RimMind.Dialogue.Memory.WithRecipient>
-    <RimMind.Dialogue.Memory.WithPawn>与{0}的对话: {1}</RimMind.Dialogue.Memory.WithPawn>
-
-    <!-- Trigger Labels -->
-    <RimMind.Dialogue.Trigger.Chitchat>闲聊</RimMind.Dialogue.Trigger.Chitchat>
-    <RimMind.Dialogue.Trigger.Hediff>健康变化</RimMind.Dialogue.Trigger.Hediff>
-    <RimMind.Dialogue.Trigger.LevelUp>技能升级</RimMind.Dialogue.Trigger.LevelUp>
-    <RimMind.Dialogue.Trigger.Thought>情绪变化</RimMind.Dialogue.Trigger.Thought>
-    <RimMind.Dialogue.Trigger.Auto>自动触发</RimMind.Dialogue.Trigger.Auto>
-    <RimMind.Dialogue.Trigger.PlayerInput>玩家对话</RimMind.Dialogue.Trigger.PlayerInput>
-
-    <!-- ThoughtInjector.cs -->
-    <RimMind.Dialogue.Thought.ENCOURAGED>受到鼓励</RimMind.Dialogue.Thought.ENCOURAGED>
-    <RimMind.Dialogue.Thought.HURT>感到受伤</RimMind.Dialogue.Thought.HURT>
-    <RimMind.Dialogue.Thought.VALUED>感到被重视</RimMind.Dialogue.Thought.VALUED>
-    <RimMind.Dialogue.Thought.CONNECTED>感到亲近</RimMind.Dialogue.Thought.CONNECTED>
-    <RimMind.Dialogue.Thought.STRESSED>感到压力</RimMind.Dialogue.Thought.STRESSED>
-    <RimMind.Dialogue.Thought.IRRITATED>感到烦躁</RimMind.Dialogue.Thought.IRRITATED>
-
-    <!-- RimMindDialogueMod.cs -->
-    <RimMind.Dialogue.Settings.TabLabel>对话</RimMind.Dialogue.Settings.TabLabel>
-    <RimMind.Dialogue.Context.StateHeader>[当前对话状态]\n</RimMind.Dialogue.Context.StateHeader>
-    <RimMind.Dialogue.Context.ThoughtRemaining>- {0}（剩余 {1} 游戏时）</RimMind.Dialogue.Context.ThoughtRemaining>
-    <RimMind.Dialogue.Context.RelationHeader>[与 {0} 的关系]</RimMind.Dialogue.Context.RelationHeader>
-    <RimMind.Dialogue.Context.Opinion.Friend>朋友</RimMind.Dialogue.Context.Opinion.Friend>
-    <RimMind.Dialogue.Context.Opinion.Enemy>仇敌</RimMind.Dialogue.Context.Opinion.Enemy>
-    <RimMind.Dialogue.Context.Opinion.Acquaintance>相识</RimMind.Dialogue.Context.Opinion.Acquaintance>
-    <RimMind.Dialogue.Context.OpinionLabel>好感度: {0} ({1})</RimMind.Dialogue.Context.OpinionLabel>
-    <RimMind.Dialogue.Context.Compat.High>高，容易产生愉快交流</RimMind.Dialogue.Context.Compat.High>
-    <RimMind.Dialogue.Context.Compat.Low>低，容易产生摩擦</RimMind.Dialogue.Context.Compat.Low>
-    <RimMind.Dialogue.Context.Compat.Medium>中等</RimMind.Dialogue.Context.Compat.Medium>
-    <RimMind.Dialogue.Context.CompatLabel>兼容性: {0} ({1})</RimMind.Dialogue.Context.CompatLabel>
-    <RimMind.Dialogue.Context.Romance.High>高</RimMind.Dialogue.Context.Romance.High>
-    <RimMind.Dialogue.Context.Romance.Medium>中等</RimMind.Dialogue.Context.Romance.Medium>
-    <RimMind.Dialogue.Context.Romance.Low>低</RimMind.Dialogue.Context.Romance.Low>
-    <RimMind.Dialogue.Context.RomanceLabel>吸引力: {0} ({1}，{2})</RimMind.Dialogue.Context.RomanceLabel>
-    <RimMind.Dialogue.Context.Romance.Unlikely>不太可能发展浪漫关系</RimMind.Dialogue.Context.Romance.Unlikely>
-    <RimMind.Dialogue.Context.DirectRelation>关系: {0}</RimMind.Dialogue.Context.DirectRelation>
-
-    <!-- RimMindDialogueSettings.cs -->
-    <RimMind.Dialogue.Settings.Enable>启用 AI 对话系统</RimMind.Dialogue.Settings.Enable>
-    <RimMind.Dialogue.Settings.Enable.Desc>开启后，殖民者会根据游戏事件和自身状态产生对话和独白。</RimMind.Dialogue.Settings.Enable.Desc>
-    <RimMind.Dialogue.Settings.TriggerSources>触发来源</RimMind.Dialogue.Settings.TriggerSources>
-    <RimMind.Dialogue.Settings.ChitchatIntercept>拦截原生闲聊</RimMind.Dialogue.Settings.ChitchatIntercept>
-    <RimMind.Dialogue.Settings.ChitchatIntercept.Desc>将原版 Chitchat/DeepTalk 交互替换为 AI 生成的对话。</RimMind.Dialogue.Settings.ChitchatIntercept.Desc>
-    <RimMind.Dialogue.Settings.HediffReaction>健康变化反应</RimMind.Dialogue.Settings.HediffReaction>
-    <RimMind.Dialogue.Settings.HediffReaction.Desc>当殖民者受伤或患病时，AI 生成对应的对话反应。</RimMind.Dialogue.Settings.HediffReaction.Desc>
-    <RimMind.Dialogue.Settings.LevelUpReaction>技能升级反应</RimMind.Dialogue.Settings.LevelUpReaction>
-    <RimMind.Dialogue.Settings.LevelUpReaction.Desc>当殖民者技能升级时，AI 生成对应的对话反应。</RimMind.Dialogue.Settings.LevelUpReaction.Desc>
-    <RimMind.Dialogue.Settings.ThoughtReaction>心情变化反应</RimMind.Dialogue.Settings.ThoughtReaction>
-    <RimMind.Dialogue.Settings.ThoughtReaction.Desc>当殖民者心情发生显著变化时，AI 生成对应的对话反应。</RimMind.Dialogue.Settings.ThoughtReaction.Desc>
-    <RimMind.Dialogue.Settings.AutoMonologue>空闲自动独白</RimMind.Dialogue.Settings.AutoMonologue>
-    <RimMind.Dialogue.Settings.AutoMonologue.Desc>当殖民者空闲时，自动触发一句内心独白。独白会进入对话上下文。</RimMind.Dialogue.Settings.AutoMonologue.Desc>
-    <RimMind.Dialogue.Settings.AutoMonologueDesc>当小人处于空闲状态时，自动触发一句内心独白。独白会像对话一样进入上下文。</RimMind.Dialogue.Settings.AutoMonologueDesc>
-    <RimMind.Dialogue.Settings.PlayerDialogueGizmo>玩家主动对话</RimMind.Dialogue.Settings.PlayerDialogueGizmo>
-    <RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>在殖民者身上显示对话按钮和右键对话选项，允许玩家主动与其交谈。</RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>
-    <RimMind.Dialogue.Settings.MonologueCooldown>独白冷却：{0} 游戏小时（{1} ticks）</RimMind.Dialogue.Settings.MonologueCooldown>
-    <RimMind.Dialogue.Settings.MonologueCooldown.Desc>同一小人同类型独白的最小触发间隔。增大可减少重复独白。</RimMind.Dialogue.Settings.MonologueCooldown.Desc>
-    <RimMind.Dialogue.Settings.MoodThreshold>心情变化阈值：{0}（|moodEffect| ≥ 此值时触发）</RimMind.Dialogue.Settings.MoodThreshold>
-    <RimMind.Dialogue.Settings.AutoInterval>空闲自动独白间隔：{0} 游戏小时</RimMind.Dialogue.Settings.AutoInterval>
-    <RimMind.Dialogue.Settings.MaxDailyDialogues>每日每对最大对话轮数：{0}</RimMind.Dialogue.Settings.MaxDailyDialogues>
-    <RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>每对殖民者每天最多产生的对话轮数。增大可产生更多对话但增加 API 费用。</RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>
-    <RimMind.Dialogue.Settings.DialogueContextRounds>对话上下文轮数（-1=全部）：{0}</RimMind.Dialogue.Settings.DialogueContextRounds>
-    <RimMind.Dialogue.Settings.DialogueContextRounds.Desc>发送给 AI 的历史对话轮数。-1 表示发送全部历史，设小可节省 Token。</RimMind.Dialogue.Settings.DialogueContextRounds.Desc>
-    <RimMind.Dialogue.Settings.EnableDialogueReply>启用对话回复</RimMind.Dialogue.Settings.EnableDialogueReply>
-    <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>收到他人对话后自动生成回复，形成双向对话。</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
-    <RimMind.Dialogue.Settings.CustomPrompt>自定义对话 Prompt（追加在系统 Prompt 末尾，留空则不追加）：</RimMind.Dialogue.Settings.CustomPrompt>
-    <RimMind.Dialogue.Settings.StartDelay>游戏开始延迟</RimMind.Dialogue.Settings.StartDelay>
-    <RimMind.Dialogue.Settings.StartDelay.Desc>加载存档或新游戏后一段时间内不触发对话，避免游戏启动时产生大量请求。</RimMind.Dialogue.Settings.StartDelay.Desc>
-    <RimMind.Dialogue.Settings.StartDelayValue>开始延迟：{0} 秒</RimMind.Dialogue.Settings.StartDelayValue>
-    <RimMind.Dialogue.Settings.ShowNotification>注入 Thought 时显示通知</RimMind.Dialogue.Settings.ShowNotification>
-    <RimMind.Dialogue.Settings.ShowNotification.Desc>当对话系统向殖民者注入心情 Thought 时，在屏幕上显示通知。</RimMind.Dialogue.Settings.ShowNotification.Desc>
-    <RimMind.Dialogue.Settings.ShowOverlay>显示对话浮窗</RimMind.Dialogue.Settings.ShowOverlay>
-    <RimMind.Dialogue.Settings.ShowOverlay.Desc>在屏幕上显示最近的对话内容浮窗。</RimMind.Dialogue.Settings.ShowOverlay.Desc>
-    <RimMind.Dialogue.Settings.OverlayOpacity>浮窗透明度：{0}</RimMind.Dialogue.Settings.OverlayOpacity>
-    <RimMind.Dialogue.Settings.OverlayOpacity.Desc>对话浮窗的不透明度。1.0 为完全不透明，0.1 为几乎透明。</RimMind.Dialogue.Settings.OverlayOpacity.Desc>
-    <RimMind.Dialogue.Settings.OverlayMaxMessages>浮窗最大消息数：{0}</RimMind.Dialogue.Settings.OverlayMaxMessages>
-    <RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>浮窗同时显示的最大对话条数。超出后旧消息会被隐藏。</RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>
-    <RimMind.Dialogue.Settings.Section.Behavior>行为设置</RimMind.Dialogue.Settings.Section.Behavior>
-    <RimMind.Dialogue.Settings.Section.Display>显示</RimMind.Dialogue.Settings.Section.Display>
-    <RimMind.Dialogue.Settings.Section.Request>请求设置</RimMind.Dialogue.Settings.Section.Request>
-    <RimMind.Dialogue.Settings.MonologueExpire>独白请求过期：{0} 游戏天</RimMind.Dialogue.Settings.MonologueExpire>
-    <RimMind.Dialogue.Settings.MonologueExpire.Desc>独白请求超过此时间未获得响应则自动取消。</RimMind.Dialogue.Settings.MonologueExpire.Desc>
-    <RimMind.Dialogue.Settings.DialogueExpire>对话请求过期：{0} 游戏天</RimMind.Dialogue.Settings.DialogueExpire>
-    <RimMind.Dialogue.Settings.DialogueExpire.Desc>对话请求超过此时间未获得响应则自动取消。</RimMind.Dialogue.Settings.DialogueExpire.Desc>
-
-    <!-- DialogueOverlay.cs -->
-    <RimMind.Dialogue.UI.Overlay.Title>RimMind 对话</RimMind.Dialogue.UI.Overlay.Title>
-    <RimMind.Dialogue.UI.Overlay.Details>详细</RimMind.Dialogue.UI.Overlay.Details>
-    <RimMind.Dialogue.UI.Overlay.DragResize>拖动调整大小</RimMind.Dialogue.UI.Overlay.DragResize>
-
-    <!-- Window_Dialogue.cs -->
-    <RimMind.Dialogue.UI.ChatTitle>与 {0} 对话</RimMind.Dialogue.UI.ChatTitle>
-    <RimMind.Dialogue.UI.ChatTitleWithInitiator>{0} 与 {1} 对话</RimMind.Dialogue.UI.ChatTitleWithInitiator>
-    <RimMind.Dialogue.UI.Thinking>● 正在思考...</RimMind.Dialogue.UI.Thinking>
-    <RimMind.Dialogue.UI.Send>发送</RimMind.Dialogue.UI.Send>
-    <RimMind.Dialogue.UI.PlayerPrefix>你: </RimMind.Dialogue.UI.PlayerPrefix>
-    <RimMind.Dialogue.UI.PawnPrefix>{0}: </RimMind.Dialogue.UI.PawnPrefix>
-
-    <!-- Window_DialogueLog.cs -->
-    <RimMind.Dialogue.UI.Log.Title>对话日志</RimMind.Dialogue.UI.Log.Title>
-    <RimMind.Dialogue.UI.Log.NoRecords>暂无记录</RimMind.Dialogue.UI.Log.NoRecords>
-    <RimMind.Dialogue.UI.Log.SelectTab>选择左侧栏目查看对话</RimMind.Dialogue.UI.Log.SelectTab>
-    <RimMind.Dialogue.UI.Log.ColonistMonologue>殖民者独白</RimMind.Dialogue.UI.Log.ColonistMonologue>
-    <RimMind.Dialogue.UI.Log.ColonistDialogue>殖民者对话</RimMind.Dialogue.UI.Log.ColonistDialogue>
-    <RimMind.Dialogue.UI.Log.PlayerDialogue>玩家对话</RimMind.Dialogue.UI.Log.PlayerDialogue>
-    <RimMind.Dialogue.UI.Log.NonColonistMonologue>非殖民者独白</RimMind.Dialogue.UI.Log.NonColonistMonologue>
-    <RimMind.Dialogue.UI.Log.NonColonistDialogue>非殖民者对话</RimMind.Dialogue.UI.Log.NonColonistDialogue>
-
-    <!-- FloatMenuPatch.cs -->
-    <RimMind.Dialogue.UI.FloatMenu.ChatWith>与 {0} 对话</RimMind.Dialogue.UI.FloatMenu.ChatWith>
-    <RimMind.Dialogue.UI.FloatMenu.APINotConfigured>API 未配置，无法对话</RimMind.Dialogue.UI.FloatMenu.APINotConfigured>
-    <RimMind.Dialogue.UI.FloatMenu.NotReady>对话系统尚未就绪，请稍后再试</RimMind.Dialogue.UI.FloatMenu.NotReady>
-    <RimMind.Dialogue.UI.FloatMenu.Pending>对话请求处理中，请稍候</RimMind.Dialogue.UI.FloatMenu.Pending>
-    <RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>今日对话次数已达上限</RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>
-    <RimMind.Dialogue.UI.FloatMenu.RequestFailed>{0} 的对话请求失败</RimMind.Dialogue.UI.FloatMenu.RequestFailed>
-    <RimMind.Dialogue.Context.PlayerInitiate>{0} 主动与 {1} 交谈</RimMind.Dialogue.Context.PlayerInitiate>
-
-    <!-- BubblePatch.cs -->
-    <RimMind.Dialogue.Context.InteractionContext>[{0}] 正在与 {1} 对话</RimMind.Dialogue.Context.InteractionContext>
-
-    <!-- HediffPatch.cs -->
-    <RimMind.Dialogue.Context.HediffOccurred>刚刚发生了 {0}</RimMind.Dialogue.Context.HediffOccurred>
-
-    <!-- SkillLearnPatch.cs -->
-    <RimMind.Dialogue.Context.SkillLevelUp>{0} 技能升至 {1} 级</RimMind.Dialogue.Context.SkillLevelUp>
-
-    <!-- ThoughtPatch.cs -->
-    <RimMind.Dialogue.Context.MoodChanged>心情发生了变化：{0}（{1} 心情）</RimMind.Dialogue.Context.MoodChanged>
-
-    <!-- DialogueDebugActions.cs -->
-    <RimMind.Dialogue.Debug.ChitchatContext>[Chitchat] 正在与 {0} 对话</RimMind.Dialogue.Debug.ChitchatContext>
-    <RimMind.Dialogue.Debug.HediffContext>刚刚受到了伤害</RimMind.Dialogue.Debug.HediffContext>
-
-    <!-- RelationDelta -->
-    <RimMind.Dialogue.Prompt.System.RelationDelta>你可以通过 relation_delta 字段改变对话双方的好感度。范围 -5 到 +5，正值提升好感，负值降低好感。根据对话内容和当前关系决定：友好对话可能+1~+3，争吵可能-2~-5。如果对话内容不涉及关系变化，不要输出此字段。</RimMind.Dialogue.Prompt.System.RelationDelta>
-    <RimMind.Dialogue.Prompt.Role.Prisoner>角色约束：此人是囚犯。语气应警惕、犹豫，提及被关押，可能乞求或讨价还价。</RimMind.Dialogue.Prompt.Role.Prisoner>
-    <RimMind.Dialogue.Prompt.Role.Slave>角色约束：此人是奴隶。语气应恐惧、顺从，提及强制劳动和疲惫，称呼殖民者为"主人"。</RimMind.Dialogue.Prompt.Role.Slave>
-    <RimMind.Dialogue.Prompt.Role.Enemy>角色约束：此人是敌人。语气应敌对、攻击性，使用简短的命令或威胁。</RimMind.Dialogue.Prompt.Role.Enemy>
-    <RimMind.Dialogue.Prompt.Role.Visitor>角色约束：此人是访客。语气应礼貌、好奇、恭敬，将同行的其他访客视为同伴。</RimMind.Dialogue.Prompt.Role.Visitor>
-    <RimMind.Dialogue.Prompt.System.RecipientRole>对话对象角色：{0}</RimMind.Dialogue.Prompt.System.RecipientRole>
-    <RimMind.Dialogue.Relation.Positive>与 {0} 的愉快交流</RimMind.Dialogue.Relation.Positive>
-    <RimMind.Dialogue.Relation.Negative>与 {0} 的不快交流</RimMind.Dialogue.Relation.Negative>
+  <!-- CompRimMindDialogue.cs -->
+  <RimMind.Dialogue.Context.IdleState>小人目前处于空闲状态</RimMind.Dialogue.Context.IdleState>
+  <RimMind.Dialogue.UI.Gizmo.ChatWith>与 {0} 对话</RimMind.Dialogue.UI.Gizmo.ChatWith>
+  <RimMind.Dialogue.Context.ReplyTrigger>{0} 对你说：{1}</RimMind.Dialogue.Context.ReplyTrigger>
+  <RimMind.Dialogue.UI.TimeFormat>第{0}天 {1}时</RimMind.Dialogue.UI.TimeFormat>
+  <!-- RimMindDialogueService.cs - Memory Bridge -->
+  <RimMind.Dialogue.Memory.WithRecipient>与{0}的对话: {1}</RimMind.Dialogue.Memory.WithRecipient>
+  <RimMind.Dialogue.Memory.WithPawn>与{0}的对话: {1}</RimMind.Dialogue.Memory.WithPawn>
+  <!-- Trigger Labels -->
+  <RimMind.Dialogue.Trigger.Chitchat>闲聊</RimMind.Dialogue.Trigger.Chitchat>
+  <RimMind.Dialogue.Trigger.Hediff>健康变化</RimMind.Dialogue.Trigger.Hediff>
+  <RimMind.Dialogue.Trigger.LevelUp>技能升级</RimMind.Dialogue.Trigger.LevelUp>
+  <RimMind.Dialogue.Trigger.Thought>情绪变化</RimMind.Dialogue.Trigger.Thought>
+  <RimMind.Dialogue.Trigger.Auto>自动触发</RimMind.Dialogue.Trigger.Auto>
+  <RimMind.Dialogue.Trigger.PlayerInput>玩家对话</RimMind.Dialogue.Trigger.PlayerInput>
+  <!-- ThoughtInjector.cs -->
+  <RimMind.Dialogue.Thought.ENCOURAGED>受到鼓励</RimMind.Dialogue.Thought.ENCOURAGED>
+  <RimMind.Dialogue.Thought.HURT>感到受伤</RimMind.Dialogue.Thought.HURT>
+  <RimMind.Dialogue.Thought.VALUED>感到被重视</RimMind.Dialogue.Thought.VALUED>
+  <RimMind.Dialogue.Thought.CONNECTED>感到亲近</RimMind.Dialogue.Thought.CONNECTED>
+  <RimMind.Dialogue.Thought.STRESSED>感到压力</RimMind.Dialogue.Thought.STRESSED>
+  <RimMind.Dialogue.Thought.IRRITATED>感到烦躁</RimMind.Dialogue.Thought.IRRITATED>
+  <!-- RimMindDialogueMod.cs -->
+  <RimMind.Dialogue.Settings.TabLabel>对话</RimMind.Dialogue.Settings.TabLabel>
+  <RimMind.Dialogue.Context.StateHeader>[当前对话状态]\n</RimMind.Dialogue.Context.StateHeader>
+  <RimMind.Dialogue.Context.ThoughtRemaining>- {0}（剩余 {1} 游戏时）</RimMind.Dialogue.Context.ThoughtRemaining>
+  <RimMind.Dialogue.Context.RelationHeader>[与 {0} 的关系]</RimMind.Dialogue.Context.RelationHeader>
+  <RimMind.Dialogue.Context.Opinion.Friend>朋友</RimMind.Dialogue.Context.Opinion.Friend>
+  <RimMind.Dialogue.Context.Opinion.Enemy>仇敌</RimMind.Dialogue.Context.Opinion.Enemy>
+  <RimMind.Dialogue.Context.Opinion.Acquaintance>相识</RimMind.Dialogue.Context.Opinion.Acquaintance>
+  <RimMind.Dialogue.Context.OpinionLabel>好感度: {0} ({1})</RimMind.Dialogue.Context.OpinionLabel>
+  <RimMind.Dialogue.Context.Compat.High>高，容易产生愉快交流</RimMind.Dialogue.Context.Compat.High>
+  <RimMind.Dialogue.Context.Compat.Low>低，容易产生摩擦</RimMind.Dialogue.Context.Compat.Low>
+  <RimMind.Dialogue.Context.Compat.Medium>中等</RimMind.Dialogue.Context.Compat.Medium>
+  <RimMind.Dialogue.Context.CompatLabel>兼容性: {0} ({1})</RimMind.Dialogue.Context.CompatLabel>
+  <RimMind.Dialogue.Context.Romance.High>高</RimMind.Dialogue.Context.Romance.High>
+  <RimMind.Dialogue.Context.Romance.Medium>中等</RimMind.Dialogue.Context.Romance.Medium>
+  <RimMind.Dialogue.Context.Romance.Low>低</RimMind.Dialogue.Context.Romance.Low>
+  <RimMind.Dialogue.Context.RomanceLabel>吸引力: {0} ({1}，{2})</RimMind.Dialogue.Context.RomanceLabel>
+  <RimMind.Dialogue.Context.Romance.Unlikely>不太可能发展浪漫关系</RimMind.Dialogue.Context.Romance.Unlikely>
+  <RimMind.Dialogue.Context.DirectRelation>关系: {0}</RimMind.Dialogue.Context.DirectRelation>
+  <!-- RimMindDialogueSettings.cs -->
+  <RimMind.Dialogue.Settings.Enable>启用 AI 对话系统</RimMind.Dialogue.Settings.Enable>
+  <RimMind.Dialogue.Settings.Enable.Desc>开启后，殖民者会根据游戏事件和自身状态产生对话和独白。</RimMind.Dialogue.Settings.Enable.Desc>
+  <RimMind.Dialogue.Settings.TriggerSources>触发来源</RimMind.Dialogue.Settings.TriggerSources>
+  <RimMind.Dialogue.Settings.ChitchatIntercept>拦截原生闲聊</RimMind.Dialogue.Settings.ChitchatIntercept>
+  <RimMind.Dialogue.Settings.ChitchatIntercept.Desc>将原版 Chitchat/DeepTalk 交互替换为 AI 生成的对话。</RimMind.Dialogue.Settings.ChitchatIntercept.Desc>
+  <RimMind.Dialogue.Settings.HediffReaction>健康变化反应</RimMind.Dialogue.Settings.HediffReaction>
+  <RimMind.Dialogue.Settings.HediffReaction.Desc>当殖民者受伤或患病时，AI 生成对应的对话反应。</RimMind.Dialogue.Settings.HediffReaction.Desc>
+  <RimMind.Dialogue.Settings.LevelUpReaction>技能升级反应</RimMind.Dialogue.Settings.LevelUpReaction>
+  <RimMind.Dialogue.Settings.LevelUpReaction.Desc>当殖民者技能升级时，AI 生成对应的对话反应。</RimMind.Dialogue.Settings.LevelUpReaction.Desc>
+  <RimMind.Dialogue.Settings.ThoughtReaction>心情变化反应</RimMind.Dialogue.Settings.ThoughtReaction>
+  <RimMind.Dialogue.Settings.ThoughtReaction.Desc>当殖民者心情发生显著变化时，AI 生成对应的对话反应。</RimMind.Dialogue.Settings.ThoughtReaction.Desc>
+  <RimMind.Dialogue.Settings.AutoMonologue>空闲自动独白</RimMind.Dialogue.Settings.AutoMonologue>
+  <RimMind.Dialogue.Settings.AutoMonologue.Desc>当殖民者空闲时，自动触发一句内心独白。独白会进入对话上下文。</RimMind.Dialogue.Settings.AutoMonologue.Desc>
+  <RimMind.Dialogue.Settings.AutoMonologueDesc>当小人处于空闲状态时，自动触发一句内心独白。独白会像对话一样进入上下文。</RimMind.Dialogue.Settings.AutoMonologueDesc>
+  <RimMind.Dialogue.Settings.PlayerDialogueGizmo>玩家主动对话</RimMind.Dialogue.Settings.PlayerDialogueGizmo>
+  <RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>在殖民者身上显示对话按钮和右键对话选项，允许玩家主动与其交谈。</RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc>
+  <RimMind.Dialogue.Settings.MonologueCooldown>独白冷却：{0} 游戏小时（{1} ticks）</RimMind.Dialogue.Settings.MonologueCooldown>
+  <RimMind.Dialogue.Settings.MonologueCooldown.Desc>同一小人同类型独白的最小触发间隔。增大可减少重复独白。</RimMind.Dialogue.Settings.MonologueCooldown.Desc>
+  <RimMind.Dialogue.Settings.MoodThreshold>心情变化阈值：{0}（|moodEffect| ≥ 此值时触发）</RimMind.Dialogue.Settings.MoodThreshold>
+  <RimMind.Dialogue.Settings.AutoInterval>空闲自动独白间隔：{0} 游戏小时</RimMind.Dialogue.Settings.AutoInterval>
+  <RimMind.Dialogue.Settings.MaxDailyDialogues>每日每对最大对话轮数：{0}</RimMind.Dialogue.Settings.MaxDailyDialogues>
+  <RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>每对殖民者每天最多产生的对话轮数。增大可产生更多对话但增加 API 费用。</RimMind.Dialogue.Settings.MaxDailyDialogues.Desc>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds>AI对话历史保留轮数：{0}</RimMind.Dialogue.Settings.MaxHistoryRounds>
+  <RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>保留作为 AI 对话上下文的对话轮数。提高可增强连贯性但增加 token 消耗。</RimMind.Dialogue.Settings.MaxHistoryRounds.Desc>
+  <RimMind.Dialogue.Settings.GlobalConcurrency>全局对话并发上限：{0}</RimMind.Dialogue.Settings.GlobalConcurrency>
+  <RimMind.Dialogue.Settings.GlobalConcurrency.Desc>同时进行的 AI 对话请求最大数量。降低可减少 API 压力但可能导致对话延迟。</RimMind.Dialogue.Settings.GlobalConcurrency.Desc>
+  <RimMind.Dialogue.Settings.EnableDialogueReply>启用对话回复</RimMind.Dialogue.Settings.EnableDialogueReply>
+  <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>收到他人对话后自动生成回复，形成双向对话。</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
+  <RimMind.Dialogue.Settings.StartDelay>游戏开始延迟</RimMind.Dialogue.Settings.StartDelay>
+  <RimMind.Dialogue.Settings.StartDelay.Desc>加载存档或新游戏后一段时间内不触发对话，避免游戏启动时产生大量请求。</RimMind.Dialogue.Settings.StartDelay.Desc>
+  <RimMind.Dialogue.Settings.StartDelayValue>开始延迟：{0} 秒</RimMind.Dialogue.Settings.StartDelayValue>
+  <RimMind.Dialogue.Settings.ShowNotification>注入 Thought 时显示通知</RimMind.Dialogue.Settings.ShowNotification>
+  <RimMind.Dialogue.Settings.ShowNotification.Desc>当对话系统向殖民者注入心情 Thought 时，在屏幕上显示通知。</RimMind.Dialogue.Settings.ShowNotification.Desc>
+  <RimMind.Dialogue.Settings.ShowOverlay>显示对话浮窗</RimMind.Dialogue.Settings.ShowOverlay>
+  <RimMind.Dialogue.Settings.ShowOverlay.Desc>在屏幕上显示最近的对话内容浮窗。</RimMind.Dialogue.Settings.ShowOverlay.Desc>
+  <RimMind.Dialogue.Settings.OverlayOpacity>浮窗透明度：{0}</RimMind.Dialogue.Settings.OverlayOpacity>
+  <RimMind.Dialogue.Settings.OverlayOpacity.Desc>对话浮窗的不透明度。1.0 为完全不透明，0.1 为几乎透明。</RimMind.Dialogue.Settings.OverlayOpacity.Desc>
+  <RimMind.Dialogue.Settings.OverlayMaxMessages>浮窗最大消息数：{0}</RimMind.Dialogue.Settings.OverlayMaxMessages>
+  <RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>浮窗同时显示的最大对话条数。超出后旧消息会被隐藏。</RimMind.Dialogue.Settings.OverlayMaxMessages.Desc>
+  <RimMind.Dialogue.Settings.Section.Behavior>行为设置</RimMind.Dialogue.Settings.Section.Behavior>
+  <RimMind.Dialogue.Settings.Section.Display>显示</RimMind.Dialogue.Settings.Section.Display>
+  <!-- DialogueOverlay.cs -->
+  <RimMind.Dialogue.UI.Overlay.Title>RimMind 对话</RimMind.Dialogue.UI.Overlay.Title>
+  <RimMind.Dialogue.UI.Overlay.Details>详细</RimMind.Dialogue.UI.Overlay.Details>
+  <RimMind.Dialogue.UI.Overlay.DragResize>拖动调整大小</RimMind.Dialogue.UI.Overlay.DragResize>
+  <!-- Window_Dialogue.cs -->
+  <RimMind.Dialogue.UI.ChatTitle>与 {0} 对话</RimMind.Dialogue.UI.ChatTitle>
+  <RimMind.Dialogue.UI.ChatTitleWithInitiator>{0} 与 {1} 对话</RimMind.Dialogue.UI.ChatTitleWithInitiator>
+  <RimMind.Dialogue.UI.Thinking>● 正在思考...</RimMind.Dialogue.UI.Thinking>
+  <RimMind.Dialogue.UI.Send>发送</RimMind.Dialogue.UI.Send>
+  <RimMind.Dialogue.UI.PlayerPrefix>你: </RimMind.Dialogue.UI.PlayerPrefix>
+  <RimMind.Dialogue.Speaker.Player>玩家</RimMind.Dialogue.Speaker.Player>
+  <RimMind.Dialogue.UI.PawnPrefix>{0}: </RimMind.Dialogue.UI.PawnPrefix>
+  <!-- Window_DialogueLog.cs -->
+  <RimMind.Dialogue.UI.Log.Title>对话日志</RimMind.Dialogue.UI.Log.Title>
+  <RimMind.Dialogue.UI.Log.NoRecords>暂无记录</RimMind.Dialogue.UI.Log.NoRecords>
+  <RimMind.Dialogue.UI.Log.SelectTab>选择左侧栏目查看对话</RimMind.Dialogue.UI.Log.SelectTab>
+  <RimMind.Dialogue.UI.Log.ColonistMonologue>殖民者独白</RimMind.Dialogue.UI.Log.ColonistMonologue>
+  <RimMind.Dialogue.UI.Log.ColonistDialogue>殖民者对话</RimMind.Dialogue.UI.Log.ColonistDialogue>
+  <RimMind.Dialogue.UI.Log.PlayerDialogue>玩家对话</RimMind.Dialogue.UI.Log.PlayerDialogue>
+  <RimMind.Dialogue.UI.Log.NonColonistMonologue>非殖民者独白</RimMind.Dialogue.UI.Log.NonColonistMonologue>
+  <RimMind.Dialogue.UI.Log.NonColonistDialogue>非殖民者对话</RimMind.Dialogue.UI.Log.NonColonistDialogue>
+  <!-- FloatMenuPatch.cs -->
+  <RimMind.Dialogue.UI.FloatMenu.ChatWith>与 {0} 对话</RimMind.Dialogue.UI.FloatMenu.ChatWith>
+  <RimMind.Dialogue.UI.FloatMenu.APINotConfigured>API 未配置，无法对话</RimMind.Dialogue.UI.FloatMenu.APINotConfigured>
+  <RimMind.Dialogue.UI.FloatMenu.NotReady>对话系统尚未就绪，请稍后再试</RimMind.Dialogue.UI.FloatMenu.NotReady>
+  <RimMind.Dialogue.UI.FloatMenu.Pending>对话请求处理中，请稍候</RimMind.Dialogue.UI.FloatMenu.Pending>
+  <RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>今日对话次数已达上限</RimMind.Dialogue.UI.FloatMenu.DailyLimitReached>
+  <RimMind.Dialogue.UI.FloatMenu.RequestFailed>{0} 的对话请求失败</RimMind.Dialogue.UI.FloatMenu.RequestFailed>
+  <RimMind.Dialogue.Context.PlayerInitiate>{0} 主动与 {1} 交谈</RimMind.Dialogue.Context.PlayerInitiate>
+  <!-- BubblePatch.cs -->
+  <RimMind.Dialogue.Context.InteractionContext>[{0}] 正在与 {1} 对话</RimMind.Dialogue.Context.InteractionContext>
+  <!-- HediffPatch.cs -->
+  <RimMind.Dialogue.Context.HediffOccurred>刚刚发生了 {0}</RimMind.Dialogue.Context.HediffOccurred>
+  <!-- SkillLearnPatch.cs -->
+  <RimMind.Dialogue.Context.SkillLevelUp>{0} 技能升至 {1} 级</RimMind.Dialogue.Context.SkillLevelUp>
+  <!-- ThoughtPatch.cs -->
+  <RimMind.Dialogue.Context.MoodChanged>心情发生了变化：{0}（{1} 心情）</RimMind.Dialogue.Context.MoodChanged>
+  <!-- DialogueDebugActions.cs -->
+  <RimMind.Dialogue.Debug.ChitchatContext>[Chitchat] 正在与 {0} 对话</RimMind.Dialogue.Debug.ChitchatContext>
+  <RimMind.Dialogue.Debug.HediffContext>刚刚受到了伤害</RimMind.Dialogue.Debug.HediffContext>
+  <RimMind.Dialogue.Relation.Positive>与 {0} 的愉快交流</RimMind.Dialogue.Relation.Positive>
+  <RimMind.Dialogue.Relation.Negative>与 {0} 的不快交流</RimMind.Dialogue.Relation.Negative>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Role>你正在扮演 RimWorld 殖民者，根据当前状态生成自然的对话或独白。</RimMind.Dialogue.Prompt.TaskInstruction.Role>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Goal>根据当前状态用第一人称进行回应。</RimMind.Dialogue.Prompt.TaskInstruction.Goal>
+  <RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>根据当前状态用第一人称说出对话（15~40字）。</RimMind.Dialogue.Prompt.TaskInstruction.GoalDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.GoalMonologue>根据当前状态用第一人称说出一句内心独白（15~40字）。</RimMind.Dialogue.Prompt.TaskInstruction.GoalMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Process>1. 感知当前状态（心情、健康、环境）
+2. 结合触发原因
+3. 生成符合角色性格的对话/独白
+4. 评估对话对情绪的影响</RimMind.Dialogue.Prompt.TaskInstruction.Process>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Constraint>保持角色一致性；不要打破第四面墙；对话15~40字，独白15~40字</RimMind.Dialogue.Prompt.TaskInstruction.Constraint>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Example>独白输入：小人心情35%，正在采矿
+独白输出：{"reply":"这矿洞真冷……不知道还要挖多久。","thought":{"tag":"STRESSED","description":"对繁重劳动感到疲惫"}}
+对话输入：与Alex闲聊
+对话输出：{"reply":"Alex，你今天看起来心情不错？","thought":{"tag":"CONNECTED","description":"想与同伴亲近"},"relation_delta":1}</RimMind.Dialogue.Prompt.TaskInstruction.Example>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Output>只返回以下 JSON 格式：
+独白：{"reply":"独白文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}}
+对话：{"reply":"对话文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.Output>
+  <RimMind.Dialogue.Prompt.TaskInstruction.Fallback>如果无法生成，返回 {"reply":"...","thought":{"tag":"NONE","description":"无特殊情绪"}}。</RimMind.Dialogue.Prompt.TaskInstruction.Fallback>
+  <RimMind.Dialogue.Prompt.TaskInstruction.JsonTemplate>{"reply": "对话/独白文本", "thought": {"tag": "ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE", "description": "≤15字"}, "relation_delta": 0}</RimMind.Dialogue.Prompt.TaskInstruction.JsonTemplate>
+  <RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>触发原因已在上下文中提供。</RimMind.Dialogue.Prompt.TaskInstruction.TriggerReason>
+  <RimMind.Dialogue.Prompt.TaskInstruction.RelationDelta>你可以通过 relation_delta 字段改变对话双方的好感度。范围 -5 到 +5，正值提升好感，负值降低好感。根据对话内容和当前关系决定：友好对话可能+1~+3，争吵可能-2~-5。如果对话内容不涉及关系变化，不要输出此字段。</RimMind.Dialogue.Prompt.TaskInstruction.RelationDelta>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ExampleMonologue>独白输入：小人心情35%，正在采矿
+独白输出：{"reply":"这矿洞真冷……不知道还要挖多久。","thought":{"tag":"STRESSED","description":"对繁重劳动感到疲惫"}}</RimMind.Dialogue.Prompt.TaskInstruction.ExampleMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ExampleDialogue>对话输入：与Alex闲聊
+对话输出：{"reply":"Alex，你今天看起来心情不错？","thought":{"tag":"CONNECTED","description":"想与同伴亲近"},"relation_delta":1}</RimMind.Dialogue.Prompt.TaskInstruction.ExampleDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>只返回 JSON：
+{"reply":"独白文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}}</RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>只返回 JSON：
+{"reply":"对话文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>thought.tag 选择：心情<40%→STRESSED；受伤→HURT；被关心→VALUED；主动关心他人→CONNECTED；听到鼓励话语→ENCOURAGED；被冒犯→IRRITATED；无特别→NONE。</RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>你正在扮演这位 RimWorld 殖民者。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>根据当前状态和性格，用第一人称自然地回应玩家的对话。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>1. 回顾自己的当前状态（心情、健康、正在做的事）
+2. 结合与玩家的关系和过往对话
+3. 生成符合角色性格的回复
+4. 评估对话对自己情绪的影响</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Constraint>保持角色一致性，不要脱离当前状态；回复长度 20~60 字；不要打破第四面墙；不要提及游戏机制</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Constraint>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Example>输入：玩家说"你还好吗？今天看起来很累"
+输出：{"reply":"嗯...确实有点累，昨晚一直在采矿。不过谢谢你的关心。","thought":{"tag":"VALUED","description":"被关心感到温暖"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Example>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>只返回以下 JSON 格式，不要输出其他内容：
+{"reply":"对话文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>如果无法生成对话，返回 {"reply":"...","thought":{"tag":"NONE","description":"无特殊情绪"}}。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>
+  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>[对话发起者] 与你对话的人的信息已在上下文中提供，请根据你们之间的关系和对方的状态来回应。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>
+  <RimMind.Dialogue.Prompt.Role.Prisoner>角色约束：此人是囚犯。语气应警惕、犹豫，提及被关押，可能乞求或讨价还价。</RimMind.Dialogue.Prompt.Role.Prisoner>
+  <RimMind.Dialogue.Prompt.Role.Slave>角色约束：此人是奴隶。语气应恐惧、顺从，提及强制劳动和疲惫，称呼殖民者为"主人"。</RimMind.Dialogue.Prompt.Role.Slave>
+  <RimMind.Dialogue.Prompt.Role.Enemy>角色约束：此人是敌人。语气应敌对、攻击性，使用简短的命令或威胁。</RimMind.Dialogue.Prompt.Role.Enemy>
+  <RimMind.Dialogue.Prompt.Role.Visitor>角色约束：此人是访客。语气应礼貌、好奇、恭敬，将同行的其他访客视为同伴。</RimMind.Dialogue.Prompt.Role.Visitor>
+  <RimMind.Dialogue.Prompt.Context.Chitchat>[触发原因: 闲聊] {0}</RimMind.Dialogue.Prompt.Context.Chitchat>
+  <RimMind.Dialogue.Prompt.Context.Recipient>[对象] {0}</RimMind.Dialogue.Prompt.Context.Recipient>
+  <RimMind.Dialogue.Prompt.Context.Hediff>[触发原因: 健康变化] {0}</RimMind.Dialogue.Prompt.Context.Hediff>
+  <RimMind.Dialogue.Prompt.Context.LevelUp>[触发原因: 技能升级] {0}</RimMind.Dialogue.Prompt.Context.LevelUp>
+  <RimMind.Dialogue.Prompt.Context.Thought>[触发原因: 情绪变化] {0}</RimMind.Dialogue.Prompt.Context.Thought>
+  <RimMind.Dialogue.Prompt.Context.Auto>[触发原因: 自动触发] {0}</RimMind.Dialogue.Prompt.Context.Auto>
+  <RimMind.Dialogue.Prompt.AutoTrigger>请根据你当前的状态和周围环境，自然地做出回应。</RimMind.Dialogue.Prompt.AutoTrigger>
 </LanguageData>

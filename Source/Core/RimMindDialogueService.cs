@@ -1,13 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Newtonsoft.Json;
+using System.Threading;
 using RimMind.Core;
-using RimMind.Core.Client;
-using RimMind.Core.Prompt;
+using RimMind.Core.Context;
+using RimMind.Core.Npc;
 using RimMind.Dialogue.Settings;
-using RimMind.Dialogue;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -20,22 +19,40 @@ namespace RimMind.Dialogue.Core
 
     public static class RimMindDialogueService
     {
-        private static readonly HashSet<int> _pendingPawns = new HashSet<int>();
-        private static readonly HashSet<(int, int)> _pendingDialoguePairs = new HashSet<(int, int)>();
+        private static readonly ConcurrentDictionary<int, byte> _pendingPawns = new ConcurrentDictionary<int, byte>();
+        private static readonly ConcurrentDictionary<(int, int), byte> _pendingDialoguePairs = new ConcurrentDictionary<(int, int), byte>();
 
         private static readonly List<(int tick, int pawnId, DialogueTriggerType type)> _recentTriggers
             = new List<(int, int, DialogueTriggerType)>();
 
         private static int _gameStartTick = -1;
 
-        private static readonly List<DialogueLogEntry> _logEntries = new List<DialogueLogEntry>();
+        private static ConcurrentBag<DialogueLogEntry> _logEntries = new ConcurrentBag<DialogueLogEntry>();
         private const int MaxLogEntries = 500;
 
-        private static readonly Dictionary<(int, int), List<int>> _dailyDialogueCounts
-            = new Dictionary<(int, int), List<int>>();
+        private static List<DialogueLogEntry>? _cachedLogEntries;
+        private static bool _logDirty = true;
+
+        private static readonly ConcurrentDictionary<(int, int), List<int>> _dailyDialogueCounts
+            = new ConcurrentDictionary<(int, int), List<int>>();
         private static int _lastCountDay = -1;
 
+        // 当前活跃对话对象映射（替代 DialogueSession.Recipient）
+        private static readonly ConcurrentDictionary<int, int> _activeRecipients = new ConcurrentDictionary<int, int>();
+
+        private static Dictionary<int, Pawn> _pawnCache = new Dictionary<int, Pawn>();
+        private static int _pawnCacheTick = -1;
+
+        internal static readonly Dictionary<string, string> RegisteredTriggerLabels = new Dictionary<string, string>();
+
         public static event Action? OnLogUpdated;
+
+        public static event Action<Pawn, Pawn?, string, string?>? OnDialogueCompleted;
+
+        public static void RaiseOnDialogueCompleted(Pawn pawn, Pawn? recipient, string replyText, string? thoughtTag)
+        {
+            OnDialogueCompleted?.Invoke(pawn, recipient, replyText, thoughtTag);
+        }
 
         public static bool IsReady
         {
@@ -48,9 +65,22 @@ namespace RimMind.Dialogue.Core
             }
         }
 
-        public static IReadOnlyList<DialogueLogEntry> LogEntries => _logEntries;
+        public static IReadOnlyList<DialogueLogEntry> LogEntries
+        {
+            get
+            {
+                if (!_logDirty && _cachedLogEntries != null) return _cachedLogEntries;
+                _cachedLogEntries = _logEntries.ToList();
+                _logDirty = false;
+                return _cachedLogEntries;
+            }
+        }
 
-        public static void ClearLog() => _logEntries.Clear();
+        public static void ClearLog()
+        {
+            Interlocked.Exchange(ref _logEntries, new ConcurrentBag<DialogueLogEntry>());
+            _logDirty = true;
+        }
 
         public static void NotifyGameLoaded()
         {
@@ -59,20 +89,31 @@ namespace RimMind.Dialogue.Core
 
         public static void HandleTrigger(Pawn pawn, string context,
                                          DialogueTriggerType type, Pawn? recipient,
-                                         bool isReply = false, bool isImmediate = false)
+                                         bool isReply = false)
         {
             if (!RimMindDialogueSettings.Get().enabled) return;
             if (!RimMindAPI.IsConfigured()) return;
             if (!IsReady) return;
-            if (_pendingPawns.Contains(pawn.thingIDNumber)) return;
-
-            if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString())) return;
 
             bool isMonologue = recipient == null;
+
+            if (_pendingPawns.ContainsKey(pawn.thingIDNumber))
+            {
+                if (isMonologue) Log.Message($"[RimMind-Dialogue] Monologue SKIPPED for {pawn.LabelShort}: pending request exists");
+                else Log.Message($"[RimMind-Dialogue] Dialogue SKIPPED for {pawn.LabelShort}: pending request exists");
+                return;
+            }
+
+            if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString()))
+            {
+                Log.Message($"[RimMind-Dialogue] {(isMonologue ? "Monologue" : "Dialogue")} SKIPPED for {pawn.LabelShort} ({type}): AI condition not met");
+                return;
+            }
+
             if (!isMonologue)
             {
                 var pairKey = MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber);
-                if (_pendingDialoguePairs.Contains(pairKey)) return;
+                if (_pendingDialoguePairs.ContainsKey(pairKey)) return;
             }
 
             if (isMonologue && IsMonologueOnCooldown(pawn, type)) return;
@@ -80,127 +121,268 @@ namespace RimMind.Dialogue.Core
             if (!isMonologue && !isReply && IsDailyDialogueLimitReached(pawn.thingIDNumber, recipient!.thingIDNumber))
                 return;
 
-            _pendingPawns.Add(pawn.thingIDNumber);
+            _pendingPawns.TryAdd(pawn.thingIDNumber, 0);
             if (!isMonologue)
-                _pendingDialoguePairs.Add(MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber));
+                _pendingDialoguePairs.TryAdd(MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber), 0);
             CleanExpiredTriggers();
             _recentTriggers.Add((Find.TickManager.TicksGame, pawn.thingIDNumber, type));
 
-            var session = DialogueSessionManager.GetOrCreate(pawn);
-            session.Recipient = recipient;
+            if (recipient != null)
+                _activeRecipients[pawn.thingIDNumber] = recipient.thingIDNumber;
+            else
+                _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
 
             string triggerLabel = GetTriggerLabel(type);
-            string systemPrompt = BuildSystemPrompt(pawn, triggerLabel, recipient);
-            string userPrompt = BuildUserPrompt(pawn, context, type, recipient);
+            var npcId = $"NPC-{pawn.thingIDNumber}";
 
-            var request = new AIRequest
+            string formattedContext = type switch
             {
-                SystemPrompt = systemPrompt,
-                UserPrompt = userPrompt,
-                MaxTokens = 200,
+                DialogueTriggerType.Chitchat => "RimMind.Dialogue.Prompt.Context.Chitchat".Translate(context),
+                DialogueTriggerType.Hediff => "RimMind.Dialogue.Prompt.Context.Hediff".Translate(context),
+                DialogueTriggerType.LevelUp => "RimMind.Dialogue.Prompt.Context.LevelUp".Translate(context),
+                DialogueTriggerType.Thought => "RimMind.Dialogue.Prompt.Context.Thought".Translate(context),
+                DialogueTriggerType.Auto => "RimMind.Dialogue.Prompt.Context.Auto".Translate(context),
+                DialogueTriggerType.PlayerInput => context,
+                _ => context
+            };
+
+            if (recipient != null)
+            {
+                string? roleKey = GetRecipientRoleKey(recipient);
+                if (roleKey != null)
+                    formattedContext += "\n" + "RimMind.Dialogue.Prompt.Context.Recipient".Translate(recipient.Name.ToStringShort) + "\n" + roleKey.Translate();
+            }
+
+            Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel} | Context: {formattedContext}");
+
+            var request = new ContextRequest
+            {
+                NpcId = npcId,
+                Scenario = ScenarioIds.Dialogue,
+                CurrentQuery = type == DialogueTriggerType.PlayerInput
+                    ? formattedContext
+                    : "RimMind.Dialogue.Prompt.AutoTrigger".Translate(),
+                MaxTokens = 400,
                 Temperature = 0.8f,
-                UseJsonMode = true,
-                RequestId = $"RimMindDialogue_{type}_{pawn.thingIDNumber}_{Find.TickManager.TicksGame}",
-                ModId = "Dialogue",
-                ExpireAtTicks = Find.TickManager.TicksGame + (isMonologue
-                    ? RimMindDialogueSettings.Get().monologueExpireTicks
-                    : RimMindDialogueSettings.Get().dialogueExpireTicks),
-                Priority = AIRequestPriority.High,
+                SpeakerName = recipient?.Name?.ToStringShort,
             };
 
-            Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel} | Context: {context}");
+            ContextKeyRegistry.CurrentSpeakerName = request.SpeakerName;
 
-            Action<AIResponse> onResponse = response =>
+            RimMindAPI.Chat(request).ContinueWith(task =>
             {
-                _pendingPawns.Remove(pawn.thingIDNumber);
-                if (!isMonologue)
-                    _pendingDialoguePairs.Remove(MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber));
-                if (!response.Success)
+                LongEventHandler.ExecuteWhenFinished(() =>
                 {
-                    Log.Warning($"[RimMind-Dialogue] AI request failed for {pawn.Name.ToStringShort}: {response.Error}");
+                    _pendingPawns.TryRemove(pawn.thingIDNumber, out _);
                     if (!isMonologue)
+                        _pendingDialoguePairs.TryRemove(MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber), out _);
+
+                    if (task.IsFaulted || task.IsCanceled)
                     {
-                        Messages.Message(
-                            "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
-                            MessageTypeDefOf.RejectInput, false);
+                        Log.Warning($"[RimMind-Dialogue] Chat faulted for {pawn.Name.ToStringShort}: {task.Exception?.InnerException?.Message ?? "cancelled"}");
+                        if (!isMonologue)
+                        {
+                            Messages.Message(
+                                "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
+                                MessageTypeDefOf.RejectInput, false);
+                        }
+                        return;
                     }
-                    return;
-                }
 
-                AutoDialogueResponse? result = null;
-                try { result = JsonConvert.DeserializeObject<AutoDialogueResponse>(response.Content); }
-                catch (Exception ex)
-                {
-                    Log.Warning($"[RimMind-Dialogue] JSON parse failed: {ex.Message}");
-                    return;
-                }
+                    var result = task.Result;
+                    NpcResponseHandler.Handle(result, pawn, recipient, formattedContext, type);
 
-                string replyText = result?.reply ?? string.Empty;
-                if (replyText.NullOrEmpty()) return;
-
-                DisplayInteraction(pawn, recipient, replyText);
-
-                string? tag = result?.thought?.tag;
-                string? desc = result?.thought?.description;
-                if (!tag.NullOrEmpty() && tag != "NONE")
-                    ThoughtInjector.Inject(pawn, recipient, tag!, desc);
-
-                if (result?.relation_delta.HasValue == true && recipient != null)
-                {
-                    float delta = result.relation_delta.Value;
-                    if (Mathf.Abs(delta) >= 0.01f)
-                        ThoughtInjector.InjectRelationDelta(pawn, recipient, delta);
-                }
-
-                AddLogEntry(pawn, recipient, triggerLabel, context, replyText, tag, desc);
-
-                if (!isMonologue && Verse.ModsConfig.IsActive("mcocdaa.RimMindMemory"))
-                {
-                    try
-                    {
-                        string memContent = replyText.Length > 60 ? replyText.Substring(0, 60) + "..." : replyText;
-                    MemoryBridge.AddMemory(
-                        "RimMind.Dialogue.Memory.WithRecipient".Translate(recipient!.Name.ToStringShort, memContent),
-                        "Event", Find.TickManager.TicksGame, 0.5f, pawn.ThingID);
-                    MemoryBridge.AddMemory(
-                        "RimMind.Dialogue.Memory.WithPawn".Translate(pawn.Name.ToStringShort, memContent),
-                        "Event", Find.TickManager.TicksGame, 0.5f, recipient!.ThingID);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Log.Warning($"[RimMind-Dialogue] Memory add failed: {ex.Message}");
-                    }
-                }
-
-                if (!isMonologue)
-                    RecordDailyDialogue(pawn.thingIDNumber, recipient!.thingIDNumber);
-
-                if (RimMindDialogueSettings.Get().showThoughtNotification && tag != "NONE" && !tag.NullOrEmpty())
-                {
-                    Messages.Message(
-                        $"[RimMind] {pawn.Name.ToStringShort}: {replyText}",
-                        pawn, MessageTypeDefOf.SilentInput, historical: false);
-                }
-
-                if (!isMonologue && RimMindDialogueSettings.Get().enableDialogueReply)
-                {
-                    TryTriggerReply(pawn, recipient!, replyText);
-                }
-            };
-
-            if (isImmediate)
-                RimMindAPI.RequestImmediate(request, onResponse);
-            else
-                RimMindAPI.RequestAsync(request, onResponse);
+                    _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
+                });
+            });
         }
 
-        private static void TryTriggerReply(Pawn originalSender, Pawn replier, string originalMessage)
+        // ── 供 NpcResponseHandler 调用的公共方法 ──
+
+        public static void TryTriggerReply(Pawn originalSender, Pawn replier, string originalMessage)
         {
             if (IsDailyDialogueLimitReached(originalSender.thingIDNumber, replier.thingIDNumber)) return;
-            if (_pendingPawns.Contains(replier.thingIDNumber)) return;
+            if (_pendingPawns.ContainsKey(replier.thingIDNumber)) return;
 
             string replyContext = "RimMind.Dialogue.Context.ReplyTrigger".Translate(originalSender.Name.ToStringShort, originalMessage);
             HandleTrigger(replier, replyContext, DialogueTriggerType.Chitchat, originalSender, isReply: true);
+        }
+
+        public static void DisplayInteraction(Pawn initiator, Pawn? recipient, string replyText)
+        {
+            if (initiator.Map == null) return;
+
+            MoteMaker.ThrowText(initiator.DrawPos, initiator.Map, replyText,
+                new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
+
+            if (recipient != null && recipient.Map != null && recipient.Map == initiator.Map)
+            {
+                MoteMaker.ThrowText(recipient.DrawPos, recipient.Map, replyText,
+                    new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
+            }
+        }
+
+        public static void RegisterTriggerType(string typeId, string labelKey)
+        {
+            RegisteredTriggerLabels[typeId] = labelKey;
+        }
+
+        public static string GetTriggerLabel(DialogueTriggerType type)
+        {
+            string typeStr = type.ToString();
+            if (RegisteredTriggerLabels.TryGetValue(typeStr, out var label))
+                return label.Translate();
+            return type switch
+            {
+                DialogueTriggerType.Chitchat => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
+                DialogueTriggerType.Hediff => "RimMind.Dialogue.Trigger.Hediff".Translate(),
+                DialogueTriggerType.LevelUp => "RimMind.Dialogue.Trigger.LevelUp".Translate(),
+                DialogueTriggerType.Thought => "RimMind.Dialogue.Trigger.Thought".Translate(),
+                DialogueTriggerType.Auto => "RimMind.Dialogue.Trigger.Auto".Translate(),
+                DialogueTriggerType.PlayerInput => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
+                _ => typeStr
+            };
+        }
+
+        public static void AddLogEntry(Pawn pawn, Pawn? recipient, DialogueTriggerType triggerType,
+            string context, string reply, string? thoughtTag, string? thoughtDesc)
+        {
+            var entry = new DialogueLogEntry
+            {
+                tick = Find.TickManager.TicksGame,
+                initiatorName = pawn.Name.ToStringShort,
+                initiatorId = pawn.thingIDNumber,
+                initiatorIsColonist = pawn.IsColonist,
+                recipientName = recipient?.Name.ToStringShort,
+                recipientId = recipient?.thingIDNumber ?? -1,
+                recipientIsColonist = recipient?.IsColonist ?? false,
+                category = GetCategory(pawn, recipient, triggerType),
+                trigger = triggerType.ToString(),
+                context = context,
+                reply = reply,
+                thoughtTag = thoughtTag ?? "NONE",
+                thoughtDesc = thoughtDesc ?? ""
+            };
+
+            _logEntries.Add(entry);
+
+            if (_logEntries.Count > MaxLogEntries)
+            {
+                var kept = _logEntries.OrderByDescending(e => e.tick).Take(MaxLogEntries).ToList();
+                Interlocked.Exchange(ref _logEntries, new ConcurrentBag<DialogueLogEntry>(kept));
+            }
+
+            OnLogUpdated?.Invoke();
+            _logDirty = true;
+        }
+
+        public static void RecordDailyDialogue(int idA, int idB)
+        {
+            CleanExpiredDailyCounts();
+            var key = MakePairKey(idA, idB);
+            var ticks = _dailyDialogueCounts.GetOrAdd(key, _ => new List<int>());
+            ticks.Add(Find.TickManager.TicksGame);
+        }
+
+        public static Pawn? GetActiveRecipient(Pawn pawn)
+        {
+            if (!_activeRecipients.TryGetValue(pawn.thingIDNumber, out var recipientId))
+                return null;
+
+            int now = Find.TickManager.TicksGame;
+            if (_pawnCacheTick < 0 || now - _pawnCacheTick >= 600)
+            {
+                _pawnCache.Clear();
+                foreach (var map in Find.Maps)
+                {
+                    if (map.mapPawns != null)
+                    {
+                        foreach (var p in map.mapPawns.AllPawns)
+                            _pawnCache[p.thingIDNumber] = p;
+                    }
+                }
+                if (Find.WorldPawns?.AllPawnsAlive != null)
+                {
+                    foreach (var p in Find.WorldPawns.AllPawnsAlive)
+                        _pawnCache[p.thingIDNumber] = p;
+                }
+                _pawnCacheTick = now;
+            }
+
+            return _pawnCache.TryGetValue(recipientId, out var cached) ? cached : null;
+        }
+
+        public static void SetActiveRecipient(Pawn pawn, Pawn? recipient)
+        {
+            if (recipient != null)
+                _activeRecipients[pawn.thingIDNumber] = recipient.thingIDNumber;
+            else
+                _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
+        }
+
+        // ── 查询方法 ──
+
+        public static int GetDailyDialogueCount(int idA, int idB)
+        {
+            CleanExpiredDailyCounts();
+            var key = MakePairKey(idA, idB);
+            return _dailyDialogueCounts.TryGetValue(key, out var ticks) ? ticks.Count : 0;
+        }
+
+        public static bool IsDialoguePending(int pawnIdA, int pawnIdB)
+        {
+            if (_pendingPawns.ContainsKey(pawnIdA) || _pendingPawns.ContainsKey(pawnIdB)) return true;
+            return _pendingDialoguePairs.ContainsKey(MakePairKey(pawnIdA, pawnIdB));
+        }
+
+        public static List<DialogueLogEntry> GetDialogueHistory(int pawnId, int maxCount = 20)
+        {
+            return _logEntries
+                .Where(e => e.initiatorId == pawnId || e.recipientId == pawnId)
+                .OrderByDescending(e => e.tick)
+                .Take(maxCount)
+                .ToList();
+        }
+
+        public static DialogueCategory GetCategory(Pawn initiator, Pawn? recipient, DialogueTriggerType triggerType)
+        {
+            if (triggerType == DialogueTriggerType.PlayerInput)
+                return DialogueCategory.PlayerDialogue;
+
+            if (recipient == null)
+            {
+                return initiator.IsColonist ? DialogueCategory.ColonistMonologue : DialogueCategory.NonColonistMonologue;
+            }
+
+            bool initiatorColonist = initiator.IsColonist;
+            bool recipientColonist = recipient.IsColonist;
+
+            if (!initiatorColonist || !recipientColonist)
+                return DialogueCategory.NonColonistDialogue;
+
+            return DialogueCategory.ColonistDialogue;
+        }
+
+        // ── 内部方法 ──
+
+        private static bool IsDailyDialogueLimitReached(int idA, int idB)
+        {
+            int limit = RimMindDialogueSettings.Get().maxDailyDialogueRounds;
+            return GetDailyDialogueCount(idA, idB) >= limit;
+        }
+
+        private static bool IsMonologueOnCooldown(Pawn pawn, DialogueTriggerType type)
+        {
+            int cooldownTicks = RimMindDialogueSettings.Get().monologueCooldownTicks;
+            int now = Find.TickManager.TicksGame;
+            foreach (var entry in _recentTriggers)
+            {
+                if (entry.pawnId == pawn.thingIDNumber
+                    && entry.type == type
+                    && now - entry.tick < cooldownTicks)
+                    return true;
+            }
+            return false;
         }
 
         private static int CurrentGameDay()
@@ -223,186 +405,25 @@ namespace RimMind.Dialogue.Core
             return idA < idB ? (idA, idB) : (idB, idA);
         }
 
-        private static void RecordDailyDialogue(int idA, int idB)
-        {
-            CleanExpiredDailyCounts();
-            var key = MakePairKey(idA, idB);
-            if (!_dailyDialogueCounts.TryGetValue(key, out var ticks))
-            {
-                ticks = new List<int>();
-                _dailyDialogueCounts[key] = ticks;
-            }
-            ticks.Add(Find.TickManager.TicksGame);
-        }
-
-        public static int GetDailyDialogueCount(int idA, int idB)
-        {
-            CleanExpiredDailyCounts();
-            var key = MakePairKey(idA, idB);
-            return _dailyDialogueCounts.TryGetValue(key, out var ticks) ? ticks.Count : 0;
-        }
-
-        public static bool IsDialoguePending(int pawnIdA, int pawnIdB)
-        {
-            if (_pendingPawns.Contains(pawnIdA) || _pendingPawns.Contains(pawnIdB)) return true;
-            return _pendingDialoguePairs.Contains(MakePairKey(pawnIdA, pawnIdB));
-        }
-
-        private static bool IsDailyDialogueLimitReached(int idA, int idB)
-        {
-            int limit = RimMindDialogueSettings.Get().maxDailyDialogueRounds;
-            return GetDailyDialogueCount(idA, idB) >= limit;
-        }
-
-        public static void AddPlayerDialogueLog(Pawn pawn, string playerMessage, string replyText,
-            string? thoughtTag, string? thoughtDesc)
-        {
-            AddLogEntry(pawn, null, "RimMind.Dialogue.Trigger.PlayerInput".Translate(), playerMessage, replyText, thoughtTag, thoughtDesc);
-        }
-
-        public static void DisplayInteraction(Pawn initiator, Pawn? recipient, string replyText)
-        {
-            if (initiator.Map == null) return;
-
-            MoteMaker.ThrowText(initiator.DrawPos, initiator.Map, replyText,
-                new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
-
-            if (recipient != null && recipient.Map != null && recipient.Map == initiator.Map)
-            {
-                MoteMaker.ThrowText(recipient.DrawPos, recipient.Map, replyText,
-                    new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
-            }
-        }
-
-        private static bool IsMonologueOnCooldown(Pawn pawn, DialogueTriggerType type)
-        {
-            int cooldownTicks = RimMindDialogueSettings.Get().monologueCooldownTicks;
-            int now = Find.TickManager.TicksGame;
-            foreach (var entry in _recentTriggers)
-            {
-                if (entry.pawnId == pawn.thingIDNumber
-                    && entry.type == type
-                    && now - entry.tick < cooldownTicks)
-                    return true;
-            }
-            return false;
-        }
-
-        private static string GetTriggerLabel(DialogueTriggerType type)
-        {
-            return type switch
-            {
-                DialogueTriggerType.Chitchat => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
-                DialogueTriggerType.Hediff => "RimMind.Dialogue.Trigger.Hediff".Translate(),
-                DialogueTriggerType.LevelUp => "RimMind.Dialogue.Trigger.LevelUp".Translate(),
-                DialogueTriggerType.Thought => "RimMind.Dialogue.Trigger.Thought".Translate(),
-                DialogueTriggerType.Auto => "RimMind.Dialogue.Trigger.Auto".Translate(),
-                DialogueTriggerType.PlayerInput => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
-                _ => type.ToString()
-            };
-        }
-
-        private static string GetRoleConstraint(Pawn pawn)
-        {
-            if (pawn.IsPrisoner)
-                return "RimMind.Dialogue.Prompt.Role.Prisoner".Translate();
-            if (pawn.IsSlave)
-                return "RimMind.Dialogue.Prompt.Role.Slave".Translate();
-            if (pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer))
-                return "RimMind.Dialogue.Prompt.Role.Enemy".Translate();
-            if (!pawn.IsColonist && pawn.Faction != null && !pawn.Faction.HostileTo(Faction.OfPlayer))
-                return "RimMind.Dialogue.Prompt.Role.Visitor".Translate();
-            return string.Empty;
-        }
-
-        public static DialogueCategory GetCategory(Pawn initiator, Pawn? recipient)
-        {
-            if (recipient == null)
-            {
-                return initiator.IsColonist ? DialogueCategory.ColonistMonologue : DialogueCategory.NonColonistMonologue;
-            }
-
-            bool initiatorColonist = initiator.IsColonist;
-            bool recipientColonist = recipient.IsColonist;
-
-            if (!initiatorColonist || !recipientColonist)
-                return DialogueCategory.NonColonistDialogue;
-
-            return DialogueCategory.ColonistDialogue;
-        }
-
-        public static List<DialogueLogEntry> GetDialogueHistory(int pawnIdA, int pawnIdB, int maxRounds)
-        {
-            var pairKey = MakePairKey(pawnIdA, pawnIdB);
-            var entries = _logEntries
-                .Where(e => !e.IsMonologue && MakePairKey(e.initiatorId, e.recipientId) == pairKey)
-                .ToList();
-
-            if (maxRounds < 0) return entries;
-
-            int take = Math.Min(maxRounds, entries.Count);
-            return entries.TakeLast(take).ToList();
-        }
-
-        private static string BuildSystemPrompt(Pawn pawn, string triggerLabel, Pawn? recipient)
-        {
-            string? custom = RimMindDialogueSettings.Get().dialogueCustomPrompt?.Trim();
-            return DialoguePromptBuilder.BuildAutoSystemPrompt(pawn, triggerLabel, recipient, custom);
-        }
-
-        private static string BuildUserPrompt(Pawn pawn, string context,
-            DialogueTriggerType type, Pawn? recipient)
-        {
-            return DialoguePromptBuilder.BuildAutoUserPrompt(pawn, context, type, recipient);
-        }
-
-        private static void AddLogEntry(Pawn pawn, Pawn? recipient, string triggerLabel,
-            string context, string reply, string? thoughtTag, string? thoughtDesc)
-        {
-            var entry = new DialogueLogEntry
-            {
-                tick = Find.TickManager.TicksGame,
-                initiatorName = pawn.Name.ToStringShort,
-                initiatorId = pawn.thingIDNumber,
-                initiatorIsColonist = pawn.IsColonist,
-                recipientName = recipient?.Name.ToStringShort,
-                recipientId = recipient?.thingIDNumber ?? -1,
-                recipientIsColonist = recipient?.IsColonist ?? false,
-                category = GetCategory(pawn, recipient),
-                trigger = triggerLabel,
-                context = context,
-                reply = reply,
-                thoughtTag = thoughtTag ?? "NONE",
-                thoughtDesc = thoughtDesc ?? ""
-            };
-
-            _logEntries.Add(entry);
-
-            if (_logEntries.Count > MaxLogEntries)
-                _logEntries.RemoveRange(0, _logEntries.Count - MaxLogEntries);
-
-            OnLogUpdated?.Invoke();
-        }
-
         private static void CleanExpiredTriggers()
         {
             int maxCooldown = RimMindDialogueSettings.Get().monologueCooldownTicks;
             int now = Find.TickManager.TicksGame;
             _recentTriggers.RemoveAll(e => now - e.tick >= maxCooldown);
         }
-    }
 
-    public class AutoDialogueResponse
-    {
-        public string? reply;
-        public ThoughtPart? thought;
-        public float? relation_delta;
-    }
-
-    public class ThoughtPart
-    {
-        public string? tag;
-        public string? description;
+        private static string? GetRecipientRoleKey(Pawn recipient)
+        {
+            if (recipient.IsPrisoner)
+                return "RimMind.Dialogue.Prompt.Role.Prisoner";
+            if (recipient.IsSlave)
+                return "RimMind.Dialogue.Prompt.Role.Slave";
+            if (recipient.Faction?.HostileTo(Faction.OfPlayer) == true)
+                return "RimMind.Dialogue.Prompt.Role.Enemy";
+            if (!recipient.IsColonist)
+                return "RimMind.Dialogue.Prompt.Role.Visitor";
+            return null;
+        }
     }
 
     public class DialogueLogEntry
@@ -421,7 +442,7 @@ namespace RimMind.Dialogue.Core
         public string thoughtTag = "NONE";
         public string thoughtDesc = string.Empty;
 
-        public bool IsMonologue => recipientName == null;
+        public bool IsMonologue => category == DialogueCategory.ColonistMonologue || category == DialogueCategory.NonColonistMonologue;
 
         public string PairKey
         {
