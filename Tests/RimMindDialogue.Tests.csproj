@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../../RimMind-Core/Source/Application/Features/Json/JsonRepairHelper.cs" LinkBase="Application/Json" />
     <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
