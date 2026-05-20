@@ -7,8 +7,6 @@ using RimMind.Application.Common.Interfaces.Npc;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation;
-using RimMind.Presentation.Context;
-using RimMind.Application.Features.Context;
 using RimMind.Application.Common.Interfaces.Context;
 using RimMind.Dialogue.Settings;
 using RimWorld;
@@ -165,7 +163,7 @@ namespace RimMind.Dialogue.Core
             var request = new ContextRequest
             {
                 NpcId = npcId,
-                Scenario = ScenarioIds.Dialogue,
+                Scenario = RimMindAPI.Context.ScenarioDialogue,
                 CurrentQuery = type == DialogueTriggerType.PlayerInput
                     ? formattedContext
                     : "RimMind.Dialogue.Prompt.AutoTrigger".Translate(),
@@ -176,8 +174,8 @@ namespace RimMind.Dialogue.Core
                 IsMonologue = isMonologue,
             };
 
-            ContextKeyRegistry.CurrentSpeakerName = request.SpeakerName;
-            ContextKeyRegistry.CurrentIsMonologue = isMonologue;
+            RimMindAPI.Context.CurrentSpeakerName = request.SpeakerName;
+            RimMindAPI.Context.CurrentIsMonologue = isMonologue;
 
             RimMindAPI.Chat(request).ContinueWith(task =>
             {

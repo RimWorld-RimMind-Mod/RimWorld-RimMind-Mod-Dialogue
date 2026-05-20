@@ -7,10 +7,7 @@ using RimMind.Application.Common.Interfaces.Extension;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation;
-using RimMind.Presentation.Context;
 using RimMind.Presentation.Settings;
-using RimMind.Application.Features.Context;
-using RimMind.Application.Features.Prompt;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using Verse;
@@ -38,7 +35,7 @@ namespace RimMind.Dialogue
 
         private static void RegisterContextProviders()
         {
-            ContextKeyRegistry.Register("dialogue_state", ContextLayer.L3_State, 0.2f,
+            RimMindAPI.Context.RegisterContextKey("dialogue_state", ContextLayer.L3_State, 0.2f,
                 pawnObj =>
                 {
                     var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
@@ -59,7 +56,7 @@ namespace RimMind.Dialogue
                     return any ? new List<ContextEntry> { new ContextEntry(sb.ToString().TrimEnd()) } : new List<ContextEntry>();
                 }, "RimMind.Dialogue");
 
-            ContextKeyRegistry.Register("dialogue_relation", ContextLayer.L3_State, 0.15f,
+            RimMindAPI.Context.RegisterContextKey("dialogue_relation", ContextLayer.L3_State, 0.15f,
                 pawnObj =>
                 {
                     var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
@@ -93,28 +90,28 @@ namespace RimMind.Dialogue
                     return new List<ContextEntry> { new ContextEntry(sb.ToString().TrimEnd()) };
                 }, "RimMind.Dialogue");
 
-            ContextKeyRegistry.Register("dialogue_task", ContextLayer.L0_Static, 0.95f,
+            RimMindAPI.Context.RegisterContextKey("dialogue_task", ContextLayer.L0_Static, 0.95f,
                 pawnObj =>
                 {
                     var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
-                    if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
-                    if (!string.IsNullOrEmpty(ContextKeyRegistry.CurrentSpeakerName)) return new List<ContextEntry>();
-                    bool isMonologue = ContextKeyRegistry.CurrentIsMonologue;
+                    if (RimMindAPI.Context.CurrentScenario != RimMindAPI.Context.ScenarioDialogue) return new List<ContextEntry>();
+                    if (!string.IsNullOrEmpty(RimMindAPI.Context.CurrentSpeakerName)) return new List<ContextEntry>();
+                    bool isMonologue = RimMindAPI.Context.CurrentIsMonologue;
                     var subKeys = new List<string> { "Role", "Process", "Constraint", "Fallback", "ThoughtRules" };
                     subKeys.Add(isMonologue ? "GoalMonologue" : "GoalDialogue");
                     subKeys.Add(isMonologue ? "ExampleMonologue" : "ExampleDialogue");
                     subKeys.Add(isMonologue ? "OutputMonologue" : "OutputDialogue");
                     if (!isMonologue) subKeys.Add("RelationDelta");
-                    return new List<ContextEntry> { new ContextEntry(TaskInstructionBuilder.Build("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray())) };
+                    return new List<ContextEntry> { new ContextEntry(RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray())) };
                 }, "RimMind.Dialogue");
 
-            ContextKeyRegistry.Register("player_dialogue_task", ContextLayer.L0_Static, 0.95f,
+            RimMindAPI.Context.RegisterContextKey("player_dialogue_task", ContextLayer.L0_Static, 0.95f,
                 pawnObj =>
                 {
                     var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
-                    if (ContextKeyRegistry.CurrentScenario != ScenarioIds.Dialogue) return new List<ContextEntry>();
-                    if (string.IsNullOrEmpty(ContextKeyRegistry.CurrentSpeakerName)) return new List<ContextEntry>();
-                    return new List<ContextEntry> { new ContextEntry(TaskInstructionBuilder.Build("RimMind.Dialogue.Prompt.PlayerTaskInstruction", null,
+                    if (RimMindAPI.Context.CurrentScenario != RimMindAPI.Context.ScenarioDialogue) return new List<ContextEntry>();
+                    if (string.IsNullOrEmpty(RimMindAPI.Context.CurrentSpeakerName)) return new List<ContextEntry>();
+                    return new List<ContextEntry> { new ContextEntry(RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.PlayerTaskInstruction", null,
                         "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback", "InitiatorConstraint")) };
                 }, "RimMind.Dialogue");
         }

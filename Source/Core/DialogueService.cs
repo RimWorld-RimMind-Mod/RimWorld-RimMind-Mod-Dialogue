@@ -3,7 +3,6 @@ using RimMind.Application.Common.Interfaces.Npc;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation;
-using RimMind.Application.Features.Context;
 using RimMind.Application.Common.Interfaces.Context;
 using RimMind.Dialogue.Settings;
 using Verse;
@@ -23,7 +22,7 @@ namespace RimMind.Dialogue.Core
             var request = new ContextRequest
             {
                 NpcId = npcId,
-                Scenario = ScenarioIds.Dialogue,
+                Scenario = RimMindAPI.Context.ScenarioDialogue,
                 CurrentQuery = playerMessage,
                 MaxTokens = 400,
                 Temperature = 0.85f,
