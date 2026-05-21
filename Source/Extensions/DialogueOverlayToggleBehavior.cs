@@ -6,6 +6,7 @@ namespace RimMind.Dialogue
     internal sealed class DialogueOverlayToggleBehavior : IToggleBehavior
     {
         public string Id => "dialogue_overlay";
+        public string OwnerModId => "RimMindDialogue";
         public bool IsActive => RimMindDialogueSettings.Get().overlayEnabled;
         public void Toggle()
         {
