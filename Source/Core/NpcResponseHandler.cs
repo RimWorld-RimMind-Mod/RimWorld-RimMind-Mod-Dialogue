@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Newtonsoft.Json;
 using RimMind.Application.Common.Interfaces.Npc;
-using RimMind.Application.Common.Models.Npc;
+using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using RimMind.Dialogue.Settings;
 using RimWorld;
@@ -14,25 +12,12 @@ namespace RimMind.Dialogue.Core
 {
     public static class NpcResponseHandler
     {
-        private static readonly Dictionary<string, MethodInfo> _commandCache = new Dictionary<string, MethodInfo>();
-        public static void Handle(Result<NpcChatResult, RimMindError> result, Pawn pawn, Pawn? recipient,
+        public static void Handle(LlmResponse response, string npcId, Pawn pawn, Pawn? recipient,
             string context, DialogueTriggerType type)
         {
             if (pawn.Dead || pawn.Destroyed) return;
 
-            if (result.IsErr)
-            {
-                RimMindErrors.Warn($"[RimMind] NpcChat error for {pawn.LabelShort}: {result.Error}");
-                if (recipient != null)
-                {
-                    Messages.Message(
-                        "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
-                        MessageTypeDefOf.RejectInput, false);
-                }
-                return;
-            }
-
-            string replyText = result.Value.Message ?? string.Empty;
+            string replyText = response.Content ?? string.Empty;
             if (replyText.NullOrEmpty())
             {
                 RimMindErrors.Warn($"[RimMind-Dialogue] Empty reply for {pawn.LabelShort}, context: {context}");
@@ -45,7 +30,7 @@ namespace RimMind.Dialogue.Core
             string? thoughtDesc = null;
             int relationDelta = 0;
 
-            ResponseJsonParser.TryParseResponseJson(result.Value.Message, isMonologue, ref replyText, ref thoughtTag, ref thoughtDesc, ref relationDelta);
+            ResponseJsonParser.TryParseResponseJson(replyText, isMonologue, ref replyText, ref thoughtTag, ref thoughtDesc, ref relationDelta);
 
             // 显示气泡
             RimMindDialogueService.DisplayInteraction(pawn, recipient, replyText);
@@ -108,39 +93,6 @@ namespace RimMind.Dialogue.Core
             }
 
             RimMindDialogueService.RaiseOnDialogueCompleted(pawn, recipient, replyText, thoughtTag);
-        }
-
-
-
-        private static void ExecuteCommand(NpcCommandResult cmd, Pawn pawn, Pawn? recipient)
-        {
-            if (!Verse.ModsConfig.IsActive("mcocdaa.RimMindActions")) return;
-
-            try
-            {
-                if (!_commandCache.TryGetValue(cmd.Name, out var method))
-                {
-                    var type = System.Type.GetType("RimMind.Actions.RimMindActionsAPI, RimMindActions");
-                    if (type == null)
-                    {
-                        _commandCache[cmd.Name] = null!;
-                        return;
-                    }
-
-                    method = type.GetMethod("Execute",
-                        BindingFlags.Public | BindingFlags.Static,
-                        null,
-                        new[] { typeof(string), typeof(Pawn), typeof(Pawn), typeof(string) },
-                        null);
-                    _commandCache[cmd.Name] = method;
-                }
-
-                method?.Invoke(null, new object?[] { cmd.Name, pawn, recipient, cmd.Arguments });
-            }
-            catch (Exception ex)
-            {
-                RimMindErrors.Warn($"[RimMind] Failed to execute command {cmd.Name}: {ex.Message}");
-            }
         }
     }
 }

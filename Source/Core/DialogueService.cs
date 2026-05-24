@@ -1,6 +1,6 @@
 using System;
-using RimMind.Application.Common.Interfaces.Npc;
 using RimMind.Application.Common.Models.Context;
+using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation;
 using RimMind.Application.Common.Interfaces.Context;
@@ -12,48 +12,39 @@ namespace RimMind.Dialogue.Core
     public static class DialogueService
     {
         /// <summary>
-        /// 玩家对话请求，统一RimMindAPI.Chat 路径
+        /// 玩家对话请求，统一 RimMindAPI.Request.Send 路径
         /// </summary>
         public static void RequestReply(Pawn pawn, string playerMessage, Pawn? initiator,
             Action<string> onReply, Action<string> onError)
         {
             var npcId = $"NPC-{pawn.thingIDNumber}";
 
-            var request = new ContextRequest
-            {
-                NpcId = npcId,
-                Scenario = RimMindAPI.Context.ScenarioDialogue,
-                CurrentQuery = playerMessage,
-                MaxTokens = 400,
-                Temperature = 0.85f,
-                SpeakerName = initiator?.Name?.ToStringShort ?? "RimMind.Dialogue.Speaker.Player".Translate(),
-            };
+            var envelope = LlmRequestEnvelopeBuilder
+                .ForNpc(npcId, gameStateInfo: playerMessage)
+                .ForScenarioId(ScenarioIds.Dialogue)
+                .WithModId("RimMind.Dialogue")
+                .WithMaxTokens(400)
+                .WithTemperature(0.85f)
+                .Build();
 
-            RimMindAPI.Chat(request).ContinueWith(task =>
+            RimMindAPI.Request.Send(envelope, result =>
             {
                 LongEventHandler.ExecuteWhenFinished(() =>
                 {
-                    if (task.IsFaulted || task.IsCanceled)
-                    {
-                        onError(task.Exception?.InnerException?.Message ?? "Chat cancelled");
-                        return;
-                    }
-
-                    var result = task.Result;
                     if (result.IsErr)
                     {
                         onError(result.Error.ToString());
                         return;
                     }
 
-                    string replyText = result.Value.Message ?? string.Empty;
+                    string replyText = result.Value.Content ?? string.Empty;
                     if (replyText.NullOrEmpty())
                     {
                         onError("Empty reply");
                         return;
                     }
 
-                    NpcResponseHandler.Handle(result, pawn, initiator, playerMessage, DialogueTriggerType.PlayerInput);
+                    NpcResponseHandler.Handle(result.Value, npcId, pawn, initiator, playerMessage, DialogueTriggerType.PlayerInput);
 
                     onReply(replyText);
                 });

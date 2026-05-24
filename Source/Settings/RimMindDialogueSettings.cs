@@ -87,8 +87,8 @@ namespace RimMind.Dialogue.Settings
         {
             var s = Get();
 
-            Rect contentArea = SettingsUIHelper.SplitContentArea(inRect);
-            Rect bottomBar = SettingsUIHelper.SplitBottomBar(inRect);
+            Rect contentArea = SettingsUIDrawer.SplitContentArea(inRect);
+            Rect bottomBar = SettingsUIDrawer.SplitBottomBar(inRect);
 
             float contentH = EstimateSettingsHeight();
             Rect viewRect = new Rect(0f, 0f, contentArea.width - 16f, contentH);
@@ -100,7 +100,7 @@ namespace RimMind.Dialogue.Settings
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.Enable".Translate(), ref s.enabled,
                 "RimMind.Dialogue.Settings.Enable.Desc".Translate());
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
+            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ChitchatIntercept".Translate(), ref s.chitchatEnabled,
                 "RimMind.Dialogue.Settings.ChitchatIntercept.Desc".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.HediffReaction".Translate(), ref s.hediffEnabled,
@@ -127,7 +127,7 @@ namespace RimMind.Dialogue.Settings
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.PlayerDialogueGizmo".Translate(), ref s.playerDialogueEnabled,
                 "RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc".Translate());
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
+            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
             listing.Label("RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"));
             GUI.color = Color.gray;
             listing.Label("  " + "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
@@ -164,7 +164,7 @@ namespace RimMind.Dialogue.Settings
                 s.startDelaySeconds = (int)listing.Slider(s.startDelaySeconds, 1f, 60f);
             }
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
+            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowNotification".Translate(), ref s.showThoughtNotification,
                 "RimMind.Dialogue.Settings.ShowNotification.Desc".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
@@ -183,7 +183,7 @@ namespace RimMind.Dialogue.Settings
             listing.End();
             Widgets.EndScrollView();
 
-            SettingsUIHelper.DrawBottomBar(bottomBar, () =>
+            SettingsUIDrawer.DrawBottomBar(bottomBar, () =>
             {
                 s.enabled = true;
                 s.chitchatEnabled = true;

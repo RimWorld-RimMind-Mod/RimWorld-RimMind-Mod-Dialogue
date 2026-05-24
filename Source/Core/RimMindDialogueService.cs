@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using RimMind.Application.Common.Interfaces.Npc;
 using RimMind.Application.Common.Models.Context;
+using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation;
 using RimMind.Application.Common.Interfaces.Context;
@@ -160,24 +160,17 @@ namespace RimMind.Dialogue.Core
 
             Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel} | Context: {formattedContext}");
 
-            var request = new ContextRequest
-            {
-                NpcId = npcId,
-                Scenario = RimMindAPI.Context.ScenarioDialogue,
-                CurrentQuery = type == DialogueTriggerType.PlayerInput
+            var envelope = LlmRequestEnvelopeBuilder
+                .ForNpc(npcId, gameStateInfo: type == DialogueTriggerType.PlayerInput
                     ? formattedContext
-                    : "RimMind.Dialogue.Prompt.AutoTrigger".Translate(),
-                MaxTokens = 400,
-                Temperature = 0.8f,
-                SpeakerName = type == DialogueTriggerType.PlayerInput ? recipient?.Name?.ToStringShort : null,
-                MaxRounds = RimMindDialogueSettings.Get().maxHistoryRounds,
-                IsMonologue = isMonologue,
-            };
+                    : "RimMind.Dialogue.Prompt.AutoTrigger".Translate())
+                .ForScenarioId(ScenarioIds.Dialogue)
+                .WithModId("RimMind.Dialogue")
+                .WithMaxTokens(400)
+                .WithTemperature(0.8f)
+                .Build();
 
-            RimMindAPI.Context.CurrentSpeakerName = request.SpeakerName;
-            RimMindAPI.Context.CurrentIsMonologue = isMonologue;
-
-            RimMindAPI.Chat(request).ContinueWith(task =>
+            RimMindAPI.Request.Send(envelope, result =>
             {
                 LongEventHandler.ExecuteWhenFinished(() =>
                 {
@@ -185,9 +178,9 @@ namespace RimMind.Dialogue.Core
                     if (!isMonologue)
                     _pendingDialoguePairs.TryRemove(DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber), out _);
 
-                    if (task.IsFaulted || task.IsCanceled)
+                    if (result.IsErr)
                     {
-                        RimMindErrors.Warn($"[RimMind-Dialogue] Chat faulted for {pawn.Name.ToStringShort}: {task.Exception?.InnerException?.Message ?? "cancelled"}");
+                        RimMindErrors.Warn($"[RimMind-Dialogue] Chat failed for {pawn.Name.ToStringShort}: {result.Error}");
                         if (!isMonologue)
                         {
                             Messages.Message(
@@ -197,8 +190,7 @@ namespace RimMind.Dialogue.Core
                         return;
                     }
 
-                    var result = task.Result;
-                    NpcResponseHandler.Handle(result, pawn, recipient, formattedContext, type);
+                    NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient, formattedContext, type);
 
                     _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
                 });
