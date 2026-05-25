@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using HarmonyLib;
 using RimMind.Application.Common.Interfaces.Context;
 using RimMind.Application.Common.Interfaces.Extension;
-using RimMind.Application.Common.Models.Context;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation;
 using RimMind.Presentation.Settings;
@@ -35,12 +36,16 @@ namespace RimMind.Dialogue
 
         private static void RegisterContextProviders()
         {
-            RimMindAPI.Context.RegisterContextKey("dialogue_state", ContextLayer.L3_State, 0.2f,
-                pawnObj =>
+            RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
+                "dialogue_state", ContextLayer.L3_State, 0.2f,
+                async (ctx, ct) =>
                 {
-                    var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
+                    if (ctx.PawnId <= 0) return null;
+                    var pawn = Find.WorldPawns.AllPawnsAlive.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId)
+                        ?? Find.CurrentMap?.mapPawns?.FreeColonists.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId);
+                    if (pawn == null) return null;
                     var memories = pawn.needs?.mood?.thoughts?.memories?.Memories;
-                    if (memories == null) return new List<ContextEntry>();
+                    if (memories == null) return null;
 
                     var sb = new StringBuilder("RimMind.Dialogue.Context.StateHeader".Translate());
                     bool any = false;
@@ -53,15 +58,19 @@ namespace RimMind.Dialogue
                         sb.AppendLine("RimMind.Dialogue.Context.ThoughtRemaining".Translate(desc, $"{hours:F1}"));
                         any = true;
                     }
-                    return any ? new List<ContextEntry> { new ContextEntry(sb.ToString().TrimEnd()) } : new List<ContextEntry>();
-                }, "RimMind.Dialogue");
+                    return any ? sb.ToString().TrimEnd() : null;
+                }, "RimMind.Dialogue", stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
 
-            RimMindAPI.Context.RegisterContextKey("dialogue_relation", ContextLayer.L3_State, 0.15f,
-                pawnObj =>
+            RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
+                "dialogue_relation", ContextLayer.L3_State, 0.15f,
+                async (ctx, ct) =>
                 {
-                    var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
+                    if (ctx.PawnId <= 0) return null;
+                    var pawn = Find.WorldPawns.AllPawnsAlive.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId)
+                        ?? Find.CurrentMap?.mapPawns?.FreeColonists.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId);
+                    if (pawn == null) return null;
                     var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
-                    if (recipient == null) return new List<ContextEntry>();
+                    if (recipient == null) return null;
 
                     var sb = new StringBuilder("RimMind.Dialogue.Context.RelationHeader".Translate(recipient.Name.ToStringShort));
 
@@ -87,33 +96,37 @@ namespace RimMind.Dialogue
                     if (directRel != null)
                         sb.AppendLine("RimMind.Dialogue.Context.DirectRelation".Translate(directRel.def.label));
 
-                    return new List<ContextEntry> { new ContextEntry(sb.ToString().TrimEnd()) };
-                }, "RimMind.Dialogue");
+                    return sb.ToString().TrimEnd();
+                }, "RimMind.Dialogue", stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
 
-            RimMindAPI.Context.RegisterContextKey("dialogue_task", ContextLayer.L0_Static, 0.95f,
-                pawnObj =>
+            RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
+                "dialogue_task", ContextLayer.L0_Static, 0.95f,
+                async (ctx, ct) =>
                 {
-                    var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
-                    if (RimMindAPI.Context.CurrentScenario != RimMindAPI.Context.ScenarioDialogue) return new List<ContextEntry>();
-                    if (!string.IsNullOrEmpty(RimMindAPI.Context.CurrentSpeakerName)) return new List<ContextEntry>();
-                    bool isMonologue = RimMindAPI.Context.CurrentIsMonologue;
+                    if (ctx.PawnId <= 0) return null;
+                    if (ctx.Scenario != RimMindAPI.Context.ScenarioDialogue) return null;
+                    string? speakerName = ctx.Hints?.TryGetValue("SpeakerName", out var sn) == true ? sn?.ToString() : null;
+                    if (!string.IsNullOrEmpty(speakerName)) return null;
+                    bool isMonologue = ctx.Hints?.TryGetValue("IsMonologue", out var im) == true && im is bool b && b;
                     var subKeys = new List<string> { "Role", "Process", "Constraint", "Fallback", "ThoughtRules" };
                     subKeys.Add(isMonologue ? "GoalMonologue" : "GoalDialogue");
                     subKeys.Add(isMonologue ? "ExampleMonologue" : "ExampleDialogue");
                     subKeys.Add(isMonologue ? "OutputMonologue" : "OutputDialogue");
                     if (!isMonologue) subKeys.Add("RelationDelta");
-                    return new List<ContextEntry> { new ContextEntry(RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray())) };
-                }, "RimMind.Dialogue");
+                    return RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray());
+                }, "RimMind.Dialogue", stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
 
-            RimMindAPI.Context.RegisterContextKey("player_dialogue_task", ContextLayer.L0_Static, 0.95f,
-                pawnObj =>
+            RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
+                "player_dialogue_task", ContextLayer.L0_Static, 0.95f,
+                async (ctx, ct) =>
                 {
-                    var pawn = pawnObj as Pawn; if (pawn == null) return new List<ContextEntry>();
-                    if (RimMindAPI.Context.CurrentScenario != RimMindAPI.Context.ScenarioDialogue) return new List<ContextEntry>();
-                    if (string.IsNullOrEmpty(RimMindAPI.Context.CurrentSpeakerName)) return new List<ContextEntry>();
-                    return new List<ContextEntry> { new ContextEntry(RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.PlayerTaskInstruction", null,
-                        "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback", "InitiatorConstraint")) };
-                }, "RimMind.Dialogue");
+                    if (ctx.PawnId <= 0) return null;
+                    if (ctx.Scenario != RimMindAPI.Context.ScenarioDialogue) return null;
+                    string? speakerName = ctx.Hints?.TryGetValue("SpeakerName", out var sn) == true ? sn?.ToString() : null;
+                    if (string.IsNullOrEmpty(speakerName)) return null;
+                    return RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.PlayerTaskInstruction", null,
+                        "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback", "InitiatorConstraint");
+                }, "RimMind.Dialogue", stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
         }
 
         public override string SettingsCategory() => "RimMind - Dialogue";
