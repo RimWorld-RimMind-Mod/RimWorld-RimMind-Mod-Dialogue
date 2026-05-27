@@ -32,6 +32,10 @@ namespace Verse
 
         // RimWorld 翻译扩展方法存根，测试中直接返回原字符串
         public static TaggedString Translate(this string s) => new TaggedString { Value = s };
+
+        // RimWorld 带参数的翻译扩展方法存根，测试中简单拼接
+        public static TaggedString Translate(this string s, params object[] args) =>
+            new TaggedString { Value = string.Format(s, args) };
     }
 
     // Def 基类存根
