@@ -25,5 +25,31 @@ namespace Verse
     public static class Extensions
     {
         public static bool NullOrEmpty(this string? s) => string.IsNullOrEmpty(s);
+
+        // RimWorld 字符串首字母大写扩展方法存根
+        public static string CapitalizeFirst(this string s) =>
+            string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
+
+        // RimWorld 翻译扩展方法存根，测试中直接返回原字符串
+        public static TaggedString Translate(this string s) => new TaggedString { Value = s };
+    }
+
+    // Def 基类存根
+    public class Def : IExposable
+    {
+        public string defName = "";
+        public virtual void ExposeData() { }
+    }
+
+    // DefDatabase<T> 存根，仅提供编译所需的最小接口
+    public static class DefDatabase<T>
+    {
+        public static T? GetNamedSilentFail(string defName) => default;
+    }
+
+    // Scribe_Values 存根，序列化用，测试中不执行实际操作
+    public static class Scribe_Values
+    {
+        public static void Look<T>(ref T value, string label, T defaultValue = default!) { }
     }
 }
