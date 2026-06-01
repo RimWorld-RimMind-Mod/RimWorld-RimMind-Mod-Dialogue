@@ -143,7 +143,7 @@
 {"reply":"独白文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}}</RimMind.Dialogue.Prompt.TaskInstruction.OutputMonologue>
   <RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>只返回 JSON：
 {"reply":"对话文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>
-  <RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>thought.tag 选择：心情<40%→STRESSED；受伤→HURT；被关心→VALUED；主动关心他人→CONNECTED；听到鼓励话语→ENCOURAGED；被冒犯→IRRITATED；无特别→NONE。</RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>
+  <RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>thought.tag 选择：心情&lt;40%→STRESSED；受伤→HURT；被关心→VALUED；主动关心他人→CONNECTED；听到鼓励话语→ENCOURAGED；被冒犯→IRRITATED；无特别→NONE。</RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>你正在扮演这位 RimWorld 殖民者。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>根据当前状态和性格，用第一人称自然地回应玩家的对话。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>
   <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>1. 回顾自己的当前状态（心情、健康、正在做的事）

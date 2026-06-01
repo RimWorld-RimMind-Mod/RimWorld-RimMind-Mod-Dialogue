@@ -20,7 +20,7 @@ namespace RimMind.Dialogue.Core
             var npcId = $"NPC-{pawn.thingIDNumber}";
 
             var envelope = LlmRequestEnvelopeBuilder
-                .ForNpc(npcId, gameStateInfo: playerMessage)
+                .ForNpc(npcId, gameStateInfo: new GameStateInfo().AddSection("dialogue_input", playerMessage))
                 .ForScenarioId(ScenarioIds.Dialogue)
                 .WithModId("RimMind.Dialogue")
                 .WithMaxTokens(400)

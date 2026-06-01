@@ -161,9 +161,10 @@ namespace RimMind.Dialogue.Core
             Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel} | Context: {formattedContext}");
 
             var envelope = LlmRequestEnvelopeBuilder
-                .ForNpc(npcId, gameStateInfo: type == DialogueTriggerType.PlayerInput
-                    ? formattedContext
-                    : "RimMind.Dialogue.Prompt.AutoTrigger".Translate())
+                .ForNpc(npcId, gameStateInfo: new GameStateInfo().AddSection("dialogue_trigger",
+                    type == DialogueTriggerType.PlayerInput
+                        ? formattedContext
+                        : "RimMind.Dialogue.Prompt.AutoTrigger".Translate()))
                 .ForScenarioId(ScenarioIds.Dialogue)
                 .WithModId("RimMind.Dialogue")
                 .WithMaxTokens(400)
