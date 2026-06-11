@@ -7,7 +7,7 @@ using HarmonyLib;
 using RimMind.Application.Common.Interfaces.Context;
 using RimMind.Application.Common.Interfaces.Extension;
 using RimMind.Domain.ValueObjects;
-using RimMind.Presentation;
+using RimMind.Application.Api;
 using RimMind.Presentation.Settings;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
