@@ -1,8 +1,9 @@
 using System;
 using RimMind.Application.Common.Models.Context;
+using RimMind.Application.Features.Llm;
 using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
-using RimMind.Application.Api;
+using RimMind.Presentation.Api;
 using RimMind.Application.Common.Interfaces.Context;
 using RimMind.Dialogue.Settings;
 using Verse;
