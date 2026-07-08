@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using RimMind.Domain.ValueObjects;
 using RimWorld;
@@ -12,24 +13,26 @@ namespace RimMind.Dialogue
         private const string ThoughtDefName = "RimMindDialogue_Thought";
         private const string RelationThoughtDefName = "RimMindDialogue_RelationThought";
 
-        private static readonly Dictionary<string, int> MoodOffsetMap = new Dictionary<string, int>
+        // 使用 ConcurrentDictionary：RegisterThoughtTag 是公开 API，鼓励外部 mod 调用，
+        // 并发注册 + 读取时 Dictionary 会抛 InvalidOperationException（集合已修改）。
+        private static readonly ConcurrentDictionary<string, int> MoodOffsetMap = new ConcurrentDictionary<string, int>
         {
-            { "ENCOURAGED", 1 },
-            { "HURT", -1 },
-            { "VALUED", 2 },
-            { "CONNECTED", 2 },
-            { "STRESSED", -2 },
-            { "IRRITATED", -1 },
+            ["ENCOURAGED"] = 1,
+            ["HURT"] = -1,
+            ["VALUED"] = 2,
+            ["CONNECTED"] = 2,
+            ["STRESSED"] = -2,
+            ["IRRITATED"] = -1,
         };
 
-        private static readonly Dictionary<string, string> LabelMap = new Dictionary<string, string>
+        private static readonly ConcurrentDictionary<string, string> LabelMap = new ConcurrentDictionary<string, string>
         {
-            { "ENCOURAGED", "RimMind.Dialogue.Thought.ENCOURAGED" },
-            { "HURT", "RimMind.Dialogue.Thought.HURT" },
-            { "VALUED", "RimMind.Dialogue.Thought.VALUED" },
-            { "CONNECTED", "RimMind.Dialogue.Thought.CONNECTED" },
-            { "STRESSED", "RimMind.Dialogue.Thought.STRESSED" },
-            { "IRRITATED", "RimMind.Dialogue.Thought.IRRITATED" },
+            ["ENCOURAGED"] = "RimMind.Dialogue.Thought.ENCOURAGED",
+            ["HURT"] = "RimMind.Dialogue.Thought.HURT",
+            ["VALUED"] = "RimMind.Dialogue.Thought.VALUED",
+            ["CONNECTED"] = "RimMind.Dialogue.Thought.CONNECTED",
+            ["STRESSED"] = "RimMind.Dialogue.Thought.STRESSED",
+            ["IRRITATED"] = "RimMind.Dialogue.Thought.IRRITATED",
         };
 
         public static void Inject(Pawn pawn, Pawn? recipient, string tag, string? description)
