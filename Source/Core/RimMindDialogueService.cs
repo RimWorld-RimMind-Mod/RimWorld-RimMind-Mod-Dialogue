@@ -346,11 +346,6 @@ namespace RimMind.Dialogue.Core
                 .ToList();
         }
 
-        public static DialogueCategory GetCategory(Pawn initiator, Pawn? recipient, DialogueTriggerType triggerType)
-        {
-            return DialogueClassifier.Classify(initiator.IsColonist, recipient?.IsColonist, triggerType);
-        }
-
         // ── 内部方法 ──
 
         private static bool IsDailyDialogueLimitReached(int idA, int idB)
