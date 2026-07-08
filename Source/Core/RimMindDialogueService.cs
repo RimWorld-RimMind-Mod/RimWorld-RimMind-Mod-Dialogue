@@ -42,7 +42,7 @@ namespace RimMind.Dialogue.Core
         private static Dictionary<int, Pawn> _pawnCache = new Dictionary<int, Pawn>();
         private static int _pawnCacheTick = -1;
 
-        internal static readonly Dictionary<string, string> RegisteredTriggerLabels = new Dictionary<string, string>();
+        internal static readonly ConcurrentDictionary<string, string> RegisteredTriggerLabels = new ConcurrentDictionary<string, string>();
 
         public static event Action? OnLogUpdated;
 
