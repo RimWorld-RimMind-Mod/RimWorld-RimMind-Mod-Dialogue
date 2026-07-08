@@ -78,13 +78,14 @@ Source/
 - 翻译键大小写: Thought标签翻译键使用全大写（如 `RimMind.Dialogue.Thought.ENCOURAGED`），与XML保持一致
 - Memory/Actions调用必须反射松耦合(检查 `ModsConfig.IsActive` 先)
 - 日志上限500条(ConcurrentBag + 脏标记缓存)
-- `isMonologue` 判断: `recipient == null && type != PlayerInput`
-- `GetCategory` 判断: PlayerInput 优先返回 PlayerDialogue，再按 recipient 是否为空区分独白/对话
+- `isMonologue` 判断: `recipient == null && type != PlayerInput`（`HandleTrigger` 与 `NpcResponseHandler.Handle` 统一使用此公式）
+- `reply` 触发: `TryTriggerReply` 用 `isReply: true` 绕过每日限额检查，`NpcResponseHandler.Handle` 对 `isReply=true` 不调用 `RecordDailyDialogue`（reply 是对话链的自然延续，不额外消耗每日额度）
+- `ThoughtInjector.MoodOffsetMap`/`LabelMap` 和 `RimMindDialogueService.RegisteredTriggerLabels` 使用 `ConcurrentDictionary` 保证外部 mod 并发注册安全
 
 ## 操作边界
 
 ### ✅ 必须做
-- 新触发类型在 `DialogueTriggerType` 添加值 + `GetTriggerLabel`/`GetCategory` 映射 + `RegisterTriggerType` 注册标签
+- 新触发类型在 `DialogueTriggerType` 添加值 + `GetTriggerLabel` 映射 + `RegisterTriggerType` 注册标签
 - 新Thought标签通过 `ThoughtInjector.RegisterThoughtTag` 注册（勿直接修改MoodOffsetMap/LabelMap）
 - AI响应通过 `NpcResponseHandler.Handle` 统一处理
 - 翻译键大小写必须与XML一致
