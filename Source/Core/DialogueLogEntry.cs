@@ -24,10 +24,13 @@ namespace RimMind.Dialogue.Core
         {
             get
             {
-                if (recipientName == null) return initiatorName;
-                return string.CompareOrdinal(initiatorName, recipientName) < 0
-                    ? $"{initiatorName}|{recipientName}"
-                    : $"{recipientName}|{initiatorName}";
+                // 基于小人 ID 而非名字生成配对键，避免重名导致的冲突与列归属错误。
+                // recipientId <= 0 视为独白（AddLogEntry 用 -1 表示无接收者；
+                // 0 是 int 默认值，真实小人 thingIDNumber 始终为正数）。
+                if (recipientId <= 0) return initiatorId.ToString();
+                return initiatorId < recipientId
+                    ? $"{initiatorId}|{recipientId}"
+                    : $"{recipientId}|{initiatorId}";
             }
         }
 

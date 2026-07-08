@@ -20,7 +20,7 @@
     <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
-      <Compile Include="../Source/Core/DialogueLogEntry.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueLogEntry.cs" LinkBase="Core" />
     <Compile Include="../Source/Thoughts/ThoughtInjector.cs" LinkBase="Thoughts" />
     <Compile Include="../Source/Thoughts/Thought_RimMindDialogue.cs" LinkBase="Thoughts" />
     <Compile Include="../Source/Thoughts/Thought_RelationDialogue.cs" LinkBase="Thoughts" />
