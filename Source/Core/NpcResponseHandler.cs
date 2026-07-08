@@ -13,7 +13,7 @@ namespace RimMind.Dialogue.Core
     public static class NpcResponseHandler
     {
         public static void Handle(LlmResponse response, string npcId, Pawn pawn, Pawn? recipient,
-            string context, DialogueTriggerType type)
+            string context, DialogueTriggerType type, bool isReply = false)
         {
             if (pawn.Dead || pawn.Destroyed) return;
 
@@ -73,8 +73,8 @@ namespace RimMind.Dialogue.Core
                 }
             }
 
-            // 每日对话计数
-            if (!isMonologue && recipient != null)
+            // 每日对话计数（reply 不计入每日限额——reply 是对话链的自然延续，不额外消耗每日额度）
+            if (!isMonologue && recipient != null && !isReply)
                 RimMindDialogueService.RecordDailyDialogue(pawn.thingIDNumber, recipient.thingIDNumber);
 
             // Thought 通知

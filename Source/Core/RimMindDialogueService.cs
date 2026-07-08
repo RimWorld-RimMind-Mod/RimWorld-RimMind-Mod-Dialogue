@@ -192,7 +192,7 @@ namespace RimMind.Dialogue.Core
                         return;
                     }
 
-                    NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient, formattedContext, type);
+                    NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient, formattedContext, type, isReply);
 
                     _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
                 });
