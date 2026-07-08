@@ -59,9 +59,8 @@ Source/
 
 - `dialogue_state` / `dialogue_relation`: ContextKeyRegistry(L3_State)
 - `dialogue_task`: ContextKeyRegistry(L0_Static, 仅ScenarioIds.Dialogue, CurrentSpeakerName为空时触发 → 当前仅独白)
-- `player_dialogue_task`: ContextKeyRegistry(L0_Static, 仅ScenarioIds.Dialogue, CurrentSpeakerName非空时触发 → 玩家对话+自动对话)
 
-⚠️ **已知问题**：自动对话（有recipient）因 CurrentSpeakerName 非空而错误走 player_dialogue_task 路径，缺少 RelationDelta 指令。需引入 CurrentTriggerType 区分。
+> 注：原 `player_dialogue_task` provider 已于 2026-07-08 审查删除——Core 的 `ContextOrchestrator` 在所有 `BuildContext` 构造路径中将 `SpeakerName` 硬编码为 null，该 provider 触发条件（SpeakerName 非空）永不满足，属不可达死代码。归档于 `Refs/backup/RimMind-Dialogue/RimMindDialogueMod.player_dialogue_task.cs`。
 
 ## 公共API（供其他mod调用）
 
@@ -94,7 +93,7 @@ Source/
 - 修改并发控制(`_pendingPawns`/`_pendingDialoguePairs`)
 - 修改冷却机制
 - 新增对RimTalk/RimChat直接编译期依赖
-- 修改 `dialogue_task`/`player_dialogue_task` provider 的触发条件
+- 修改 `dialogue_task` provider 的触发条件
 
 ### 🚫 绝对禁止
 - MemoryBridge/跨模组调用使用编译期引用

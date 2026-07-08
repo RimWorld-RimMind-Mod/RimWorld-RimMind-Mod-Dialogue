@@ -115,18 +115,6 @@ namespace RimMind.Dialogue
                     if (!isMonologue) subKeys.Add("RelationDelta");
                     return RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray());
                 }, "RimMind.Dialogue", stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
-
-            RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
-                "player_dialogue_task", ContextLayer.L0_Static, 0.95f,
-                async (ctx, ct) =>
-                {
-                    if (ctx.PawnId <= 0) return null;
-                    if (ctx.Scenario != RimMindAPI.Context.ScenarioDialogue) return null;
-                    string? speakerName = ctx.Hints?.TryGetValue("SpeakerName", out var sn) == true ? sn?.ToString() : null;
-                    if (string.IsNullOrEmpty(speakerName)) return null;
-                    return RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.PlayerTaskInstruction", null,
-                        "Role", "Goal", "Process", "Constraint", "Example", "Output", "Fallback", "InitiatorConstraint");
-                }, "RimMind.Dialogue", stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
         }
 
         public override string SettingsCategory() => "RimMind - Dialogue";
