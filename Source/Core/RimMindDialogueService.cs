@@ -94,7 +94,7 @@ namespace RimMind.Dialogue.Core
             if (!RimMindAPI.IsConfigured()) return;
             if (!IsReady) return;
 
-            bool isMonologue = recipient == null;
+            bool isMonologue = recipient == null && type != DialogueTriggerType.PlayerInput;
 
             if (_pendingPawns.ContainsKey(pawn.thingIDNumber))
             {
@@ -109,15 +109,15 @@ namespace RimMind.Dialogue.Core
                 return;
             }
 
-            if (!isMonologue)
+            if (!isMonologue && recipient != null)
             {
-                var pairKey = DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber);
+                var pairKey = DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber);
                 if (_pendingDialoguePairs.ContainsKey(pairKey)) return;
             }
 
             if (isMonologue && IsMonologueOnCooldown(pawn, type)) return;
 
-            if (!isMonologue && !isReply && IsDailyDialogueLimitReached(pawn.thingIDNumber, recipient!.thingIDNumber))
+            if (!isMonologue && recipient != null && !isReply && IsDailyDialogueLimitReached(pawn.thingIDNumber, recipient.thingIDNumber))
                 return;
 
             int globalConcurrency = RimMindDialogueSettings.Get().globalConcurrency;
@@ -128,8 +128,8 @@ namespace RimMind.Dialogue.Core
             }
 
             _pendingPawns.TryAdd(pawn.thingIDNumber, 0);
-            if (!isMonologue)
-                _pendingDialoguePairs.TryAdd(DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber), 0);
+            if (!isMonologue && recipient != null)
+                _pendingDialoguePairs.TryAdd(DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber), 0);
             CleanExpiredTriggers();
             _recentTriggers.Add((Find.TickManager.TicksGame, pawn.thingIDNumber, type));
 
@@ -177,8 +177,8 @@ namespace RimMind.Dialogue.Core
                 LongEventHandler.ExecuteWhenFinished(() =>
                 {
                     _pendingPawns.TryRemove(pawn.thingIDNumber, out _);
-                    if (!isMonologue)
-                    _pendingDialoguePairs.TryRemove(DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient!.thingIDNumber), out _);
+                    if (!isMonologue && recipient != null)
+                    _pendingDialoguePairs.TryRemove(DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber), out _);
 
                     if (result.IsErr)
                     {
