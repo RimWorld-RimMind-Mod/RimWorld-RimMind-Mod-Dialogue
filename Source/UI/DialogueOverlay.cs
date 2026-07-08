@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
@@ -49,6 +48,9 @@ namespace RimMind.Dialogue.Overlay
         public override void MapComponentOnGUI()
         {
             if (Current.ProgramState != ProgramState.Playing) return;
+
+            // 隔帧绘制以降低性能开销
+            if (Time.frameCount % 2 != 0) return;
 
             var settings = RimMindDialogueSettings.Get();
             bool currentlyEnabled = settings.overlayEnabled;
@@ -256,27 +258,5 @@ namespace RimMind.Dialogue.Overlay
             s.overlayW = _windowRect.width;
             s.overlayH = _windowRect.height;
         }
-    }
-
-    [HarmonyPatch(typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootOnGUI))]
-    public static class DialogueOverlayPatch
-    {
-        private static bool _skip;
-
-        private static void DrawOverlay()
-        {
-            _skip = !_skip;
-            if (_skip) return;
-            if (Current.ProgramState != ProgramState.Playing) return;
-
-            var mapComp = Find.CurrentMap?.GetComponent<DialogueOverlay>();
-            mapComp?.MapComponentOnGUI();
-        }
-
-        [HarmonyPrefix]
-        public static void Prefix() => DrawOverlay();
-
-        [HarmonyPostfix]
-        public static void Postfix() => DrawOverlay();
     }
 }
