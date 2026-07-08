@@ -31,8 +31,19 @@ namespace RimMind.Dialogue.Overlay
 
         public DialogueOverlay(Map map) : base(map)
         {
-            RimMindDialogueService.OnLogUpdated += () => _cacheDirty = true;
+            RimMindDialogueService.OnLogUpdated += OnLogUpdated;
             LoadPositionFromSettings();
+        }
+
+        private void OnLogUpdated()
+        {
+            _cacheDirty = true;
+        }
+
+        public override void MapRemoved()
+        {
+            RimMindDialogueService.OnLogUpdated -= OnLogUpdated;
+            base.MapRemoved();
         }
 
         public override void MapComponentOnGUI()
