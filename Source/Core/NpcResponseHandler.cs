@@ -1,9 +1,11 @@
 using System;
 using Newtonsoft.Json;
 using RimMind.Application.Common.Interfaces.Npc;
+using RimMind.Application.Common.Models.Memory;
 using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using RimMind.Dialogue.Settings;
+using RimMind.Presentation.Api;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -60,12 +62,12 @@ namespace RimMind.Dialogue.Core
                 try
                 {
                     string memContent = replyText.Length > 60 ? replyText.Substring(0, 60) + "..." : replyText;
-                    MemoryBridge.AddMemory(
+                    RimMindAPI.Memory.AddPawnMemory(
                         "RimMind.Dialogue.Memory.WithRecipient".Translate(recipient!.Name.ToStringShort, memContent),
-                        "Event", Find.TickManager.TicksGame, 0.5f, pawn.ThingID);
-                    MemoryBridge.AddMemory(
+                        MemoryKind.Event, Find.TickManager.TicksGame, 0.5f, pawn.ThingID);
+                    RimMindAPI.Memory.AddPawnMemory(
                         "RimMind.Dialogue.Memory.WithPawn".Translate(pawn.Name.ToStringShort, memContent),
-                        "Event", Find.TickManager.TicksGame, 0.5f, recipient!.ThingID);
+                        MemoryKind.Event, Find.TickManager.TicksGame, 0.5f, recipient!.ThingID);
                 }
                 catch (Exception ex)
                 {
