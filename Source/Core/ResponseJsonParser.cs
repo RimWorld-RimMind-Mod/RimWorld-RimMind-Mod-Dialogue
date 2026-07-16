@@ -11,7 +11,7 @@ namespace RimMind.Dialogue.Core
         public static void TryParseResponseJson(string? rawResponse, bool isMonologue,
             ref string replyText, ref string? thoughtTag, ref string? thoughtDesc, ref int relationDelta)
         {
-            if (string.IsNullOrEmpty(rawResponse) || !rawResponse.TrimStart().StartsWith("{")) return;
+            if (rawResponse is null || rawResponse.Length == 0 || !rawResponse.TrimStart().StartsWith("{")) return;
             try
             {
                 var obj = JsonConvert.DeserializeObject<Dictionary<string, object>>(rawResponse);

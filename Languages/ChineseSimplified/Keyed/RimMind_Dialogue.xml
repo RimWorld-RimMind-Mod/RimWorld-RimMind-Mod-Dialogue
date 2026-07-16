@@ -91,7 +91,6 @@
   <RimMind.Dialogue.UI.Thinking>● 正在思考...</RimMind.Dialogue.UI.Thinking>
   <RimMind.Dialogue.UI.Send>发送</RimMind.Dialogue.UI.Send>
   <RimMind.Dialogue.UI.PlayerPrefix>你: </RimMind.Dialogue.UI.PlayerPrefix>
-  <RimMind.Dialogue.Speaker.Player>玩家</RimMind.Dialogue.Speaker.Player>
   <RimMind.Dialogue.UI.PawnPrefix>{0}: </RimMind.Dialogue.UI.PawnPrefix>
   <!-- Window_DialogueLog.cs -->
   <RimMind.Dialogue.UI.Log.Title>对话日志</RimMind.Dialogue.UI.Log.Title>
@@ -142,19 +141,6 @@
   <RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>只返回 JSON：
 {"reply":"对话文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"},"relation_delta":0}</RimMind.Dialogue.Prompt.TaskInstruction.OutputDialogue>
   <RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>thought.tag 选择：心情&lt;40%→STRESSED；受伤→HURT；被关心→VALUED；主动关心他人→CONNECTED；听到鼓励话语→ENCOURAGED；被冒犯→IRRITATED；无特别→NONE。</RimMind.Dialogue.Prompt.TaskInstruction.ThoughtRules>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>你正在扮演这位 RimWorld 殖民者。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Role>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>根据当前状态和性格，用第一人称自然地回应玩家的对话。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Goal>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>1. 回顾自己的当前状态（心情、健康、正在做的事）
-2. 结合与玩家的关系和过往对话
-3. 生成符合角色性格的回复
-4. 评估对话对自己情绪的影响</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Process>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Constraint>保持角色一致性，不要脱离当前状态；回复长度 20~60 字；不要打破第四面墙；不要提及游戏机制</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Constraint>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Example>输入：玩家说"你还好吗？今天看起来很累"
-输出：{"reply":"嗯...确实有点累，昨晚一直在采矿。不过谢谢你的关心。","thought":{"tag":"VALUED","description":"被关心感到温暖"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Example>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>只返回以下 JSON 格式，不要输出其他内容：
-{"reply":"对话文本","thought":{"tag":"ENCOURAGED|HURT|VALUED|CONNECTED|STRESSED|IRRITATED|NONE","description":"≤15字"}}</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Output>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>如果无法生成对话，返回 {"reply":"...","thought":{"tag":"NONE","description":"无特殊情绪"}}。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.Fallback>
-  <RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>[对话发起者] 与你对话的人的信息已在上下文中提供，请根据你们之间的关系和对方的状态来回应。</RimMind.Dialogue.Prompt.PlayerTaskInstruction.InitiatorConstraint>
   <RimMind.Dialogue.Prompt.Role.Prisoner>角色约束：此人是囚犯。语气应警惕、犹豫，提及被关押，可能乞求或讨价还价。</RimMind.Dialogue.Prompt.Role.Prisoner>
   <RimMind.Dialogue.Prompt.Role.Slave>角色约束：此人是奴隶。语气应恐惧、顺从，提及强制劳动和疲惫，称呼殖民者为"主人"。</RimMind.Dialogue.Prompt.Role.Slave>
   <RimMind.Dialogue.Prompt.Role.Enemy>角色约束：此人是敌人。语气应敌对、攻击性，使用简短的命令或威胁。</RimMind.Dialogue.Prompt.Role.Enemy>
