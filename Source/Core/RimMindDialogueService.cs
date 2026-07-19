@@ -176,25 +176,33 @@ namespace RimMind.Dialogue.Core
             {
                 LongEventHandler.ExecuteWhenFinished(() =>
                 {
-                    _pendingPawns.TryRemove(pawn.thingIDNumber, out _);
-                    if (!isMonologue && recipient != null)
-                    _pendingDialoguePairs.TryRemove(DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber), out _);
-
-                    if (result.IsErr)
+                    try
                     {
-                        RimMindErrors.Warn($"[RimMind-Dialogue] Chat failed for {pawn.Name.ToStringShort}: {result.Error}");
-                        if (!isMonologue)
+                        _pendingPawns.TryRemove(pawn.thingIDNumber, out _);
+                        if (!isMonologue && recipient != null)
+                            _pendingDialoguePairs.TryRemove(
+                                DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber),
+                                out _);
+
+                        if (result.IsErr)
                         {
-                            Messages.Message(
-                                "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
-                                MessageTypeDefOf.RejectInput, false);
+                            RimMindErrors.Warn($"[RimMind-Dialogue] Chat failed for {pawn.Name.ToStringShort}: {result.Error}");
+                            if (!isMonologue)
+                            {
+                                Messages.Message(
+                                    "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
+                                    MessageTypeDefOf.RejectInput, false);
+                            }
+                            return;
                         }
-                        return;
+
+                        NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient, formattedContext, type, isReply);
+                    }
+                    finally
+                    {
+                        _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
                     }
 
-                    NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient, formattedContext, type, isReply);
-
-                    _activeRecipients.TryRemove(pawn.thingIDNumber, out _);
                 });
             });
         }
