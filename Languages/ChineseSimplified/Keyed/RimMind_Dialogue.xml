@@ -68,6 +68,8 @@
   <RimMind.Dialogue.Settings.GlobalConcurrency.Desc>同时进行的 AI 对话请求最大数量。降低可减少 API 压力但可能导致对话延迟。</RimMind.Dialogue.Settings.GlobalConcurrency.Desc>
   <RimMind.Dialogue.Settings.EnableDialogueReply>启用对话回复</RimMind.Dialogue.Settings.EnableDialogueReply>
   <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>收到他人对话后自动生成回复，形成双向对话。</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
+  <RimMind.Dialogue.Settings.MaxDailyReplies>每日每对自动回复上限：{0}</RimMind.Dialogue.Settings.MaxDailyReplies>
+  <RimMind.Dialogue.Settings.MaxDailyReplies.Desc>限制持续双向对话的调用速率。达到上限后，该对角色的自动回复会暂停到次日。</RimMind.Dialogue.Settings.MaxDailyReplies.Desc>
   <RimMind.Dialogue.Settings.StartDelay>游戏开始延迟</RimMind.Dialogue.Settings.StartDelay>
   <RimMind.Dialogue.Settings.StartDelay.Desc>加载存档或新游戏后一段时间内不触发对话，避免游戏启动时产生大量请求。</RimMind.Dialogue.Settings.StartDelay.Desc>
   <RimMind.Dialogue.Settings.StartDelayValue>开始延迟：{0} 秒</RimMind.Dialogue.Settings.StartDelayValue>

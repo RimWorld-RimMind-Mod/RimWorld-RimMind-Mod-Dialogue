@@ -68,6 +68,8 @@
   <RimMind.Dialogue.Settings.GlobalConcurrency.Desc>Maximum number of simultaneous AI dialogue requests. Lower values reduce API pressure but may cause dialogue delays.</RimMind.Dialogue.Settings.GlobalConcurrency.Desc>
   <RimMind.Dialogue.Settings.EnableDialogueReply>Enable Dialogue Reply</RimMind.Dialogue.Settings.EnableDialogueReply>
   <RimMind.Dialogue.Settings.EnableDialogueReply.Desc>Automatically generate a reply when receiving dialogue, creating two-way conversations.</RimMind.Dialogue.Settings.EnableDialogueReply.Desc>
+  <RimMind.Dialogue.Settings.MaxDailyReplies>Maximum automatic replies per pair each day: {0}</RimMind.Dialogue.Settings.MaxDailyReplies>
+  <RimMind.Dialogue.Settings.MaxDailyReplies.Desc>Rate-limits continuous two-way conversations. When reached, automatic replies for that pair stop until the next day.</RimMind.Dialogue.Settings.MaxDailyReplies.Desc>
   <RimMind.Dialogue.Settings.StartDelay>Game start delay</RimMind.Dialogue.Settings.StartDelay>
   <RimMind.Dialogue.Settings.StartDelay.Desc>No dialogue is triggered for a period after loading a save or starting a new game, avoiding excessive requests at startup.</RimMind.Dialogue.Settings.StartDelay.Desc>
   <RimMind.Dialogue.Settings.StartDelayValue>Start delay: {0}s</RimMind.Dialogue.Settings.StartDelayValue>

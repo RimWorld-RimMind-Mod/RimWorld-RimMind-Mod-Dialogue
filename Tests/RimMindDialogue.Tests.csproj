@@ -7,6 +7,7 @@
     <AssemblyName>RimMindDialogue.Tests</AssemblyName>
     <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,10 +18,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="RimWorldStubs.cs" />
+    <Compile Include="UnityEngineStubs.cs" />
+    <Compile Include="VerseStubs.cs" />
+    <Compile Include="Contracts\**\*.cs" />
+    <Compile Include="..\..\RimMind-Core\TestSupport\ContractCaseRunner.cs"
+             Link="Support\ContractCaseRunner.cs" />
     <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueLogEntry.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueFlowPolicy.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueRequestReservations.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueActiveRecipientRegistry.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialoguePairRateLimiter.cs" LinkBase="Core" />
     <Compile Include="../Source/Thoughts/ThoughtInjector.cs" LinkBase="Thoughts" />
     <Compile Include="../Source/Thoughts/Thought_RimMindDialogue.cs" LinkBase="Thoughts" />
     <Compile Include="../Source/Thoughts/Thought_RelationDialogue.cs" LinkBase="Thoughts" />

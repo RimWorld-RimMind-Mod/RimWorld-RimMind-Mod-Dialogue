@@ -22,6 +22,7 @@ namespace RimMind.Dialogue.Settings
         public bool showThoughtNotification = false;
 
         public bool enableDialogueReply = true;
+        public int maxDailyReplyRounds = 12;
 
         public int monologueCooldownTicks = 36000;
 
@@ -66,6 +67,7 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref showThoughtNotification, "showThoughtNotification", false);
 
             Scribe_Values.Look(ref enableDialogueReply, "enableDialogueReply", true);
+            Scribe_Values.Look(ref maxDailyReplyRounds, "maxDailyReplyRounds", 12);
 
             Scribe_Values.Look(ref monologueCooldownTicks, "monologueCooldownTicks", 36000);
             Scribe_Values.Look(ref startDelayEnabled, "startDelayEnabled", true);
@@ -147,6 +149,14 @@ namespace RimMind.Dialogue.Settings
 
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
                 "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
+            if (s.enableDialogueReply)
+            {
+                listing.Label("RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds));
+                GUI.color = Color.gray;
+                listing.Label("  " + "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
+                GUI.color = Color.white;
+                s.maxDailyReplyRounds = (int)listing.Slider(s.maxDailyReplyRounds, 1f, 50f);
+            }
 
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled,
                 "RimMind.Dialogue.Settings.StartDelay.Desc".Translate());
@@ -190,6 +200,7 @@ namespace RimMind.Dialogue.Settings
                 s.globalConcurrency = 3;
                 s.showThoughtNotification = false;
                 s.enableDialogueReply = true;
+                s.maxDailyReplyRounds = 12;
                 s.monologueCooldownTicks = 36000;
                 s.startDelayEnabled = true;
                 s.startDelaySeconds = 10;
@@ -218,6 +229,8 @@ namespace RimMind.Dialogue.Settings
             h += 24f + 24f + 32f + 24f + 32f;
             h += 24f + 24f + 32f;
             h += 24f + 24f;
+            if (s.enableDialogueReply)
+                h += 24f + 24f + 32f;
             if (s.startDelayEnabled)
                 h += 24f + 32f;
             h += 24f + 24f + 24f + 24f + 32f + 24f + 32f;

@@ -54,6 +54,12 @@ namespace Verse
     // Scribe_Values 存根，序列化用，测试中不执行实际操作
     public static class Scribe_Values
     {
-        public static void Look<T>(ref T value, string label, T defaultValue = default!) { }
+        public static readonly List<(string Label, object? DefaultValue)> Calls =
+            new List<(string, object?)>();
+
+        public static void Reset() => Calls.Clear();
+
+        public static void Look<T>(ref T value, string label, T defaultValue = default!)
+            => Calls.Add((label, defaultValue));
     }
 }

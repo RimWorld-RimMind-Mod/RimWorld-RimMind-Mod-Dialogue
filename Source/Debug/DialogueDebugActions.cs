@@ -159,6 +159,7 @@ namespace RimMind.Dialogue.Debug
             sb.AppendLine($"  startDelayEnabled: {s.startDelayEnabled}");
             sb.AppendLine($"  startDelaySeconds: {s.startDelaySeconds}");
             sb.AppendLine($"  enableDialogueReply: {s.enableDialogueReply}");
+            sb.AppendLine($"  maxDailyReplyRounds: {s.maxDailyReplyRounds}");
             sb.AppendLine($"  overlayEnabled: {s.overlayEnabled}");
 
             Log.Message(sb.ToString());

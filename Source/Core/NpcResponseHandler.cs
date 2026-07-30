@@ -26,7 +26,7 @@ namespace RimMind.Dialogue.Core
                 return;
             }
 
-            bool isMonologue = recipient == null && type != DialogueTriggerType.PlayerInput;
+            bool isMonologue = DialogueFlowPolicy.IsMonologue(type, recipient != null);
 
             string? thoughtTag = null;
             string? thoughtDesc = null;
@@ -76,8 +76,11 @@ namespace RimMind.Dialogue.Core
             }
 
             // 每日对话计数（reply 不计入每日限额——reply 是对话链的自然延续，不额外消耗每日额度）
-            if (!isMonologue && recipient != null && !isReply)
+            if (DialogueFlowPolicy.UsesDailyQuota(type, recipient != null, isReply)
+                && recipient != null)
+            {
                 RimMindDialogueService.RecordDailyDialogue(pawn.thingIDNumber, recipient.thingIDNumber);
+            }
 
             // Thought 通知
             if (RimMindDialogueSettings.Get().showThoughtNotification && thoughtTag != "NONE" && !thoughtTag.NullOrEmpty())
@@ -88,8 +91,11 @@ namespace RimMind.Dialogue.Core
             }
 
             // 尝试触发回复（仅自动对话）
-            if (!isMonologue && type != DialogueTriggerType.PlayerInput
-                && RimMindDialogueSettings.Get().enableDialogueReply)
+            if (DialogueFlowPolicy.ShouldAutoReply(
+                    type,
+                    recipient != null,
+                    isReply,
+                    RimMindDialogueSettings.Get().enableDialogueReply))
             {
                 RimMindDialogueService.TryTriggerReply(pawn, recipient!, replyText);
             }
