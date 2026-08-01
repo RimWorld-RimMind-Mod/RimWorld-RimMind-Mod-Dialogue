@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using RimMind.Dialogue.Core;
 using RimMind.Testing;
 using Xunit;
@@ -15,7 +16,8 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ("pair keys are symmetric and monologues remain unpaired", PairKeysAreStable),
                 ("structured replies preserve thought and relation semantics", StructuredRepliesPreserveSemantics),
                 ("monologues ignore relation changes", MonologuesIgnoreRelationChanges),
-                ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues));
+                ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues),
+                ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
         }
 
         private static void ClassificationCoversEveryCategory()
@@ -141,6 +143,27 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal("OLD", tag);
             Assert.Equal("old description", description);
             Assert.Equal(4, relationDelta);
+        }
+
+        private static void DialogueOverlayRendersEveryGuiPass()
+        {
+            string source = ReadDialogueSource("UI/DialogueOverlay.cs");
+
+            Assert.DoesNotContain("Time.frameCount", source, StringComparison.Ordinal);
+        }
+
+        private static string ReadDialogueSource(string relativePath)
+        {
+            DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
+            while (directory != null && !Directory.Exists(Path.Combine(directory.FullName, "RimMind-Dialogue")))
+                directory = directory.Parent;
+
+            Assert.NotNull(directory);
+            return File.ReadAllText(Path.Combine(
+                directory!.FullName,
+                "RimMind-Dialogue",
+                "Source",
+                relativePath.Replace('/', Path.DirectorySeparatorChar)));
         }
     }
 }

@@ -49,9 +49,6 @@ namespace RimMind.Dialogue.Overlay
         {
             if (Current.ProgramState != ProgramState.Playing) return;
 
-            // 隔帧绘制以降低性能开销
-            if (Time.frameCount % 2 != 0) return;
-
             var settings = RimMindDialogueSettings.Get();
             bool currentlyEnabled = settings.overlayEnabled;
             if (currentlyEnabled && !_lastEnabledState)
