@@ -17,6 +17,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ("structured replies preserve thought and relation semantics", StructuredRepliesPreserveSemantics),
                 ("monologues ignore relation changes", MonologuesIgnoreRelationChanges),
                 ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues),
+                ("dialogue overlay bounds and newest-message selection remain visible", DialogueOverlayLayoutRemainsVisible),
                 ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
         }
 
@@ -150,6 +151,32 @@ namespace RimMind.Dialogue.Tests.Contracts
             string source = ReadDialogueSource("UI/DialogueOverlay.cs");
 
             Assert.DoesNotContain("Time.frameCount", source, StringComparison.Ordinal);
+        }
+
+        private static void DialogueOverlayLayoutRemainsVisible()
+        {
+            OverlayBounds normalized = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(-100f, 1200f, 200f, 50f),
+                1920f,
+                1080f,
+                300f,
+                100f);
+            Assert.Equal(new OverlayBounds(0f, 980f, 300f, 100f), normalized);
+
+            OverlayBounds smallScreen = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(10f, 10f, 600f, 300f),
+                240f,
+                80f,
+                300f,
+                100f);
+            Assert.Equal(new OverlayBounds(0f, 0f, 240f, 80f), smallScreen);
+
+            Assert.Equal(2, DialogueOverlayLayout.FindFirstVisibleIndex(
+                new[] { 40f, 40f, 40f, 40f },
+                85f));
+            Assert.Equal(3, DialogueOverlayLayout.FindFirstVisibleIndex(
+                new[] { 40f, 40f, 120f, 140f },
+                80f));
         }
 
         private static string ReadDialogueSource(string relativePath)
