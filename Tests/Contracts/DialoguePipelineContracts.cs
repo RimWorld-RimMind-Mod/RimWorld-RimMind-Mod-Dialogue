@@ -151,6 +151,14 @@ namespace RimMind.Dialogue.Tests.Contracts
             string source = ReadDialogueSource("UI/DialogueOverlay.cs");
 
             Assert.DoesNotContain("Time.frameCount", source, StringComparison.Ordinal);
+            Assert.Contains("DialogueOverlayLayout.Normalize", source, StringComparison.Ordinal);
+            Assert.Contains("FindFirstVisibleIndex", source, StringComparison.Ordinal);
+            Assert.Contains("_cachedMaxMessages", source, StringComparison.Ordinal);
+            Assert.Contains("finally", source, StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "if (availableWidth < 50f) availableWidth = 50f",
+                source,
+                StringComparison.Ordinal);
         }
 
         private static void DialogueOverlayLayoutRemainsVisible()
