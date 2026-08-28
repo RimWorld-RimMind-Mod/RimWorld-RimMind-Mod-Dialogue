@@ -23,6 +23,15 @@ namespace RimMind.Dialogue.Core
             }
         }
 
+        public int ActivePairCount
+        {
+            get
+            {
+                lock (_gate)
+                    return _pairs.Count;
+            }
+        }
+
         public bool TryAcquire(
             int pawnId,
             (int, int)? pairKey,

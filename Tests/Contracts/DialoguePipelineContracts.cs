@@ -19,6 +19,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues),
                 ("bounded log storage is isolated from the public facade", BoundedLogStorageIsIsolated),
                 ("cooldowns quotas and recipients share one activity state", ActivityStateIsIsolated),
+                ("request construction lives behind the dialogue facade", RequestCoordinationIsIsolated),
                 ("dialogue overlay bounds and newest-message selection remain visible", DialogueOverlayLayoutRemainsVisible),
                 ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
         }
@@ -151,6 +152,20 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.DoesNotContain("_dailyDialogueCounts", facade, StringComparison.Ordinal);
             Assert.DoesNotContain("_pawnCache", facade, StringComparison.Ordinal);
             Assert.DoesNotContain("_recentTriggers", facade, StringComparison.Ordinal);
+        }
+
+        private static void RequestCoordinationIsIsolated()
+        {
+            string coordinator = ReadDialogueSource("Core/DialogueRequestCoordinator.cs");
+            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
+
+            Assert.Contains("internal sealed class DialogueRequestCoordinator", coordinator, StringComparison.Ordinal);
+            Assert.Contains("LlmRequestEnvelopeBuilder", coordinator, StringComparison.Ordinal);
+            Assert.Contains("DialogueRequestReservations", coordinator, StringComparison.Ordinal);
+            Assert.Contains("LongEventHandler.ExecuteWhenFinished", coordinator, StringComparison.Ordinal);
+            Assert.DoesNotContain("LlmRequestEnvelopeBuilder", facade, StringComparison.Ordinal);
+            Assert.DoesNotContain("DialogueRequestReservations", facade, StringComparison.Ordinal);
+            Assert.Contains("public static void HandleTrigger(", facade, StringComparison.Ordinal);
         }
 
         private static void AssertPreserved(string? raw)
