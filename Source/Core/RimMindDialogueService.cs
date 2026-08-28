@@ -39,6 +39,21 @@ namespace RimMind.Dialogue.Core
 
         public static IReadOnlyList<DialogueLogEntry> LogEntries => _logStore.Entries;
 
+        internal static int ActiveRequestCount =>
+            _requestCoordinator.ActiveRequestCount;
+
+        internal static int ActivePairCount =>
+            _requestCoordinator.ActivePairCount;
+
+        internal static int RecentTriggerCount =>
+            _activityState.RecentTriggerCount;
+
+        internal static int DailyDialoguePairCount =>
+            _activityState.DailyPairCount;
+
+        internal static (int RecentTriggers, int DailyPairs) ClearAllCooldowns()
+            => _activityState.ClearCooldowns();
+
         public static void ClearLog() => _logStore.Clear();
 
         public static void NotifyGameLoaded()

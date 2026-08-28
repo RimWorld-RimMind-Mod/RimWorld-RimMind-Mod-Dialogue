@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using LudeonTK;
 using RimMind.Dialogue;
@@ -116,38 +115,10 @@ namespace RimMind.Dialogue.Debug
             var sb = new StringBuilder("[RimMind-Dialogue] Service State:\n");
             sb.AppendLine($"  IsReady: {RimMindDialogueService.IsReady}");
             sb.AppendLine($"  LogEntries.Count: {RimMindDialogueService.LogEntries.Count}");
-
-            var flags = BindingFlags.NonPublic | BindingFlags.Static;
-
-            var recentField = typeof(RimMindDialogueService).GetField("_recentTriggers", flags);
-            if (recentField != null)
-            {
-                var recent = recentField.GetValue(null) as System.Collections.IList;
-                sb.AppendLine($"  _recentTriggers.Count: {recent?.Count.ToString() ?? "N/A"}");
-            }
-
-            var pendingField = typeof(RimMindDialogueService).GetField("_pendingPawns", flags);
-            if (pendingField != null)
-            {
-                var pending = pendingField.GetValue(null);
-                var countProp = pending?.GetType().GetProperty("Count");
-                sb.AppendLine($"  _pendingPawns.Count: {countProp?.GetValue(pending)?.ToString() ?? "N/A"}");
-            }
-
-            var pairsField = typeof(RimMindDialogueService).GetField("_pendingDialoguePairs", flags);
-            if (pairsField != null)
-            {
-                var pairs = pairsField.GetValue(null);
-                var countProp = pairs?.GetType().GetProperty("Count");
-                sb.AppendLine($"  _pendingDialoguePairs.Count: {countProp?.GetValue(pairs)?.ToString() ?? "N/A"}");
-            }
-
-            var dailyField = typeof(RimMindDialogueService).GetField("_dailyDialogueCounts", flags);
-            if (dailyField != null)
-            {
-                var daily = dailyField.GetValue(null) as System.Collections.IDictionary;
-                sb.AppendLine($"  _dailyDialogueCounts.Count: {daily?.Count.ToString() ?? "N/A"}");
-            }
+            sb.AppendLine($"  Active requests: {RimMindDialogueService.ActiveRequestCount}");
+            sb.AppendLine($"  Active pairs: {RimMindDialogueService.ActivePairCount}");
+            sb.AppendLine($"  Recent triggers: {RimMindDialogueService.RecentTriggerCount}");
+            sb.AppendLine($"  Daily dialogue pairs: {RimMindDialogueService.DailyDialoguePairCount}");
 
             sb.AppendLine("[RimMind-Dialogue] Settings:");
             var s = RimMindDialogueSettings.Get();
@@ -168,37 +139,10 @@ namespace RimMind.Dialogue.Debug
         [DebugAction("RimMind-Dialogue", "Clear All Dialogue Cooldowns", actionType = DebugActionType.Action)]
         private static void ClearAllDialogueCooldowns()
         {
-            int clearedRecent = 0;
-            int clearedDaily = 0;
-
-            var flags = BindingFlags.NonPublic | BindingFlags.Static;
-
-            var recentField = typeof(RimMindDialogueService).GetField("_recentTriggers", flags);
-            if (recentField != null)
-            {
-                var recent = recentField.GetValue(null) as System.Collections.IList;
-                if (recent != null)
-                {
-                    clearedRecent = recent.Count;
-                    recent.Clear();
-                }
-            }
-
-            var dailyField = typeof(RimMindDialogueService).GetField("_dailyDialogueCounts", flags);
-            if (dailyField != null)
-            {
-                var daily = dailyField.GetValue(null) as System.Collections.IDictionary;
-                if (daily != null)
-                {
-                    clearedDaily = daily.Count;
-                    daily.Clear();
-                }
-            }
-
-            if (clearedRecent > 0 || clearedDaily > 0)
-                Log.Message($"[RimMind-Dialogue] Cleared cooldowns: _recentTriggers={clearedRecent}, _dailyDialogueCounts={clearedDaily}");
-            else
-                Log.Message("[RimMind-Dialogue] No cooldowns to clear (or fields inaccessible). Adjust monologueCooldownTicks in settings if needed.");
+            (int recentTriggers, int dailyPairs) =
+                RimMindDialogueService.ClearAllCooldowns();
+            Log.Message(
+                $"[RimMind-Dialogue] Cleared cooldowns: recentTriggers={recentTriggers}, dailyPairs={dailyPairs}");
         }
     }
 }
