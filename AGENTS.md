@@ -2,9 +2,13 @@
 
 AI对话系统，拦截游戏事件生成上下文对话，注入Thought，支持玩家主动多轮对话。
 
+## Start here
+
+对话生命周期先读 `Source/Core/README.md`。通常只需继续打开请求协调器、活动状态、日志存储或响应处理器中的一个，不要从所有 Patch 开始搜索。
+
 ## 项目定位
 
-通过Harmony Patch监听Chitchat/Hediff/技能升级/心情变化 → `RimMindDialogueService.HandleTrigger` → `RimMindAPI.Chat` → `NpcResponseHandler.Handle` 解析JSON响应(reply/thought/relation_delta) → `ThoughtInjector` 注入独白/关系Thought → `MemoryBridge`(反射松耦合)推送记忆。含并发控制(ConcurrentDictionary)、独立冷却(独白/每日对话)、玩家对话Window、对话日志、对话完成事件回调。
+通过Harmony Patch监听Chitchat/Hediff/技能升级/心情变化 → `RimMindDialogueService.HandleTrigger` → `DialogueRequestCoordinator` → `RimMindAPI.Request.Send` → `NpcResponseHandler.Handle` 解析JSON响应(reply/thought/relation_delta) → `ThoughtInjector` 注入独白/关系Thought。请求、活动状态、日志和响应副作用各有单一入口。
 
 依赖: Core(编译期)，Memory/Actions(反射松耦合)。
 
@@ -24,8 +28,12 @@ AI对话系统，拦截游戏事件生成上下文对话，注入Thought，支�
 Source/
 ├── RimMindDialogueMod.cs            Mod入口(ContextKeyRegistry注册)
 ├── Core/
-│   ├── RimMindDialogueService.cs    核心服务(事件处理/并发控制/日志/缓存/事件回调)
-│   ├── DialogueService.cs           玩家对话服务(RimMindAPI.Chat)
+│   ├── README.md                     对话生命周期入口地图
+│   ├── RimMindDialogueService.cs    公共兼容门面与轻量事件边界
+│   ├── DialogueRequestCoordinator.cs 请求门控、派发与完成清理
+│   ├── DialogueActivityState.cs     冷却、配额、接收者与Pawn查询
+│   ├── DialogueLogStore.cs          有界日志与只读快照
+│   ├── DialogueService.cs           玩家对话请求服务
 │   ├── NpcResponseHandler.cs        统一响应处理(自动+玩家对话共用,含感知发布)
 │   └── MemoryBridge.cs              反射桥接RimMindMemoryAPI
 ├── Comps/CompRimMindDialogue.cs     ThingComp(非殖民者首行return, 1000tick检查)
@@ -38,7 +46,7 @@ Source/
 
 ## HandleTrigger 检查流程
 
-1. 总开关 → 2. API配置 → 3. IsReady → 4. _pendingPawns并发(同一小人) → 5. ShouldSkipDialogue → 6. _pendingDialoguePairs并发(同一对话对) → 7. 独白冷却 → 8. 每日对话限制 → 发送RimMindAPI.Chat
+1. 总开关 → 2. API配置 → 3. IsReady → 4. Pawn Reservation → 5. ShouldSkipDialogue → 6. Pair Reservation → 7. 独白冷却 → 8. 每日对话限制 → 发送 `RimMindAPI.Request.Send`
 
 回调通过 `LongEventHandler.ExecuteWhenFinished` 调度到主线程。
 
