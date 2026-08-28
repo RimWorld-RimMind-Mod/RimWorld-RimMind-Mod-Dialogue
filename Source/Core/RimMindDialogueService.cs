@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Application.Features.Llm;
 using RimMind.Domain.Llm;
@@ -23,16 +22,13 @@ namespace RimMind.Dialogue.Core
         private static readonly DialoguePairRateLimiter _replyRateLimiter =
             new DialoguePairRateLimiter();
 
+        private static readonly DialogueLogStore _logStore =
+            new DialogueLogStore();
+
         private static readonly List<(int tick, int pawnId, DialogueTriggerType type)> _recentTriggers
             = new List<(int, int, DialogueTriggerType)>();
 
         private static int _gameStartTick = -1;
-
-        private static ConcurrentBag<DialogueLogEntry> _logEntries = new ConcurrentBag<DialogueLogEntry>();
-        private const int MaxLogEntries = 500;
-
-        private static List<DialogueLogEntry>? _cachedLogEntries;
-        private static bool _logDirty = true;
 
         private static readonly ConcurrentDictionary<(int, int), List<int>> _dailyDialogueCounts
             = new ConcurrentDictionary<(int, int), List<int>>();
@@ -47,7 +43,11 @@ namespace RimMind.Dialogue.Core
 
         internal static readonly ConcurrentDictionary<string, string> RegisteredTriggerLabels = new ConcurrentDictionary<string, string>();
 
-        public static event Action? OnLogUpdated;
+        public static event Action? OnLogUpdated
+        {
+            add => _logStore.Updated += value;
+            remove => _logStore.Updated -= value;
+        }
 
         public static event Action<Pawn, Pawn?, string, string?>? OnDialogueCompleted;
 
@@ -67,22 +67,9 @@ namespace RimMind.Dialogue.Core
             }
         }
 
-        public static IReadOnlyList<DialogueLogEntry> LogEntries
-        {
-            get
-            {
-                if (!_logDirty && _cachedLogEntries != null) return _cachedLogEntries;
-                _cachedLogEntries = _logEntries.ToList();
-                _logDirty = false;
-                return _cachedLogEntries;
-            }
-        }
+        public static IReadOnlyList<DialogueLogEntry> LogEntries => _logStore.Entries;
 
-        public static void ClearLog()
-        {
-            Interlocked.Exchange(ref _logEntries, new ConcurrentBag<DialogueLogEntry>());
-            _logDirty = true;
-        }
+        public static void ClearLog() => _logStore.Clear();
 
         public static void NotifyGameLoaded()
         {
@@ -331,16 +318,7 @@ namespace RimMind.Dialogue.Core
                 thoughtDesc = thoughtDesc ?? ""
             };
 
-            _logEntries.Add(entry);
-
-            if (_logEntries.Count > MaxLogEntries)
-            {
-                var kept = _logEntries.OrderByDescending(e => e.tick).Take(MaxLogEntries).ToList();
-                Interlocked.Exchange(ref _logEntries, new ConcurrentBag<DialogueLogEntry>(kept));
-            }
-
-            OnLogUpdated?.Invoke();
-            _logDirty = true;
+            _logStore.Add(entry);
         }
 
         public static void RecordDailyDialogue(int idA, int idB)
@@ -410,11 +388,7 @@ namespace RimMind.Dialogue.Core
 
         public static List<DialogueLogEntry> GetDialogueHistory(int pawnId, int maxCount = 20)
         {
-            return _logEntries
-                .Where(e => e.initiatorId == pawnId || e.recipientId == pawnId)
-                .OrderByDescending(e => e.tick)
-                .Take(maxCount)
-                .ToList();
+            return _logStore.HistoryFor(pawnId, maxCount).ToList();
         }
 
         // ── 内部方法 ──

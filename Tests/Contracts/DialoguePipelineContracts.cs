@@ -17,6 +17,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ("structured replies preserve thought and relation semantics", StructuredRepliesPreserveSemantics),
                 ("monologues ignore relation changes", MonologuesIgnoreRelationChanges),
                 ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues),
+                ("bounded log storage is isolated from the public facade", BoundedLogStorageIsIsolated),
                 ("dialogue overlay bounds and newest-message selection remain visible", DialogueOverlayLayoutRemainsVisible),
                 ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
         }
@@ -123,6 +124,18 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal("CONNECTED", tag);
             Assert.Null(description);
             Assert.Equal(4, relationDelta);
+        }
+
+        private static void BoundedLogStorageIsIsolated()
+        {
+            string store = ReadDialogueSource("Core/DialogueLogStore.cs");
+            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
+
+            Assert.Contains("internal sealed class DialogueLogStore", store, StringComparison.Ordinal);
+            Assert.Contains("ConcurrentBag<DialogueLogEntry>", store, StringComparison.Ordinal);
+            Assert.Contains("IReadOnlyList<DialogueLogEntry> Entries", store, StringComparison.Ordinal);
+            Assert.DoesNotContain("ConcurrentBag<DialogueLogEntry>", facade, StringComparison.Ordinal);
+            Assert.DoesNotContain("MaxLogEntries", facade, StringComparison.Ordinal);
         }
 
         private static void AssertPreserved(string? raw)
