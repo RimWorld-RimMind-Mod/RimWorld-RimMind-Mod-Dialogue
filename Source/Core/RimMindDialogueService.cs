@@ -19,27 +19,11 @@ namespace RimMind.Dialogue.Core
     {
         private static readonly DialogueRequestReservations _requestReservations =
             new DialogueRequestReservations();
-        private static readonly DialoguePairRateLimiter _replyRateLimiter =
-            new DialoguePairRateLimiter();
+        private static readonly DialogueActivityState _activityState =
+            new DialogueActivityState();
 
         private static readonly DialogueLogStore _logStore =
             new DialogueLogStore();
-
-        private static readonly List<(int tick, int pawnId, DialogueTriggerType type)> _recentTriggers
-            = new List<(int, int, DialogueTriggerType)>();
-
-        private static int _gameStartTick = -1;
-
-        private static readonly ConcurrentDictionary<(int, int), List<int>> _dailyDialogueCounts
-            = new ConcurrentDictionary<(int, int), List<int>>();
-        private static int _lastCountDay = -1;
-
-        // 当前活跃对话对象映射（替代 DialogueSession.Recipient）
-        private static readonly DialogueActiveRecipientRegistry _activeRecipients =
-            new DialogueActiveRecipientRegistry();
-
-        private static Dictionary<int, Pawn> _pawnCache = new Dictionary<int, Pawn>();
-        private static int _pawnCacheTick = -1;
 
         internal static readonly ConcurrentDictionary<string, string> RegisteredTriggerLabels = new ConcurrentDictionary<string, string>();
 
@@ -56,16 +40,9 @@ namespace RimMind.Dialogue.Core
             OnDialogueCompleted?.Invoke(pawn, recipient, replyText, thoughtTag);
         }
 
-        public static bool IsReady
-        {
-            get
-            {
-                if (_gameStartTick < 0) _gameStartTick = Find.TickManager.TicksGame;
-                var settings = RimMindDialogueSettings.Get();
-                if (!settings.startDelayEnabled) return true;
-                return Find.TickManager.TicksGame - _gameStartTick >= settings.startDelayTicks;
-            }
-        }
+        public static bool IsReady => _activityState.IsReady(
+            RimMindDialogueSettings.Get(),
+            Find.TickManager.TicksGame);
 
         public static IReadOnlyList<DialogueLogEntry> LogEntries => _logStore.Entries;
 
@@ -73,16 +50,9 @@ namespace RimMind.Dialogue.Core
 
         public static void NotifyGameLoaded()
         {
-            _gameStartTick = Find.TickManager.TicksGame;
             _requestReservations.Reset();
-            _replyRateLimiter.Reset();
-            _activeRecipients.Reset();
-            _recentTriggers.Clear();
-            _dailyDialogueCounts.Clear();
-            _lastCountDay = -1;
-            _pawnCache.Clear();
-            _pawnCacheTick = -1;
-            ClearLog();
+            _activityState.Reset(Find.TickManager.TicksGame);
+            _logStore.Clear();
         }
 
         public static void HandleTrigger(Pawn pawn, string context,
@@ -115,14 +85,22 @@ namespace RimMind.Dialogue.Core
                 return;
 
             if (DialogueFlowPolicy.UsesMonologueCooldown(type, recipient != null)
-                && IsMonologueOnCooldown(pawn, type))
+                && _activityState.IsMonologueOnCooldown(
+                    Find.TickManager.TicksGame,
+                    pawn.thingIDNumber,
+                    type,
+                    RimMindDialogueSettings.Get().monologueCooldownTicks))
             {
                 return;
             }
 
             if (DialogueFlowPolicy.UsesDailyQuota(type, recipient != null, isReply)
                 && recipient != null
-                && IsDailyDialogueLimitReached(pawn.thingIDNumber, recipient.thingIDNumber))
+                && _activityState.IsDailyLimitReached(
+                    Find.TickManager.TicksGame,
+                    pawn.thingIDNumber,
+                    recipient.thingIDNumber,
+                    RimMindDialogueSettings.Get().maxDailyDialogueRounds))
             {
                 return;
             }
@@ -141,12 +119,15 @@ namespace RimMind.Dialogue.Core
             long reservationId = reservation!.Id;
             try
             {
-                CleanExpiredTriggers();
-                _recentTriggers.Add((Find.TickManager.TicksGame, pawn.thingIDNumber, type));
+                _activityState.RecordTrigger(
+                    Find.TickManager.TicksGame,
+                    pawn.thingIDNumber,
+                    type,
+                    RimMindDialogueSettings.Get().monologueCooldownTicks);
 
                 if (recipient != null)
                 {
-                    _activeRecipients.SetRequest(
+                    _activityState.SetRequestRecipient(
                         pawn.thingIDNumber,
                         recipient.thingIDNumber,
                         reservationId);
@@ -216,7 +197,7 @@ namespace RimMind.Dialogue.Core
                             }
                             finally
                             {
-                                _activeRecipients.ClearRequestIfOwned(
+                                _activityState.ClearRequestRecipientIfOwned(
                                     pawn.thingIDNumber,
                                     reservationId);
                             }
@@ -225,7 +206,7 @@ namespace RimMind.Dialogue.Core
                     catch
                     {
                         reservation!.Dispose();
-                        _activeRecipients.ClearRequestIfOwned(
+                        _activityState.ClearRequestRecipientIfOwned(
                             pawn.thingIDNumber,
                             reservationId);
                         throw;
@@ -235,7 +216,7 @@ namespace RimMind.Dialogue.Core
             catch (Exception ex)
             {
                 reservation!.Dispose();
-                _activeRecipients.ClearRequestIfOwned(
+                _activityState.ClearRequestRecipientIfOwned(
                     pawn.thingIDNumber,
                     reservationId);
                 RimMindErrors.Warn($"[RimMind-Dialogue] Request dispatch failed for {pawn.Name.ToStringShort}: {ex.Message}");
@@ -249,9 +230,9 @@ namespace RimMind.Dialogue.Core
             var pairKey = DialogueClassifier.MakePairKey(
                 originalSender.thingIDNumber,
                 replier.thingIDNumber);
-            if (!_replyRateLimiter.TryConsume(
+            if (!_activityState.TryConsumeReply(
                     pairKey,
-                    CurrentGameDay(),
+                    (int)(Find.TickManager.TicksGame / 2500f / 24f),
                     RimMindDialogueSettings.Get().maxDailyReplyRounds))
             {
                 Log.Message($"[RimMind-Dialogue] Auto-reply daily limit reached for pair {pairKey.Item1}|{pairKey.Item2}");
@@ -322,57 +303,28 @@ namespace RimMind.Dialogue.Core
         }
 
         public static void RecordDailyDialogue(int idA, int idB)
-        {
-            CleanExpiredDailyCounts();
-            var key = DialogueClassifier.MakePairKey(idA, idB);
-            var ticks = _dailyDialogueCounts.GetOrAdd(key, _ => new List<int>());
-            ticks.Add(Find.TickManager.TicksGame);
-        }
+            => _activityState.RecordDailyDialogue(
+                Find.TickManager.TicksGame,
+                idA,
+                idB);
 
         public static Pawn? GetActiveRecipient(Pawn pawn)
-        {
-            if (!_activeRecipients.TryGetRecipient(pawn.thingIDNumber, out var recipientId))
-                return null;
-
-            int now = Find.TickManager.TicksGame;
-            if (_pawnCacheTick < 0 || now - _pawnCacheTick >= 600)
-            {
-                _pawnCache.Clear();
-                foreach (var map in Find.Maps)
-                {
-                    if (map.mapPawns != null)
-                    {
-                        foreach (var p in map.mapPawns.AllPawns)
-                            _pawnCache[p.thingIDNumber] = p;
-                    }
-                }
-                if (Find.WorldPawns?.AllPawnsAlive != null)
-                {
-                    foreach (var p in Find.WorldPawns.AllPawnsAlive)
-                        _pawnCache[p.thingIDNumber] = p;
-                }
-                _pawnCacheTick = now;
-            }
-
-            return _pawnCache.TryGetValue(recipientId, out var cached) ? cached : null;
-        }
+            => _activityState.GetActiveRecipient(
+                pawn,
+                Find.TickManager.TicksGame);
 
         public static void SetActiveRecipient(Pawn pawn, Pawn? recipient)
-        {
-            if (recipient != null)
-                _activeRecipients.SetManual(pawn.thingIDNumber, recipient.thingIDNumber);
-            else
-                _activeRecipients.ClearManual(pawn.thingIDNumber);
-        }
+            => _activityState.SetManualRecipient(
+                pawn.thingIDNumber,
+                recipient?.thingIDNumber);
 
         // ── 查询方法 ──
 
         public static int GetDailyDialogueCount(int idA, int idB)
-        {
-            CleanExpiredDailyCounts();
-            var key = DialogueClassifier.MakePairKey(idA, idB);
-            return _dailyDialogueCounts.TryGetValue(key, out var ticks) ? ticks.Count : 0;
-        }
+            => _activityState.GetDailyDialogueCount(
+                Find.TickManager.TicksGame,
+                idA,
+                idB);
 
         public static bool IsDialoguePending(int pawnIdA, int pawnIdB)
         {
@@ -389,52 +341,6 @@ namespace RimMind.Dialogue.Core
         public static List<DialogueLogEntry> GetDialogueHistory(int pawnId, int maxCount = 20)
         {
             return _logStore.HistoryFor(pawnId, maxCount).ToList();
-        }
-
-        // ── 内部方法 ──
-
-        private static bool IsDailyDialogueLimitReached(int idA, int idB)
-        {
-            int limit = RimMindDialogueSettings.Get().maxDailyDialogueRounds;
-            return GetDailyDialogueCount(idA, idB) >= limit;
-        }
-
-        private static bool IsMonologueOnCooldown(Pawn pawn, DialogueTriggerType type)
-        {
-            int cooldownTicks = RimMindDialogueSettings.Get().monologueCooldownTicks;
-            int now = Find.TickManager.TicksGame;
-            foreach (var entry in _recentTriggers)
-            {
-                if (entry.pawnId == pawn.thingIDNumber
-                    && entry.type == type
-                    && now - entry.tick < cooldownTicks)
-                    return true;
-            }
-            return false;
-        }
-
-        private static int CurrentGameDay()
-        {
-            return (int)(Find.TickManager.TicksGame / 2500f / 24f);
-        }
-
-        private static void CleanExpiredDailyCounts()
-        {
-            int today = CurrentGameDay();
-            if (today != _lastCountDay)
-            {
-                _dailyDialogueCounts.Clear();
-                _lastCountDay = today;
-            }
-        }
-
-
-
-        private static void CleanExpiredTriggers()
-        {
-            int maxCooldown = RimMindDialogueSettings.Get().monologueCooldownTicks;
-            int now = Find.TickManager.TicksGame;
-            _recentTriggers.RemoveAll(e => now - e.tick >= maxCooldown);
         }
 
         private static string? GetRecipientRoleKey(Pawn recipient)

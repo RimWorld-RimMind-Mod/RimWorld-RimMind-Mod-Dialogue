@@ -18,6 +18,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ("monologues ignore relation changes", MonologuesIgnoreRelationChanges),
                 ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues),
                 ("bounded log storage is isolated from the public facade", BoundedLogStorageIsIsolated),
+                ("cooldowns quotas and recipients share one activity state", ActivityStateIsIsolated),
                 ("dialogue overlay bounds and newest-message selection remain visible", DialogueOverlayLayoutRemainsVisible),
                 ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
         }
@@ -136,6 +137,20 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Contains("IReadOnlyList<DialogueLogEntry> Entries", store, StringComparison.Ordinal);
             Assert.DoesNotContain("ConcurrentBag<DialogueLogEntry>", facade, StringComparison.Ordinal);
             Assert.DoesNotContain("MaxLogEntries", facade, StringComparison.Ordinal);
+        }
+
+        private static void ActivityStateIsIsolated()
+        {
+            string state = ReadDialogueSource("Core/DialogueActivityState.cs");
+            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
+
+            Assert.Contains("internal sealed class DialogueActivityState", state, StringComparison.Ordinal);
+            Assert.Contains("DialoguePairRateLimiter", state, StringComparison.Ordinal);
+            Assert.Contains("DialogueActiveRecipientRegistry", state, StringComparison.Ordinal);
+            Assert.Contains("ConcurrentDictionary<(int, int), List<int>>", state, StringComparison.Ordinal);
+            Assert.DoesNotContain("_dailyDialogueCounts", facade, StringComparison.Ordinal);
+            Assert.DoesNotContain("_pawnCache", facade, StringComparison.Ordinal);
+            Assert.DoesNotContain("_recentTriggers", facade, StringComparison.Ordinal);
         }
 
         private static void AssertPreserved(string? raw)
