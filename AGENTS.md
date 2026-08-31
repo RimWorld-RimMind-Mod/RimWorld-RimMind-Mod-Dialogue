@@ -26,8 +26,9 @@ AI对话系统，拦截游戏事件生成上下文对话，注入Thought，支�
 
 ```
 Source/
-├── RimMindDialogueMod.cs            Mod入口(ContextKeyRegistry注册)
+├── RimMindDialogueMod.cs            组合入口、Harmony与Core扩展注册
 ├── Core/
+│   ├── DialogueContextProviderRegistrar.cs  三个Core上下文Provider的唯一注册入口
 │   ├── README.md                     对话生命周期入口地图
 │   ├── RimMindDialogueService.cs    公共兼容门面与轻量事件边界
 │   ├── DialogueRequestCoordinator.cs 请求门控、派发与完成清理

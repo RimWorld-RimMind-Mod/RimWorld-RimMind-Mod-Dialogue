@@ -3,6 +3,12 @@
 Start with `RimMindDialogueService.cs`. It is the stable facade used by patches,
 components, UI, and other RimMind extensions.
 
+## Module composition
+
+`../RimMindDialogueMod.cs` installs Harmony patches and Core extensions, then
+calls `DialogueContextProviderRegistrar.RegisterAll`. Open the registrar only
+when changing `dialogue_state`, `dialogue_relation`, or `dialogue_task` context.
+
 ## Request flow
 
 `RimMindDialogueService.HandleTrigger`
