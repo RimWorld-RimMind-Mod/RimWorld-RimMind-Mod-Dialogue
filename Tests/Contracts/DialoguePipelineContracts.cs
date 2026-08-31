@@ -20,6 +20,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ("bounded log storage is isolated from the public facade", BoundedLogStorageIsIsolated),
                 ("cooldowns quotas and recipients share one activity state", ActivityStateIsIsolated),
                 ("request construction lives behind the dialogue facade", RequestCoordinationIsIsolated),
+                ("context providers stay behind the composition entry", ContextProvidersAreIsolated),
                 ("dialogue diagnostics use supported state access", DiagnosticsAvoidPrivateReflection),
                 ("dialogue overlay bounds and newest-message selection remain visible", DialogueOverlayLayoutRemainsVisible),
                 ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
@@ -167,6 +168,22 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.DoesNotContain("LlmRequestEnvelopeBuilder", facade, StringComparison.Ordinal);
             Assert.DoesNotContain("DialogueRequestReservations", facade, StringComparison.Ordinal);
             Assert.Contains("public static void HandleTrigger(", facade, StringComparison.Ordinal);
+        }
+
+        private static void ContextProvidersAreIsolated()
+        {
+            string entry = ReadDialogueSource("RimMindDialogueMod.cs");
+            string registrar = ReadDialogueSource("Core/DialogueContextProviderRegistrar.cs");
+
+            Assert.Contains(
+                "DialogueContextProviderRegistrar.RegisterAll();",
+                entry,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain("ContextProviderDef", entry, StringComparison.Ordinal);
+            Assert.Contains("internal static class DialogueContextProviderRegistrar", registrar, StringComparison.Ordinal);
+            Assert.Contains("\"dialogue_state\"", registrar, StringComparison.Ordinal);
+            Assert.Contains("\"dialogue_relation\"", registrar, StringComparison.Ordinal);
+            Assert.Contains("\"dialogue_task\"", registrar, StringComparison.Ordinal);
         }
 
         private static void DiagnosticsAvoidPrivateReflection()
