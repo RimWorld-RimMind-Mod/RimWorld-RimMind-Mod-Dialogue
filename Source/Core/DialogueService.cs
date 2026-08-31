@@ -1,9 +1,10 @@
 using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-using RimMind.Core;
-using RimMind.Core.Client;
-using RimMind.Core.Prompt;
+using RimMind.Application.Common.Models.Context;
+using RimMind.Application.Features.Llm;
+using RimMind.Domain.Llm;
+using RimMind.Domain.ValueObjects;
+using RimMind.Presentation.Api;
+using RimMind.Application.Common.Interfaces.Context;
 using RimMind.Dialogue.Settings;
 using Verse;
 
@@ -11,71 +12,44 @@ namespace RimMind.Dialogue.Core
 {
     public static class DialogueService
     {
-        public static void RequestReply(DialogueSession session, string playerMessage,
-                                        Pawn? initiator,
-                                        Action<string> onReply, Action<string> onError)
+        /// <summary>
+        /// 玩家对话请求，统一 RimMindAPI.Request.Send 路径
+        /// </summary>
+        public static void RequestReply(Pawn pawn, string playerMessage, Pawn? initiator,
+            Action<string> onReply, Action<string> onError)
         {
-            session.AddUserMessage(playerMessage);
+            var npcId = $"NPC-{pawn.thingIDNumber}";
 
-            string? custom = RimMindDialogueSettings.Get().dialogueCustomPrompt?.Trim();
-            string systemPrompt = DialoguePromptBuilder.BuildPlayerSystemPrompt(session.Pawn, initiator, custom);
-            string pawnContext = DialoguePromptBuilder.BuildPlayerUserPrompt(session.Pawn, initiator);
+            var envelope = LlmRequestEnvelopeBuilder
+                .ForNpc(npcId, gameStateInfo: new GameStateInfo().AddSection("dialogue_input", playerMessage))
+                .ForScenarioId(ScenarioIds.Dialogue)
+                .WithModId("RimMind.Dialogue")
+                .WithMaxTokens(400)
+                .WithTemperature(0.85f)
+                .Build();
 
-            var request = new AIRequest
+            RimMindAPI.Request.Send(envelope, result =>
             {
-                SystemPrompt = systemPrompt,
-                Messages = BuildMessages(systemPrompt, pawnContext, session.GetContextMessages()),
-                MaxTokens = 300,
-                Temperature = 0.85f,
-                UseJsonMode = true,
-                RequestId = $"RimMindDialogue_Player_{session.Pawn.thingIDNumber}_{Find.TickManager.TicksGame}",
-                ModId = "Dialogue",
-                ExpireAtTicks = Find.TickManager.TicksGame + RimMindDialogueSettings.Get().dialogueExpireTicks,
-                Priority = AIRequestPriority.High,
-            };
+                LongEventHandler.ExecuteWhenFinished(() =>
+                {
+                    if (result.IsErr)
+                    {
+                        onError(result.Error.ToString());
+                        return;
+                    }
 
-            RimMindAPI.RequestImmediate(request, response =>
-            {
-                if (!response.Success) { onError(response.Error); return; }
+                    string replyText = result.Value.Content ?? string.Empty;
+                    if (replyText.NullOrEmpty())
+                    {
+                        onError("Empty reply");
+                        return;
+                    }
 
-                PlayerDialogueResponse? result = null;
-                try { result = JsonConvert.DeserializeObject<PlayerDialogueResponse>(response.Content); }
-                catch (Exception ex) { onError($"JSON parse failed: {ex.Message}"); return; }
+                    NpcResponseHandler.Handle(result.Value, npcId, pawn, initiator, playerMessage, DialogueTriggerType.PlayerInput);
 
-                string replyText = result?.reply ?? string.Empty;
-                if (replyText.NullOrEmpty()) { onError("Empty reply"); return; }
-
-                session.AddAssistantMessage(replyText);
-
-                if (result?.thought?.tag is string tag && tag != "NONE" && !tag.NullOrEmpty())
-                    ThoughtInjector.Inject(session.Pawn, null, tag, result.thought.description);
-
-                RimMindDialogueService.AddPlayerDialogueLog(session.Pawn, playerMessage, replyText,
-                    result?.thought?.tag, result?.thought?.description);
-
-                onReply(replyText);
+                    onReply(replyText);
+                });
             });
         }
-
-        private static List<ChatMessage> BuildMessages(string systemPrompt, string pawnContext,
-            List<(string role, string content)> history)
-        {
-            var msgs = new List<ChatMessage>
-            {
-                new ChatMessage { Role = "system", Content = systemPrompt },
-                new ChatMessage { Role = "user", Content = pawnContext }
-            };
-
-            foreach (var (role, content) in history)
-                msgs.Add(new ChatMessage { Role = role, Content = content });
-
-            return msgs;
-        }
-    }
-
-    public class PlayerDialogueResponse
-    {
-        public string? reply;
-        public ThoughtPart? thought;
     }
 }

@@ -1,3 +1,4 @@
+using RimMind.Domain.ValueObjects;
 using System.Reflection;
 using Verse;
 
@@ -24,7 +25,7 @@ namespace RimMind.Dialogue
             }
 
             if (_addMemoryMethod == null)
-                Log.Warning("[RimMind-Dialogue] MemoryBridge: RimMindMemoryAPI.AddMemory not found via reflection.");
+                RimMindErrors.Warn("[RimMind-Dialogue] MemoryBridge: RimMindMemoryAPI.AddMemory not found via reflection.");
         }
 
         public static void AddMemory(string content, string memoryType, int tick, float importance, string? pawnId = null)

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using RimMind.Core;
+using RimMind.Presentation.Api;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
@@ -16,6 +16,7 @@ namespace RimMind.Dialogue.Comps
 
         public override void CompTick()
         {
+            if (!Pawn.IsColonist) return;
             if (!Pawn.IsHashIntervalTick(1000)) return;
             if (!RimMindDialogueSettings.Get().autoDialogueEnabled) return;
             if (!RimMindAPI.IsConfigured()) return;

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>RimMind.Dialogue.Tests</RootNamespace>
+    <AssemblyName>RimMindDialogue.Tests</AssemblyName>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="RimWorldStubs.cs" />
+    <Compile Include="UnityEngineStubs.cs" />
+    <Compile Include="VerseStubs.cs" />
+    <Compile Include="Contracts\**\*.cs" />
+    <Compile Include="..\..\RimMind-Core\TestSupport\ContractCaseRunner.cs"
+             Link="Support\ContractCaseRunner.cs" />
+    <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueLogEntry.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueFlowPolicy.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueRequestReservations.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueActiveRecipientRegistry.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialoguePairRateLimiter.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueOverlayLayout.cs" LinkBase="Core" />
+    <Compile Include="../Source/Thoughts/ThoughtInjector.cs" LinkBase="Thoughts" />
+    <Compile Include="../Source/Thoughts/Thought_RimMindDialogue.cs" LinkBase="Thoughts" />
+    <Compile Include="../Source/Thoughts/Thought_RelationDialogue.cs" LinkBase="Thoughts" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../RimMind-Core/Source/Domain/RimMindCore.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

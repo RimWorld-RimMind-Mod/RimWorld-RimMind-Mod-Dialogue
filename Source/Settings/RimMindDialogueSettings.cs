@@ -1,7 +1,6 @@
-using System;
 using UnityEngine;
 using Verse;
-using RimMind.Core.UI;
+using RimMind.Presentation.UI;
 
 namespace RimMind.Dialogue.Settings
 {
@@ -19,14 +18,13 @@ namespace RimMind.Dialogue.Settings
         public float moodChangeThreshold = 3f;
         public int autoDialogueCooldownHours = 12;
         public int maxDailyDialogueRounds = 6;
+        public int globalConcurrency = 3;
         public bool showThoughtNotification = false;
 
-        public int dialogueContextRounds = 5;
         public bool enableDialogueReply = true;
+        public int maxDailyReplyRounds = 12;
 
         public int monologueCooldownTicks = 36000;
-        [Obsolete("Use monologueCooldownTicks directly")]
-        public int MonologueCooldownTicks => monologueCooldownTicks;
 
         public bool startDelayEnabled = true;
         public int startDelaySeconds = 10;
@@ -39,11 +37,6 @@ namespace RimMind.Dialogue.Settings
         public float overlayY = 20f;
         public float overlayW = 420f;
         public float overlayH = 220f;
-
-        public string dialogueCustomPrompt = "";
-
-        public int monologueExpireTicks = 15000;
-        public int dialogueExpireTicks = 60000;
 
         public int AutoDialogueCooldownTicks => autoDialogueCooldownHours * 2500;
 
@@ -70,10 +63,11 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref moodChangeThreshold, "moodChangeThreshold", 3f);
             Scribe_Values.Look(ref autoDialogueCooldownHours, "autoDialogueCooldownHours", 12);
             Scribe_Values.Look(ref maxDailyDialogueRounds, "maxDailyDialogueRounds", 6);
+            Scribe_Values.Look(ref globalConcurrency, "globalConcurrency", 3);
             Scribe_Values.Look(ref showThoughtNotification, "showThoughtNotification", false);
 
-            Scribe_Values.Look(ref dialogueContextRounds, "dialogueContextRounds", 5);
             Scribe_Values.Look(ref enableDialogueReply, "enableDialogueReply", true);
+            Scribe_Values.Look(ref maxDailyReplyRounds, "maxDailyReplyRounds", 12);
 
             Scribe_Values.Look(ref monologueCooldownTicks, "monologueCooldownTicks", 36000);
             Scribe_Values.Look(ref startDelayEnabled, "startDelayEnabled", true);
@@ -85,9 +79,6 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref overlayY, "overlayY", 20f);
             Scribe_Values.Look(ref overlayW, "overlayW", 420f);
             Scribe_Values.Look(ref overlayH, "overlayH", 220f);
-            Scribe_Values.Look(ref dialogueCustomPrompt, "dialogueCustomPrompt", "");
-            Scribe_Values.Look(ref monologueExpireTicks, "monologueExpireTicks", 15000);
-            Scribe_Values.Look(ref dialogueExpireTicks, "dialogueExpireTicks", 60000);
         }
 
         private static Vector2 _settingsScrollPos = Vector2.zero;
@@ -96,8 +87,8 @@ namespace RimMind.Dialogue.Settings
         {
             var s = Get();
 
-            Rect contentArea = SettingsUIHelper.SplitContentArea(inRect);
-            Rect bottomBar  = SettingsUIHelper.SplitBottomBar(inRect);
+            Rect contentArea = SettingsUIDrawer.SplitContentArea(inRect);
+            Rect bottomBar = SettingsUIDrawer.SplitBottomBar(inRect);
 
             float contentH = EstimateSettingsHeight();
             Rect viewRect = new Rect(0f, 0f, contentArea.width - 16f, contentH);
@@ -109,7 +100,7 @@ namespace RimMind.Dialogue.Settings
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.Enable".Translate(), ref s.enabled,
                 "RimMind.Dialogue.Settings.Enable.Desc".Translate());
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
+            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ChitchatIntercept".Translate(), ref s.chitchatEnabled,
                 "RimMind.Dialogue.Settings.ChitchatIntercept.Desc".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.HediffReaction".Translate(), ref s.hediffEnabled,
@@ -136,7 +127,7 @@ namespace RimMind.Dialogue.Settings
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.PlayerDialogueGizmo".Translate(), ref s.playerDialogueEnabled,
                 "RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc".Translate());
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
+            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
             listing.Label("RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"));
             GUI.color = Color.gray;
             listing.Label("  " + "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
@@ -150,14 +141,22 @@ namespace RimMind.Dialogue.Settings
             GUI.color = Color.white;
             s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
 
-            listing.Label("RimMind.Dialogue.Settings.DialogueContextRounds".Translate(s.dialogueContextRounds));
+            listing.Label("RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency));
             GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.DialogueContextRounds.Desc".Translate());
+            listing.Label("  " + "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
             GUI.color = Color.white;
-            s.dialogueContextRounds = (int)listing.Slider(s.dialogueContextRounds, -1f, 20f);
+            s.globalConcurrency = (int)listing.Slider(s.globalConcurrency, 1f, 10f);
 
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
                 "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
+            if (s.enableDialogueReply)
+            {
+                listing.Label("RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds));
+                GUI.color = Color.gray;
+                listing.Label("  " + "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
+                GUI.color = Color.white;
+                s.maxDailyReplyRounds = (int)listing.Slider(s.maxDailyReplyRounds, 1f, 50f);
+            }
 
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled,
                 "RimMind.Dialogue.Settings.StartDelay.Desc".Translate());
@@ -167,11 +166,7 @@ namespace RimMind.Dialogue.Settings
                 s.startDelaySeconds = (int)listing.Slider(s.startDelaySeconds, 1f, 60f);
             }
 
-            SettingsUIHelper.DrawCustomPromptSection(listing,
-                "RimMind.Dialogue.Settings.CustomPrompt".Translate(),
-                ref s.dialogueCustomPrompt);
-
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
+            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowNotification".Translate(), ref s.showThoughtNotification,
                 "RimMind.Dialogue.Settings.ShowNotification.Desc".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
@@ -187,25 +182,10 @@ namespace RimMind.Dialogue.Settings
             GUI.color = Color.white;
             s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
 
-            SettingsUIHelper.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Request".Translate());
-            listing.Label("RimMind.Dialogue.Settings.MonologueExpire".Translate($"{s.monologueExpireTicks / 60000f:F2}"));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.MonologueExpire.Desc".Translate());
-            GUI.color = Color.white;
-            s.monologueExpireTicks = (int)listing.Slider(s.monologueExpireTicks, 3600f, 120000f);
-            s.monologueExpireTicks = (s.monologueExpireTicks / 1500) * 1500;
-
-            listing.Label("RimMind.Dialogue.Settings.DialogueExpire".Translate($"{s.dialogueExpireTicks / 60000f:F2}"));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.DialogueExpire.Desc".Translate());
-            GUI.color = Color.white;
-            s.dialogueExpireTicks = (int)listing.Slider(s.dialogueExpireTicks, 3600f, 120000f);
-            s.dialogueExpireTicks = (s.dialogueExpireTicks / 1500) * 1500;
-
             listing.End();
             Widgets.EndScrollView();
 
-            SettingsUIHelper.DrawBottomBar(bottomBar, () =>
+            SettingsUIDrawer.DrawBottomBar(bottomBar, () =>
             {
                 s.enabled = true;
                 s.chitchatEnabled = true;
@@ -217,16 +197,20 @@ namespace RimMind.Dialogue.Settings
                 s.moodChangeThreshold = 3f;
                 s.autoDialogueCooldownHours = 12;
                 s.maxDailyDialogueRounds = 6;
+                s.globalConcurrency = 3;
                 s.showThoughtNotification = false;
-                s.dialogueContextRounds = 5;
                 s.enableDialogueReply = true;
+                s.maxDailyReplyRounds = 12;
                 s.monologueCooldownTicks = 36000;
                 s.startDelayEnabled = true;
                 s.startDelaySeconds = 10;
                 s.overlayEnabled = true;
                 s.overlayOpacity = 0.75f;
                 s.overlayMaxMessages = 8;
-                s.dialogueCustomPrompt = "";
+                s.overlayX = 20f;
+                s.overlayY = 20f;
+                s.overlayW = 420f;
+                s.overlayH = 220f;
             });
 
             Get().Write();
@@ -242,12 +226,14 @@ namespace RimMind.Dialogue.Settings
                 h += 24f + 32f;
             if (s.autoDialogueEnabled)
                 h += 24f + 24f + 32f;
-            h += 24f + 24f + 32f + 24f + 32f + 24f + 32f + 24f + 24f;
+            h += 24f + 24f + 32f + 24f + 32f;
+            h += 24f + 24f + 32f;
+            h += 24f + 24f;
+            if (s.enableDialogueReply)
+                h += 24f + 24f + 32f;
             if (s.startDelayEnabled)
                 h += 24f + 32f;
-            h += 24f + 80f;
             h += 24f + 24f + 24f + 24f + 32f + 24f + 32f;
-            h += 24f + 24f + 32f + 24f + 32f;
             return h + 40f;
         }
     }

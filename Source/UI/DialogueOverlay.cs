@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
@@ -15,9 +14,13 @@ namespace RimMind.Dialogue.Overlay
     {
         private bool _isDragging;
         private bool _isResizing;
+        private bool _positionDirty;
         private Vector2 _dragStartOffset;
         private Rect _windowRect;
         private bool _cacheDirty = true;
+        private int _cachedMaxMessages = -1;
+        private bool _temporarilyClosed;
+        private bool _lastEnabledState;
         private List<DialogueLogEntry> _cachedEntries = new List<DialogueLogEntry>();
 
         private const float OptionsBarHeight = 24f;
@@ -28,50 +31,86 @@ namespace RimMind.Dialogue.Overlay
 
         public DialogueOverlay(Map map) : base(map)
         {
-            RimMindDialogueService.OnLogUpdated += () => _cacheDirty = true;
+            RimMindDialogueService.OnLogUpdated += OnLogUpdated;
             LoadPositionFromSettings();
+        }
+
+        private void OnLogUpdated()
+        {
+            _cacheDirty = true;
+        }
+
+        public override void MapRemoved()
+        {
+            RimMindDialogueService.OnLogUpdated -= OnLogUpdated;
+            base.MapRemoved();
         }
 
         public override void MapComponentOnGUI()
         {
             if (Current.ProgramState != ProgramState.Playing) return;
-            if (!RimMindDialogueSettings.Get().overlayEnabled) return;
 
             var settings = RimMindDialogueSettings.Get();
+            bool currentlyEnabled = settings.overlayEnabled;
+            if (currentlyEnabled && !_lastEnabledState)
+                _temporarilyClosed = false;
+            _lastEnabledState = currentlyEnabled;
 
+            if (!currentlyEnabled || _temporarilyClosed) return;
+
+            NormalizeWindowRect();
             HandleInput();
+            NormalizeWindowRect();
 
             bool isMouseOver = Mouse.IsOver(_windowRect);
 
+            Color previousColor = GUI.color;
+            GameFont previousFont = Text.Font;
+            TextAnchor previousAnchor = Text.Anchor;
             GUI.BeginGroup(_windowRect);
-            var inRect = new Rect(Vector2.zero, _windowRect.size);
-
-            Widgets.DrawBoxSolid(inRect, new Color(0.08f, 0.08f, 0.12f, settings.overlayOpacity));
-
-            DrawMessages(inRect);
-
-            if (isMouseOver)
+            try
             {
-                DrawOptionsBar(inRect);
+                var inRect = new Rect(Vector2.zero, _windowRect.size);
 
-                var resizeRect = new Rect(inRect.width - ResizeHandleSize, inRect.height - ResizeHandleSize,
-                    ResizeHandleSize, ResizeHandleSize);
-                GUI.DrawTexture(resizeRect, TexUI.WinExpandWidget);
-                TooltipHandler.TipRegion(resizeRect, "RimMind.Dialogue.UI.Overlay.DragResize".Translate());
+                Widgets.DrawBoxSolid(inRect, new Color(0.08f, 0.08f, 0.12f, settings.overlayOpacity));
+
+                DrawMessages(inRect);
+
+                if (isMouseOver)
+                {
+                    DrawOptionsBar(inRect);
+
+                    var resizeRect = new Rect(inRect.width - ResizeHandleSize, inRect.height - ResizeHandleSize,
+                        ResizeHandleSize, ResizeHandleSize);
+                    GUI.DrawTexture(resizeRect, TexUI.WinExpandWidget);
+                    TooltipHandler.TipRegion(resizeRect, "RimMind.Dialogue.UI.Overlay.DragResize".Translate());
+                }
+            }
+            finally
+            {
+                GUI.EndGroup();
+                GUI.color = previousColor;
+                Text.Font = previousFont;
+                Text.Anchor = previousAnchor;
             }
 
-            GUI.EndGroup();
-
-            SavePositionToSettings();
+            if (_positionDirty)
+            {
+                SavePositionToSettings();
+                _positionDirty = false;
+            }
         }
 
         private void DrawMessages(Rect inRect)
         {
-            if (_cacheDirty)
+            var settings = RimMindDialogueSettings.Get();
+            int maxMessages = Math.Max(0, settings.overlayMaxMessages);
+            if (_cacheDirty || _cachedMaxMessages != maxMessages)
             {
                 _cachedEntries = RimMindDialogueService.LogEntries
-                    .TakeLast(RimMindDialogueSettings.Get().overlayMaxMessages)
+                    .TakeLast(maxMessages)
                     .ToList();
+                _cachedMaxMessages = maxMessages;
                 _cacheDirty = false;
             }
 
@@ -83,37 +122,64 @@ namespace RimMind.Dialogue.Overlay
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            float y = contentRect.y;
+            var labels = new string[_cachedEntries.Count];
+            var labelWidths = new float[_cachedEntries.Count];
+            var lineHeights = new float[_cachedEntries.Count];
+            float maxLabelWidth = Mathf.Max(60f, contentRect.width * 0.4f);
             for (int i = 0; i < _cachedEntries.Count; i++)
             {
+                DialogueLogEntry entry = _cachedEntries[i];
+                string name = entry.initiatorName ?? string.Empty;
+                labels[i] = entry.IsMonologue
+                    ? $"[{name}]"
+                    : $"[{name}→{entry.recipientName ?? string.Empty}]";
+                labelWidths[i] = Mathf.Min(maxLabelWidth, Text.CalcSize(labels[i]).x);
+                float replyWidth = Mathf.Max(1f, contentRect.width - labelWidths[i] - TextPadding);
+                lineHeights[i] = Mathf.Max(
+                    Text.CalcHeight(labels[i], Mathf.Max(1f, labelWidths[i])),
+                    Text.CalcHeight(entry.reply ?? string.Empty, replyWidth)) + 2f;
+            }
+
+            int firstVisible = DialogueOverlayLayout.FindFirstVisibleIndex(lineHeights, contentRect.height);
+            float y = contentRect.y;
+            for (int i = firstVisible; i < _cachedEntries.Count; i++)
+            {
                 var entry = _cachedEntries[i];
-                string name = entry.initiatorName;
-                string label = entry.IsMonologue ? name : $"{name}→{entry.recipientName}";
-                string formattedLabel = $"[{label}]";
+                float lineHeight = Mathf.Min(lineHeights[i], contentRect.yMax - y);
+                if (lineHeight <= 0f)
+                    break;
 
-                float labelWidth = Text.CalcSize(formattedLabel).x;
-                float availableWidth = contentRect.width - labelWidth - TextPadding;
-                if (availableWidth < 50f) availableWidth = 50f;
-
-                float lineHeight = Mathf.Max(
-                    Text.CalcHeight(formattedLabel, labelWidth),
-                    Text.CalcHeight(entry.reply, availableWidth)) + 2f;
-
-                if (y + lineHeight > contentRect.yMax) break;
-
-                var labelRect = new Rect(contentRect.x, y, labelWidth, lineHeight);
-                var replyRect = new Rect(contentRect.x + labelWidth + TextPadding, y, availableWidth, lineHeight);
+                float availableWidth = Mathf.Max(1f, contentRect.width - labelWidths[i] - TextPadding);
+                var labelRect = new Rect(contentRect.x, y, labelWidths[i], lineHeight);
+                var replyRect = new Rect(contentRect.x + labelWidths[i] + TextPadding, y, availableWidth, lineHeight);
 
                 Color nameColor = GetCategoryColor(entry.category);
                 GUI.color = nameColor;
-                Widgets.Label(labelRect, formattedLabel);
+                Widgets.Label(labelRect, labels[i]);
                 GUI.color = Color.white;
-                Widgets.Label(replyRect, entry.reply);
+                Widgets.Label(replyRect, entry.reply ?? string.Empty);
 
                 y += lineHeight;
             }
 
             Text.Anchor = TextAnchor.UpperLeft;
+        }
+
+        private void NormalizeWindowRect()
+        {
+            OverlayBounds value = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(_windowRect.x, _windowRect.y, _windowRect.width, _windowRect.height),
+                Verse.UI.screenWidth,
+                Verse.UI.screenHeight,
+                MinWidth,
+                MinHeight);
+            Rect normalized = new Rect(value.X, value.Y, value.Width, value.Height);
+            if (normalized.x == _windowRect.x && normalized.y == _windowRect.y &&
+                normalized.width == _windowRect.width && normalized.height == _windowRect.height)
+                return;
+
+            _windowRect = normalized;
+            _positionDirty = true;
         }
 
         private void DrawOptionsBar(Rect inRect)
@@ -131,6 +197,11 @@ namespace RimMind.Dialogue.Overlay
             Text.Anchor = TextAnchor.UpperLeft;
 
             var openBtnRect = new Rect(barRect.xMax - 60f, barRect.y + 2f, 56f, barRect.height - 4f);
+            var closeBtnRect = new Rect(barRect.xMax - 82f, barRect.y + 2f, 20f, barRect.height - 4f);
+            if (Widgets.ButtonText(closeBtnRect, "X"))
+            {
+                _temporarilyClosed = true;
+            }
             if (Widgets.ButtonText(openBtnRect, "RimMind.Dialogue.UI.Overlay.Details".Translate()))
             {
                 Find.WindowStack.Add(new Window_DialogueLog());
@@ -146,6 +217,9 @@ namespace RimMind.Dialogue.Overlay
                 var openBtnScreenRect = new Rect(
                     _windowRect.xMax - 60f, _windowRect.y + 2f, 56f, OptionsBarHeight - 4f);
 
+                var closeBtnScreenRect = new Rect(
+                    _windowRect.xMax - 82f, _windowRect.y + 2f, 20f, OptionsBarHeight - 4f);
+
                 var resizeScreenRect = new Rect(
                     _windowRect.xMax - ResizeHandleSize, _windowRect.yMax - ResizeHandleSize,
                     ResizeHandleSize, ResizeHandleSize);
@@ -155,7 +229,8 @@ namespace RimMind.Dialogue.Overlay
                     _isResizing = true;
                     currentEvent.Use();
                 }
-                else if (!openBtnScreenRect.Contains(currentEvent.mousePosition))
+                else if (!openBtnScreenRect.Contains(currentEvent.mousePosition)
+                    && !closeBtnScreenRect.Contains(currentEvent.mousePosition))
                 {
                     var dragRect = new Rect(_windowRect.x, _windowRect.y, _windowRect.width, OptionsBarHeight);
                     if (dragRect.Contains(currentEvent.mousePosition))
@@ -168,6 +243,8 @@ namespace RimMind.Dialogue.Overlay
             }
             else if (currentEvent.type == EventType.MouseUp && currentEvent.button == 0)
             {
+                if (_isDragging || _isResizing)
+                    _positionDirty = true;
                 _isDragging = false;
                 _isResizing = false;
             }
@@ -222,27 +299,5 @@ namespace RimMind.Dialogue.Overlay
             s.overlayW = _windowRect.width;
             s.overlayH = _windowRect.height;
         }
-    }
-
-    [HarmonyPatch(typeof(UIRoot_Play), nameof(UIRoot_Play.UIRootOnGUI))]
-    public static class DialogueOverlayPatch
-    {
-        private static bool _skip;
-
-        private static void DrawOverlay()
-        {
-            _skip = !_skip;
-            if (_skip) return;
-            if (Current.ProgramState != ProgramState.Playing) return;
-
-            var mapComp = Find.CurrentMap?.GetComponent<DialogueOverlay>();
-            mapComp?.MapComponentOnGUI();
-        }
-
-        [HarmonyPrefix]
-        public static void Prefix() => DrawOverlay();
-
-        [HarmonyPostfix]
-        public static void Postfix() => DrawOverlay();
     }
 }
