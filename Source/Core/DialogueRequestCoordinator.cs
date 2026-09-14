@@ -1,5 +1,5 @@
 using System;
-using RimMind.Application.Common.Interfaces.Context;
+using System.Threading;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Application.Features.Llm;
 using RimMind.Dialogue.Settings;
@@ -16,6 +16,7 @@ namespace RimMind.Dialogue.Core
         private readonly DialogueActivityState _activityState;
         private readonly DialogueRequestReservations _reservations =
             new DialogueRequestReservations();
+        private CancellationTokenSource _gameLifetime = new CancellationTokenSource();
 
         public DialogueRequestCoordinator(DialogueActivityState activityState)
         {
@@ -27,7 +28,14 @@ namespace RimMind.Dialogue.Core
 
         public int ActivePairCount => _reservations.ActivePairCount;
 
-        public void Reset() => _reservations.Reset();
+        public void Reset()
+        {
+            CancellationTokenSource previous = _gameLifetime;
+            _gameLifetime = new CancellationTokenSource();
+            _reservations.Reset();
+            previous.Cancel();
+            previous.Dispose();
+        }
 
         public bool IsDialoguePending(int pawnIdA, int pawnIdB)
         {
@@ -42,42 +50,69 @@ namespace RimMind.Dialogue.Core
             string context,
             DialogueTriggerType type,
             Pawn? recipient,
-            bool isReply = false)
+            bool isReply = false,
+            Action<string>? onReply = null,
+            Action<string>? onError = null,
+            CancellationToken cancellationToken = default)
         {
-            RimMindDialogueSettings settings = RimMindDialogueSettings.Get();
-            int currentTick = Find.TickManager.TicksGame;
-            if (!settings.enabled || !RimMindAPI.IsConfigured())
-                return;
+            try
+            {
+                RimMindDialogueSettings settings = RimMindDialogueSettings.Get();
+                int currentTick = Find.TickManager.TicksGame;
+                string? rejection = cancellationToken.IsCancellationRequested
+                    ? "Dialogue request cancelled."
+                    : GetRejection(pawn, recipient, type, isReply, settings, currentTick);
+                if (rejection != null)
+                {
+                    Notify(onError, rejection);
+                    return;
+                }
+
+                (int, int)? pairKey = recipient == null
+                    ? null
+                    : DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber);
+                if (!_reservations.TryAcquire(
+                        pawn.thingIDNumber,
+                        pairKey,
+                        settings.globalConcurrency,
+                        out DialogueRequestReservations.DialogueReservation? reservation))
+                {
+                    Notify(onError, "Dialogue request capacity or reservation unavailable.");
+                    return;
+                }
+
+                DispatchRequest(pawn, recipient, context, type, isReply, currentTick,
+                    settings, reservation!, onReply, onError, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                RimMindErrors.Warn($"[RimMind-Dialogue] Request admission failed: {ex.Message}");
+                Notify(onError, ex.Message);
+            }
+        }
+
+        private string? GetRejection(
+            Pawn pawn,
+            Pawn? recipient,
+            DialogueTriggerType type,
+            bool isReply,
+            RimMindDialogueSettings settings,
+            int currentTick)
+        {
+            if (!settings.enabled
+                || (type == DialogueTriggerType.PlayerInput && !settings.playerDialogueEnabled))
+                return "Dialogue is disabled.";
+            if (pawn == null || pawn.Dead || pawn.Destroyed
+                || (recipient != null && (recipient.Dead || recipient.Destroyed)))
+                return "Dialogue participant is unavailable.";
+            if (!RimMindAPI.IsConfigured())
+                return "AI is not configured.";
             if (!_activityState.IsReady(settings, currentTick))
-                return;
-
-            bool isMonologue = DialogueFlowPolicy.IsMonologue(
-                type,
-                recipient != null);
+                return "Dialogue startup delay is active.";
             if (_reservations.IsPawnPending(pawn.thingIDNumber))
-            {
-                Log.Message(
-                    $"[RimMind-Dialogue] {(isMonologue ? "Monologue" : "Dialogue")} SKIPPED for {pawn.LabelShort}: pending request exists");
-                return;
-            }
-
+                return "A dialogue request is already pending for this pawn.";
             if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString()))
-            {
-                Log.Message(
-                    $"[RimMind-Dialogue] {(isMonologue ? "Monologue" : "Dialogue")} SKIPPED for {pawn.LabelShort} ({type}): AI condition not met");
-                return;
-            }
-
-            (int, int)? pairKey = recipient == null
-                ? null
-                : DialogueClassifier.MakePairKey(
-                    pawn.thingIDNumber,
-                    recipient.thingIDNumber);
-            if (pairKey.HasValue
-                && _reservations.IsPairPending(pairKey.Value))
-            {
-                return;
-            }
+                return "AI dialogue condition is not met.";
 
             if (DialogueFlowPolicy.UsesMonologueCooldown(
                     type,
@@ -88,7 +123,7 @@ namespace RimMind.Dialogue.Core
                     type,
                     settings.monologueCooldownTicks))
             {
-                return;
+                return "Monologue cooldown is active.";
             }
 
             if (DialogueFlowPolicy.UsesDailyQuota(
@@ -102,30 +137,10 @@ namespace RimMind.Dialogue.Core
                     recipient.thingIDNumber,
                     settings.maxDailyDialogueRounds))
             {
-                return;
+                return "Daily dialogue limit reached.";
             }
 
-            if (!_reservations.TryAcquire(
-                    pawn.thingIDNumber,
-                    pairKey,
-                    settings.globalConcurrency,
-                    out DialogueRequestReservations.DialogueReservation? reservation))
-            {
-                Log.Message(
-                    $"[RimMind-Dialogue] Request reservation unavailable (limit {settings.globalConcurrency}) for {pawn.LabelShort}");
-                return;
-            }
-
-            DispatchRequest(
-                pawn,
-                recipient,
-                context,
-                type,
-                isReply,
-                isMonologue,
-                currentTick,
-                settings,
-                reservation!);
+            return null;
         }
 
         public void TryTriggerReply(
@@ -163,19 +178,61 @@ namespace RimMind.Dialogue.Core
             string context,
             DialogueTriggerType type,
             bool isReply,
-            bool isMonologue,
             int currentTick,
             RimMindDialogueSettings settings,
-            DialogueRequestReservations.DialogueReservation reservation)
+            DialogueRequestReservations.DialogueReservation reservation,
+            Action<string>? onReply,
+            Action<string>? onError,
+            CancellationToken cancellationToken)
         {
             long reservationId = reservation.Id;
+            bool completed = false;
+            CancellationTokenSource? lifetime = null;
+            CancellationTokenRegistration cancellation = default;
+
+            bool TryFinish()
+            {
+                if (completed) return false;
+                completed = true;
+                cancellation.Dispose();
+                lifetime?.Dispose();
+                reservation.Dispose();
+                ClearRequestRecipient(pawn.thingIDNumber, reservationId);
+                return true;
+            }
+
+            void ReportFailure(string error, bool showAutomaticError = true)
+            {
+                if (onError != null)
+                {
+                    Notify(onError, error);
+                    return;
+                }
+                if (!showAutomaticError) return;
+                RimMindErrors.Warn($"[RimMind-Dialogue] Request failed: {error}");
+                if (!DialogueFlowPolicy.IsMonologue(type, recipient != null))
+                {
+                    Messages.Message(
+                        "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
+                        MessageTypeDefOf.RejectInput, false);
+                }
+            }
+
             try
             {
-                _activityState.RecordTrigger(
-                    currentTick,
-                    pawn.thingIDNumber,
-                    type,
-                    settings.monologueCooldownTicks);
+                lifetime = CancellationTokenSource.CreateLinkedTokenSource(
+                    _gameLifetime.Token, cancellationToken);
+                cancellation = lifetime.Token.Register(() =>
+                {
+                    if (TryFinish()) ReportFailure("Dialogue request cancelled.", false);
+                });
+                if (completed) return;
+
+                if (type != DialogueTriggerType.PlayerInput)
+                {
+                    _activityState.RecordTrigger(currentTick, pawn.thingIDNumber,
+                        type, settings.monologueCooldownTicks);
+                }
                 if (recipient != null)
                 {
                     _activityState.SetRequestRecipient(
@@ -186,81 +243,71 @@ namespace RimMind.Dialogue.Core
 
                 string formattedContext = FormatContext(type, context, recipient);
                 string triggerLabel = RimMindDialogueService.GetTriggerLabel(type);
-                Log.Message(
-                    $"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel} | Context: {formattedContext}");
+                Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel}");
 
                 string npcId = $"NPC-{pawn.thingIDNumber}";
                 var envelope = LlmRequestEnvelopeBuilder
                     .ForNpc(
                         npcId,
                         gameStateInfo: new GameStateInfo().AddSection(
-                            "dialogue_trigger",
+                            type == DialogueTriggerType.PlayerInput ? "dialogue_input" : "dialogue_trigger",
                             type == DialogueTriggerType.PlayerInput
-                                ? formattedContext
+                                ? context
                                 : "RimMind.Dialogue.Prompt.AutoTrigger".Translate()))
                     .ForScenarioId(ScenarioIds.Dialogue)
                     .WithModId("RimMind.Dialogue")
                     .WithMaxTokens(400)
-                    .WithTemperature(0.8f)
+                    .WithTemperature(type == DialogueTriggerType.PlayerInput ? 0.85f : 0.8f)
+                    .WithCancellation(lifetime.Token)
                     .Build();
 
                 RimMindAPI.Request.Send(envelope, result =>
                 {
+                    // Core delivers terminal callbacks on the main thread. Release before
+                    // response handling so an A-B reply can immediately reserve the pair.
+                    if (!TryFinish()) return;
                     try
                     {
-                        LongEventHandler.ExecuteWhenFinished(() =>
+                        if (result.IsErr)
                         {
-                            reservation.Dispose();
-                            try
-                            {
-                                if (result.IsErr)
-                                {
-                                    RimMindErrors.Warn(
-                                        $"[RimMind-Dialogue] Chat failed for {pawn.Name.ToStringShort}: {result.Error}");
-                                    if (!isMonologue)
-                                    {
-                                        Messages.Message(
-                                            "RimMind.Dialogue.UI.FloatMenu.RequestFailed"
-                                                .Translate(pawn.Name.ToStringShort),
-                                            MessageTypeDefOf.RejectInput,
-                                            false);
-                                    }
-                                    return;
-                                }
+                            ReportFailure(result.Error.ToString());
+                            return;
+                        }
+                        if (pawn.Dead || pawn.Destroyed
+                            || (recipient != null && (recipient.Dead || recipient.Destroyed)))
+                        {
+                            ReportFailure("Dialogue participant is unavailable.");
+                            return;
+                        }
+                        if (string.IsNullOrWhiteSpace(result.Value.Content))
+                        {
+                            ReportFailure("Empty reply.");
+                            return;
+                        }
 
-                                NpcResponseHandler.Handle(
-                                    result.Value,
-                                    npcId,
-                                    pawn,
-                                    recipient,
-                                    formattedContext,
-                                    type,
-                                    isReply);
-                            }
-                            finally
-                            {
-                                ClearRequestRecipient(
-                                    pawn.thingIDNumber,
-                                    reservationId);
-                            }
-                        });
+                        NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient,
+                            type == DialogueTriggerType.PlayerInput ? context : formattedContext,
+                            type, isReply);
+                        Notify(onReply, result.Value.Content);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        reservation.Dispose();
-                        ClearRequestRecipient(
-                            pawn.thingIDNumber,
-                            reservationId);
-                        throw;
+                        ReportFailure(ex.Message);
                     }
                 });
             }
             catch (Exception ex)
             {
-                reservation.Dispose();
-                ClearRequestRecipient(pawn.thingIDNumber, reservationId);
-                RimMindErrors.Warn(
-                    $"[RimMind-Dialogue] Request dispatch failed for {pawn.Name.ToStringShort}: {ex.Message}");
+                if (TryFinish()) ReportFailure(ex.Message);
+            }
+        }
+
+        private static void Notify(Action<string>? callback, string value)
+        {
+            try { callback?.Invoke(value); }
+            catch (Exception ex)
+            {
+                RimMindErrors.Warn($"[RimMind-Dialogue] Completion subscriber failed: {ex.Message}");
             }
         }
 

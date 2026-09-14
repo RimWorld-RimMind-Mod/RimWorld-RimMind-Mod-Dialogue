@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using RimMind.Dialogue.Core;
-using RimMind.Testing;
 using Verse;
 using Xunit;
 
@@ -10,17 +9,7 @@ namespace RimMind.Dialogue.Tests.Contracts
     public sealed class DialogueThoughtInjectionContracts
     {
         [Fact]
-        public void Stable_thought_and_lifecycle_boundaries()
-        {
-            ContractCaseRunner.Run(
-                ("built in thought tags retain mood offsets", BuiltInTagsRetainOffsets),
-                ("thought tags are case insensitive and externally extensible", TagsAreExtensible),
-                ("unknown thought tags degrade without mood changes", UnknownTagsDegradeSafely),
-                ("dialogue lifecycle records only non reply paired dialogue", LifecycleQuotaSemanticsRemainExplicit),
-                ("thought payload fields remain save compatible", ThoughtPayloadRemainsSaveCompatible));
-        }
-
-        private static void BuiltInTagsRetainOffsets()
+        public void BuiltInTagsRetainOffsets()
         {
             Assert.Equal(1, ThoughtInjector.MapTagToMoodOffset("ENCOURAGED"));
             Assert.Equal(-1, ThoughtInjector.MapTagToMoodOffset("HURT"));
@@ -30,7 +19,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(-1, ThoughtInjector.MapTagToMoodOffset("IRRITATED"));
         }
 
-        private static void TagsAreExtensible()
+        [Fact]
+        public void TagsAreExtensible()
         {
             string tag = "contract_external_tag_" + Guid.NewGuid().ToString("N");
             ThoughtInjector.RegisterThoughtTag(tag, 3, "RimMind.Dialogue.Thought.ContractExternal");
@@ -41,14 +31,16 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ThoughtInjector.MapTagToLabel(tag.ToUpperInvariant()));
         }
 
-        private static void UnknownTagsDegradeSafely()
+        [Fact]
+        public void UnknownTagsDegradeSafely()
         {
             string tag = "CONTRACT_UNKNOWN_" + Guid.NewGuid().ToString("N");
             Assert.Equal(0, ThoughtInjector.MapTagToMoodOffset(tag));
             Assert.Equal(tag, ThoughtInjector.MapTagToLabel(tag));
         }
 
-        private static void LifecycleQuotaSemanticsRemainExplicit()
+        [Fact]
+        public void LifecycleQuotaSemanticsRemainExplicit()
         {
             Assert.True(DialogueFlowPolicy.IsMonologue(DialogueTriggerType.Auto, hasRecipient: false));
             Assert.False(DialogueFlowPolicy.IsMonologue(
@@ -89,7 +81,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.True(replyLimiter.TryConsume((1, 2), day: 2, maximumPerDay: 2));
         }
 
-        private static void ThoughtPayloadRemainsSaveCompatible()
+        [Fact]
+        public void ThoughtPayloadRemainsSaveCompatible()
         {
             Scribe_Values.Reset();
             new Thought_RimMindDialogue().ExposeData();

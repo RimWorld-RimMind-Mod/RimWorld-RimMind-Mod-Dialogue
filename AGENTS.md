@@ -10,7 +10,7 @@ AI对话系统，拦截游戏事件生成上下文对话，注入Thought，支�
 
 通过Harmony Patch监听Chitchat/Hediff/技能升级/心情变化 → `RimMindDialogueService.HandleTrigger` → `DialogueRequestCoordinator` → `RimMindAPI.Request.Send` → `NpcResponseHandler.Handle` 解析JSON响应(reply/thought/relation_delta) → `ThoughtInjector` 注入独白/关系Thought。请求、活动状态、日志和响应副作用各有单一入口。
 
-依赖: Core(编译期)，Memory/Actions(反射松耦合)。
+依赖: Core(编译期)。可选 Memory 集成使用 Core 公共 `RimMindAPI.Memory`，不引用 Memory 实现程序集。
 
 ## 构建
 
@@ -34,9 +34,8 @@ Source/
 │   ├── DialogueRequestCoordinator.cs 请求门控、派发与完成清理
 │   ├── DialogueActivityState.cs     冷却、配额、接收者与Pawn查询
 │   ├── DialogueLogStore.cs          有界日志与只读快照
-│   ├── DialogueService.cs           玩家对话请求服务
+│   ├── DialogueService.cs           玩家兼容入口，直接进入同一请求协调器
 │   ├── NpcResponseHandler.cs        统一响应处理(自动+玩家对话共用,含感知发布)
-│   └── MemoryBridge.cs              反射桥接RimMindMemoryAPI
 ├── Comps/CompRimMindDialogue.cs     ThingComp(非殖民者首行return, 1000tick检查)
 ├── UI/Window_Dialogue.cs / Window_DialogueLog.cs / DialogueOverlay.cs
 ├── Thoughts/ThoughtInjector.cs + Thought_RimMindDialogue.cs + Thought_RelationDialogue.cs
@@ -45,11 +44,13 @@ Source/
 └── Settings/RimMindDialogueSettings.cs
 ```
 
-## HandleTrigger 检查流程
+## 统一请求生命周期
 
-1. 总开关 → 2. API配置 → 3. IsReady → 4. Pawn Reservation → 5. ShouldSkipDialogue → 6. Pair Reservation → 7. 独白冷却 → 8. 每日对话限制 → 发送 `RimMindAPI.Request.Send`
+自动触发通过 `RimMindDialogueService.HandleTrigger`，玩家输入通过 `DialogueService.RequestReply`，两者直接进入同一个 `DialogueRequestCoordinator`：总开关（玩家另查玩家开关）→ 参与者有效性 → API配置 → IsReady → Pawn pending → ShouldSkipDialogue → 自动冷却/配额策略 → 原子 Pawn/Pair/全局容量预约 → 唯一 `RimMindAPI.Request.Send`。
 
-回调通过 `LongEventHandler.ExecuteWhenFinished` 调度到主线程。
+玩家多轮输入不消耗自动每日配额或独白冷却；自动 A-B 回复仍连续进行，由独立 pair reply limiter 限制。
+
+入口、窗口取消与游戏重置均在主线程调用。Core 已在主线程交付完成回调，不再通过 `LongEventHandler` 重复调度。拒绝、同步抛错、失败、取消均结束玩家等待；关闭窗口或游戏重置会取消在途请求，旧/重复回调不执行响应副作用。清理先释放预约再调用 `NpcResponseHandler`，允许下一轮 A-B 回复获取同一 pair。
 
 ## Thought标签与心情映射
 
@@ -85,7 +86,7 @@ Source/
 - 全部静态服务，全局唯一
 - 翻译键前缀: `RimMind.Dialogue.*`
 - 翻译键大小写: Thought标签翻译键使用全大写（如 `RimMind.Dialogue.Thought.ENCOURAGED`），与XML保持一致
-- Memory/Actions调用必须反射松耦合(检查 `ModsConfig.IsActive` 先)
+- Memory 写入只走 Core 公共 `RimMindAPI.Memory`；可选模块未启用时跳过，不新增反射链
 - 日志上限500条(ConcurrentBag + 脏标记缓存)
 - `isMonologue` 判断: `recipient == null && type != PlayerInput`（`HandleTrigger` 与 `NpcResponseHandler.Handle` 统一使用此公式）
 - `reply` 触发: `TryTriggerReply` 用 `isReply: true` 绕过每日限额检查，`NpcResponseHandler.Handle` 对 `isReply=true` 不调用 `RecordDailyDialogue`（reply 是对话链的自然延续，不额外消耗每日额度）
@@ -106,7 +107,7 @@ Source/
 - 修改 `dialogue_task` provider 的触发条件
 
 ### 🚫 绝对禁止
-- MemoryBridge/跨模组调用使用编译期引用
+- 对 Memory/Actions 实现程序集新增编译期引用；访问 Core Internal
 - 后台线程调用 `MoteMaker.ThrowText`/`ThoughtInjector.Inject`
 - Gizmo按钮对话忽略 `initiator` 参数(导致玩家对话被当作独白)
 - LabelMap翻译键使用与XML不一致的大小写

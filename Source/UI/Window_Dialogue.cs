@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using RimMind.Domain.ValueObjects;
 using RimMind.Dialogue.Core;
 using RimWorld;
@@ -14,6 +15,8 @@ namespace RimMind.Dialogue.UI
         private readonly List<(string role, string content)> _messages = new List<(string, string)>();
         private string _inputText = string.Empty;
         private bool _isWaiting;
+        private bool _closed;
+        private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
         private Vector2 _scrollPosition;
         private bool _autoScroll = true;
         private const float InputHeight = 36f;
@@ -44,7 +47,13 @@ namespace RimMind.Dialogue.UI
 
         public override void PostClose()
         {
+            if (_closed) return;
+            _closed = true;
+            _isWaiting = false;
+            _lifetime.Cancel();
+            _lifetime.Dispose();
             RimMindDialogueService.SetActiveRecipient(_pawn, null);
+            base.PostClose();
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -180,6 +189,7 @@ namespace RimMind.Dialogue.UI
 
         private void SendMessage()
         {
+            if (_closed) return;
             string message = _inputText.Trim();
             _inputText = string.Empty;
             _isWaiting = true;
@@ -191,19 +201,21 @@ namespace RimMind.Dialogue.UI
             DialogueService.RequestReply(_pawn, message, _initiator,
                 onReply: reply =>
                 {
+                    if (_closed) return;
                     _messages.Add(("assistant", reply));
                     _isWaiting = false;
                     _autoScroll = true;
                 },
                 onError: error =>
                 {
+                    if (_closed) return;
                     _isWaiting = false;
                     _autoScroll = true;
                     RimMindErrors.Warn($"[RimMind-Dialogue] Player dialogue error: {error}");
                     Messages.Message(
                         "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(_pawn.Name.ToStringShort),
                         MessageTypeDefOf.RejectInput, false);
-                });
+                }, cancellationToken: _lifetime.Token);
         }
     }
 }

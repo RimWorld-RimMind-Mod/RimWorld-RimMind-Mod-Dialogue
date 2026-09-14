@@ -12,7 +12,8 @@ namespace RimMind.Dialogue.Core
             DialogueTriggerType type,
             bool hasRecipient,
             bool isReply)
-            => !IsMonologue(type, hasRecipient) && hasRecipient && !isReply;
+            => type != DialogueTriggerType.PlayerInput
+               && !IsMonologue(type, hasRecipient) && hasRecipient && !isReply;
 
         public static bool UsesMonologueCooldown(
             DialogueTriggerType type,

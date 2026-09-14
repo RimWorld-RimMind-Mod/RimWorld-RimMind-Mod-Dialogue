@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using RimMind.Dialogue.Core;
-using RimMind.Testing;
 using Xunit;
 
 namespace RimMind.Dialogue.Tests.Contracts
@@ -9,19 +8,7 @@ namespace RimMind.Dialogue.Tests.Contracts
     public sealed class DialogueGateErrorContracts
     {
         [Fact]
-        public void Gate_error_and_stale_response_boundaries()
-        {
-            ContractCaseRunner.Run(
-                ("pawn and pair reservations are acquired atomically", AtomicPawnAndPairReservation),
-                ("concurrent contenders cannot exceed global capacity", ConcurrentContendersRespectCapacity),
-                ("global request capacity is enforced by the same reservation boundary", GlobalCapacityIsAtomic),
-                ("request errors release pawn and pair reservations", DisposalReleasesReservations),
-                ("cleanup is idempotent across overlapping error paths", CleanupIsIdempotent),
-                ("lifecycle reset fences stale lease cleanup", ResetFencesStaleLeaseCleanup),
-                ("active recipient cleanup is request ownership aware", RecipientCleanupIsOwnershipAware));
-        }
-
-        private static void AtomicPawnAndPairReservation()
+        public void AtomicPawnAndPairReservation()
         {
             var reservations = new DialogueRequestReservations();
             Assert.True(reservations.TryAcquire(1, (1, 2), 4, out var first));
@@ -32,7 +19,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             first!.Dispose();
         }
 
-        private static void GlobalCapacityIsAtomic()
+        [Fact]
+        public void GlobalCapacityIsAtomic()
         {
             var reservations = new DialogueRequestReservations();
             Assert.True(reservations.TryAcquire(1, null, 1, out var first));
@@ -41,7 +29,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             first!.Dispose();
         }
 
-        private static void ConcurrentContendersRespectCapacity()
+        [Fact]
+        public void ConcurrentContendersRespectCapacity()
         {
             var reservations = new DialogueRequestReservations();
             var leases = new ConcurrentBag<DialogueRequestReservations.DialogueReservation>();
@@ -57,7 +46,8 @@ namespace RimMind.Dialogue.Tests.Contracts
                 lease.Dispose();
         }
 
-        private static void DisposalReleasesReservations()
+        [Fact]
+        public void DisposalReleasesReservations()
         {
             var reservations = new DialogueRequestReservations();
             Assert.True(reservations.TryAcquire(7, (7, 8), 2, out var lease));
@@ -69,7 +59,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             next!.Dispose();
         }
 
-        private static void CleanupIsIdempotent()
+        [Fact]
+        public void CleanupIsIdempotent()
         {
             var reservations = new DialogueRequestReservations();
             Assert.True(reservations.TryAcquire(9, null, 1, out var lease));
@@ -78,7 +69,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(0, reservations.ActivePawnCount);
         }
 
-        private static void ResetFencesStaleLeaseCleanup()
+        [Fact]
+        public void ResetFencesStaleLeaseCleanup()
         {
             var reservations = new DialogueRequestReservations();
             Assert.True(reservations.TryAcquire(1, (1, 2), 1, out var stale));
@@ -91,7 +83,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             current!.Dispose();
         }
 
-        private static void RecipientCleanupIsOwnershipAware()
+        [Fact]
+        public void RecipientCleanupIsOwnershipAware()
         {
             var recipients = new DialogueActiveRecipientRegistry();
             recipients.SetRequest(pawnId: 1, recipientId: 2, ownerId: 10);

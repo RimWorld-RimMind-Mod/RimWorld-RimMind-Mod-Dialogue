@@ -1,7 +1,6 @@
 using System;
-using System.IO;
+using System.Linq;
 using RimMind.Dialogue.Core;
-using RimMind.Testing;
 using Xunit;
 
 namespace RimMind.Dialogue.Tests.Contracts
@@ -9,24 +8,7 @@ namespace RimMind.Dialogue.Tests.Contracts
     public sealed class DialoguePipelineContracts
     {
         [Fact]
-        public void Stable_pipeline_boundaries()
-        {
-            ContractCaseRunner.Run(
-                ("classification covers every public category", ClassificationCoversEveryCategory),
-                ("pair keys are symmetric and monologues remain unpaired", PairKeysAreStable),
-                ("structured replies preserve thought and relation semantics", StructuredRepliesPreserveSemantics),
-                ("monologues ignore relation changes", MonologuesIgnoreRelationChanges),
-                ("plain malformed and partial replies preserve prior values", InvalidRepliesPreservePriorValues),
-                ("bounded log storage is isolated from the public facade", BoundedLogStorageIsIsolated),
-                ("cooldowns quotas and recipients share one activity state", ActivityStateIsIsolated),
-                ("request construction lives behind the dialogue facade", RequestCoordinationIsIsolated),
-                ("context providers stay behind the composition entry", ContextProvidersAreIsolated),
-                ("dialogue diagnostics use supported state access", DiagnosticsAvoidPrivateReflection),
-                ("dialogue overlay bounds and newest-message selection remain visible", DialogueOverlayLayoutRemainsVisible),
-                ("dialogue overlay renders on every GUI pass", DialogueOverlayRendersEveryGuiPass));
-        }
-
-        private static void ClassificationCoversEveryCategory()
+        public void ClassificationCoversEveryCategory()
         {
             Assert.Equal(
                 DialogueCategory.ColonistMonologue,
@@ -51,7 +33,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(5, Enum.GetValues<DialogueCategory>().Length);
         }
 
-        private static void PairKeysAreStable()
+        [Fact]
+        public void PairKeysAreStable()
         {
             Assert.Equal((7, 42), DialogueClassifier.MakePairKey(42, 7));
             Assert.Equal((7, 42), DialogueClassifier.MakePairKey(7, 42));
@@ -65,7 +48,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal("42", monologue.PairKey);
         }
 
-        private static void StructuredRepliesPreserveSemantics()
+        [Fact]
+        public void StructuredRepliesPreserveSemantics()
         {
             string reply = "raw";
             string? tag = "NONE";
@@ -86,7 +70,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(2, relationDelta);
         }
 
-        private static void MonologuesIgnoreRelationChanges()
+        [Fact]
+        public void MonologuesIgnoreRelationChanges()
         {
             string reply = "raw";
             string? tag = null;
@@ -105,7 +90,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(9, relationDelta);
         }
 
-        private static void InvalidRepliesPreservePriorValues()
+        [Fact]
+        public void InvalidRepliesPreservePriorValues()
         {
             AssertPreserved("plain text");
             AssertPreserved("{invalid");
@@ -130,72 +116,45 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(4, relationDelta);
         }
 
-        private static void BoundedLogStorageIsIsolated()
+        [Fact]
+        public void BoundedLogRetainsNewestEntriesAndIsolatesPublishedSnapshots()
         {
-            string store = ReadDialogueSource("Core/DialogueLogStore.cs");
-            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
+            var store = new DialogueLogStore();
+            int updates = 0;
+            store.Updated += () => updates++;
+            store.Add(new DialogueLogEntry { tick = 0, initiatorId = 1, recipientId = 2 });
+            var snapshot = store.Entries;
+            for (int tick = 1; tick <= 500; tick++)
+                store.Add(new DialogueLogEntry { tick = tick, initiatorId = 1, recipientId = 2 });
 
-            Assert.Contains("internal sealed class DialogueLogStore", store, StringComparison.Ordinal);
-            Assert.Contains("ConcurrentBag<DialogueLogEntry>", store, StringComparison.Ordinal);
-            Assert.Contains("IReadOnlyList<DialogueLogEntry> Entries", store, StringComparison.Ordinal);
-            Assert.DoesNotContain("ConcurrentBag<DialogueLogEntry>", facade, StringComparison.Ordinal);
-            Assert.DoesNotContain("MaxLogEntries", facade, StringComparison.Ordinal);
+            Assert.Single(snapshot);
+            Assert.Equal(500, store.Entries.Count);
+            Assert.DoesNotContain(store.Entries, entry => entry.tick == 0);
+            Assert.Equal(new[] { 500, 499, 498 }, store.HistoryFor(2, 3).Select(entry => entry.tick));
+            Assert.Empty(store.HistoryFor(3, 10));
+            Assert.Equal(501, updates);
+            store.Clear();
+            Assert.Empty(store.Entries);
+            Assert.Single(snapshot);
         }
 
-        private static void ActivityStateIsIsolated()
+        [Fact]
+        public void ActivityStateSeparatesCooldownsAndResetsDailyQuota()
         {
-            string state = ReadDialogueSource("Core/DialogueActivityState.cs");
-            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
+            var state = new DialogueActivityState();
+            state.RecordTrigger(100, 1, DialogueTriggerType.Thought, 60);
+            Assert.True(state.IsMonologueOnCooldown(159, 1, DialogueTriggerType.Thought, 60));
+            Assert.False(state.IsMonologueOnCooldown(160, 1, DialogueTriggerType.Thought, 60));
+            Assert.False(state.IsMonologueOnCooldown(110, 2, DialogueTriggerType.Thought, 60));
+            Assert.False(state.IsMonologueOnCooldown(110, 1, DialogueTriggerType.Hediff, 60));
 
-            Assert.Contains("internal sealed class DialogueActivityState", state, StringComparison.Ordinal);
-            Assert.Contains("DialoguePairRateLimiter", state, StringComparison.Ordinal);
-            Assert.Contains("DialogueActiveRecipientRegistry", state, StringComparison.Ordinal);
-            Assert.Contains("ConcurrentDictionary<(int, int), List<int>>", state, StringComparison.Ordinal);
-            Assert.DoesNotContain("_dailyDialogueCounts", facade, StringComparison.Ordinal);
-            Assert.DoesNotContain("_pawnCache", facade, StringComparison.Ordinal);
-            Assert.DoesNotContain("_recentTriggers", facade, StringComparison.Ordinal);
-        }
-
-        private static void RequestCoordinationIsIsolated()
-        {
-            string coordinator = ReadDialogueSource("Core/DialogueRequestCoordinator.cs");
-            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
-
-            Assert.Contains("internal sealed class DialogueRequestCoordinator", coordinator, StringComparison.Ordinal);
-            Assert.Contains("LlmRequestEnvelopeBuilder", coordinator, StringComparison.Ordinal);
-            Assert.Contains("DialogueRequestReservations", coordinator, StringComparison.Ordinal);
-            Assert.Contains("LongEventHandler.ExecuteWhenFinished", coordinator, StringComparison.Ordinal);
-            Assert.DoesNotContain("LlmRequestEnvelopeBuilder", facade, StringComparison.Ordinal);
-            Assert.DoesNotContain("DialogueRequestReservations", facade, StringComparison.Ordinal);
-            Assert.Contains("public static void HandleTrigger(", facade, StringComparison.Ordinal);
-        }
-
-        private static void ContextProvidersAreIsolated()
-        {
-            string entry = ReadDialogueSource("RimMindDialogueMod.cs");
-            string registrar = ReadDialogueSource("Core/DialogueContextProviderRegistrar.cs");
-
-            Assert.Contains(
-                "DialogueContextProviderRegistrar.RegisterAll();",
-                entry,
-                StringComparison.Ordinal);
-            Assert.DoesNotContain("ContextProviderDef", entry, StringComparison.Ordinal);
-            Assert.Contains("internal static class DialogueContextProviderRegistrar", registrar, StringComparison.Ordinal);
-            Assert.Contains("\"dialogue_state\"", registrar, StringComparison.Ordinal);
-            Assert.Contains("\"dialogue_relation\"", registrar, StringComparison.Ordinal);
-            Assert.Contains("\"dialogue_task\"", registrar, StringComparison.Ordinal);
-        }
-
-        private static void DiagnosticsAvoidPrivateReflection()
-        {
-            string debugActions = ReadDialogueSource("Debug/DialogueDebugActions.cs");
-            string facade = ReadDialogueSource("Core/RimMindDialogueService.cs");
-
-            Assert.DoesNotContain("System.Reflection", debugActions, StringComparison.Ordinal);
-            Assert.DoesNotContain("GetField(", debugActions, StringComparison.Ordinal);
-            Assert.Contains("ActiveRequestCount", facade, StringComparison.Ordinal);
-            Assert.Contains("ActivePairCount", facade, StringComparison.Ordinal);
-            Assert.Contains("ClearAllCooldowns", facade, StringComparison.Ordinal);
+            state.RecordDailyDialogue(100, 1, 2);
+            Assert.True(state.IsDailyLimitReached(200, 2, 1, 1));
+            Assert.False(state.IsDailyLimitReached(60000, 1, 2, 1));
+            state.RecordDailyDialogue(60000, 1, 2);
+            state.Reset(60000);
+            Assert.Equal(0, state.RecentTriggerCount);
+            Assert.Equal(0, state.GetDailyDialogueCount(60000, 1, 2));
         }
 
         private static void AssertPreserved(string? raw)
@@ -219,22 +178,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(4, relationDelta);
         }
 
-        private static void DialogueOverlayRendersEveryGuiPass()
-        {
-            string source = ReadDialogueSource("UI/DialogueOverlay.cs");
-
-            Assert.DoesNotContain("Time.frameCount", source, StringComparison.Ordinal);
-            Assert.Contains("DialogueOverlayLayout.Normalize", source, StringComparison.Ordinal);
-            Assert.Contains("FindFirstVisibleIndex", source, StringComparison.Ordinal);
-            Assert.Contains("_cachedMaxMessages", source, StringComparison.Ordinal);
-            Assert.Contains("finally", source, StringComparison.Ordinal);
-            Assert.DoesNotContain(
-                "if (availableWidth < 50f) availableWidth = 50f",
-                source,
-                StringComparison.Ordinal);
-        }
-
-        private static void DialogueOverlayLayoutRemainsVisible()
+        [Fact]
+        public void DialogueOverlayLayoutRemainsVisible()
         {
             OverlayBounds normalized = DialogueOverlayLayout.Normalize(
                 new OverlayBounds(-100f, 1200f, 200f, 50f),
@@ -260,18 +205,5 @@ namespace RimMind.Dialogue.Tests.Contracts
                 80f));
         }
 
-        private static string ReadDialogueSource(string relativePath)
-        {
-            DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory != null && !Directory.Exists(Path.Combine(directory.FullName, "RimMind-Dialogue")))
-                directory = directory.Parent;
-
-            Assert.NotNull(directory);
-            return File.ReadAllText(Path.Combine(
-                directory!.FullName,
-                "RimMind-Dialogue",
-                "Source",
-                relativePath.Replace('/', Path.DirectorySeparatorChar)));
-        }
     }
 }

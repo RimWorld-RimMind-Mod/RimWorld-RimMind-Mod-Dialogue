@@ -34,6 +34,7 @@ namespace RimMind.Dialogue.Comps
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
             if (!(parent.Faction?.IsPlayer ?? false)) yield break;
+            if (!RimMindDialogueSettings.Get().enabled) yield break;
             if (!RimMindDialogueSettings.Get().playerDialogueEnabled) yield break;
 
             yield return new Command_Action

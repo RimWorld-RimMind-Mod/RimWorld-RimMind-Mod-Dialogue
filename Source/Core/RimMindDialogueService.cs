@@ -15,6 +15,8 @@ namespace RimMind.Dialogue.Core
         private static readonly DialogueRequestCoordinator _requestCoordinator =
             new DialogueRequestCoordinator(_activityState);
 
+        internal static DialogueRequestCoordinator RequestCoordinator => _requestCoordinator;
+
         private static readonly DialogueLogStore _logStore =
             new DialogueLogStore();
 

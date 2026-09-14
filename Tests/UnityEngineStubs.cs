@@ -6,6 +6,7 @@ namespace UnityEngine
     public static class Mathf
     {
         public static float Abs(float f) => Math.Abs(f);
+        public static float Max(float a, float b) => Math.Max(a, b);
         public static float Clamp(float value, float min, float max) =>
             value < min ? min : (value > max ? max : value);
     }

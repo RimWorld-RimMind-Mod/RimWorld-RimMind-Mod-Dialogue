@@ -111,7 +111,7 @@ namespace RimMind.Dialogue.Core
         {
             CleanExpiredDailyCounts(currentTick);
             var key = DialogueClassifier.MakePairKey(idA, idB);
-            return _dailyDialogueCounts.TryGetValue(key, out List<int> ticks)
+            return _dailyDialogueCounts.TryGetValue(key, out var ticks)
                 ? ticks.Count
                 : 0;
         }
@@ -147,7 +147,7 @@ namespace RimMind.Dialogue.Core
             if (_pawnCacheTick < 0 || currentTick - _pawnCacheTick >= 600)
                 RebuildPawnCache(currentTick);
 
-            return _pawnCache.TryGetValue(recipientId, out Pawn cached)
+            return _pawnCache.TryGetValue(recipientId, out var cached)
                 ? cached
                 : null;
         }

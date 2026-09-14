@@ -1,11 +1,5 @@
 using System;
-using RimMind.Application.Common.Models.Context;
-using RimMind.Application.Features.Llm;
-using RimMind.Domain.Llm;
-using RimMind.Domain.ValueObjects;
-using RimMind.Presentation.Api;
-using RimMind.Application.Common.Interfaces.Context;
-using RimMind.Dialogue.Settings;
+using System.Threading;
 using Verse;
 
 namespace RimMind.Dialogue.Core
@@ -13,43 +7,13 @@ namespace RimMind.Dialogue.Core
     public static class DialogueService
     {
         /// <summary>
-        /// 玩家对话请求，统一 RimMindAPI.Request.Send 路径
+        /// 玩家对话兼容入口；与自动触发共享唯一请求协调器。调用与取消均在主线程。
         /// </summary>
         public static void RequestReply(Pawn pawn, string playerMessage, Pawn? initiator,
-            Action<string> onReply, Action<string> onError)
-        {
-            var npcId = $"NPC-{pawn.thingIDNumber}";
-
-            var envelope = LlmRequestEnvelopeBuilder
-                .ForNpc(npcId, gameStateInfo: new GameStateInfo().AddSection("dialogue_input", playerMessage))
-                .ForScenarioId(ScenarioIds.Dialogue)
-                .WithModId("RimMind.Dialogue")
-                .WithMaxTokens(400)
-                .WithTemperature(0.85f)
-                .Build();
-
-            RimMindAPI.Request.Send(envelope, result =>
-            {
-                LongEventHandler.ExecuteWhenFinished(() =>
-                {
-                    if (result.IsErr)
-                    {
-                        onError(result.Error.ToString());
-                        return;
-                    }
-
-                    string replyText = result.Value.Content ?? string.Empty;
-                    if (replyText.NullOrEmpty())
-                    {
-                        onError("Empty reply");
-                        return;
-                    }
-
-                    NpcResponseHandler.Handle(result.Value, npcId, pawn, initiator, playerMessage, DialogueTriggerType.PlayerInput);
-
-                    onReply(replyText);
-                });
-            });
-        }
+            Action<string> onReply, Action<string> onError,
+            CancellationToken cancellationToken = default)
+            => RimMindDialogueService.RequestCoordinator.HandleTrigger(
+                pawn, playerMessage, DialogueTriggerType.PlayerInput, initiator,
+                onReply: onReply, onError: onError, cancellationToken: cancellationToken);
     }
 }

@@ -1,22 +1,34 @@
-namespace RimWorld
+using Verse;
+
+namespace Verse
 {
     // Pawn 存根，仅提供编译所需的最小属性链
-    public class Pawn
+    public class Pawn : Thing
     {
-        public int thingIDNumber;
         public bool IsColonist;
         public bool Dead;
         public bool Destroyed;
-        public Pawn_NeedsTracker? needs;
+        public RimWorld.Pawn_NeedsTracker? needs;
         public NameTriple Name => new NameTriple();
-        public string LabelShort => "TestPawn";
-        public string ThingID => "Thing_" + thingIDNumber;
+        public bool IsPrisoner;
+        public bool IsSlave;
+        public bool Downed;
+        public bool IsFreeNonSlaveColonist = true;
+        public RimWorld.Pawn_DraftController? drafter;
+        public Map? Map;
+        public UnityEngine.Vector3 DrawPos;
+        public bool IsHashIntervalTick(int interval) => true;
     }
 
     public class NameTriple
     {
         public string ToStringShort => "TestPawn";
     }
+}
+
+namespace RimWorld
+{
+    public class Pawn_DraftController { public bool Drafted; }
 
     public class Pawn_NeedsTracker
     {

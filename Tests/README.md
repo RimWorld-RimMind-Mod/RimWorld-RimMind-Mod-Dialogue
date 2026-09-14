@@ -1,53 +1,40 @@
 # RimMind Dialogue contract tests
 
-The project now compiles only the active behavior contracts and their explicitly
-listed production seams. Legacy files remain on disk but are excluded.
+The project compiles production lifecycle and policy code directly. Core Domain and
+Application are project references, including the real request-envelope builder.
 
 ## Active contract manifest
 
-| Contract | Stable boundaries | Discovered facts |
+| Contract | Behavior | Discovered cases |
 |---|---|---:|
-| `Contracts/DialoguePipelineContracts.cs` | classification, pair keys, monologue/relation semantics, response parsing | 1 |
-| `Contracts/DialogueThoughtInjectionContracts.cs` | thought tags, continuous reply rate limit, active-dialogue quota policy, Thought save fields | 1 |
-| `Contracts/DialogueGateErrorContracts.cs` | atomic Pawn/pair/capacity reservation, lifecycle reset fencing and ownership-aware cleanup | 1 |
+| `Contracts/DialoguePipelineContracts.cs` | classification, pair keys, parser, bounded log snapshots, activity cooldown/quota, overlay geometry | 8 |
+| `Contracts/DialogueThoughtInjectionContracts.cs` | thought tags, reply rate limit, quota policy, Thought save fields | 5 |
+| `Contracts/DialogueGateErrorContracts.cs` | atomic Pawn/pair/capacity reservations, lifecycle fencing and ownership cleanup | 7 |
+| `Contracts/DialogueRequestLifecycleContracts.cs` | real player/automatic entries, shared admission and envelopes, response effects, cancellation, failure and window/Gizmo lifecycle | 31 |
 
-Current discovery count: **3 Facts**, **0 Theories** (budget: <= 40).
-Each Fact uses `ContractCaseRunner` to report its named scenarios independently.
+Current discovery count: **51 cases**, including every Theory row (module budget:
+strictly below 1000). Unrelated scenarios are independently discovered, not hidden
+inside a budget-reducing umbrella Fact.
 
 ## Active project entry
 
-The active project entry includes:
+`RimMindDialogue.Tests.csproj` explicitly lists production files. Lifecycle tests
+execute `DialogueService`, `RimMindDialogueService`, `DialogueRequestCoordinator`,
+`DialogueActivityState`, `NpcResponseHandler`, `Window_Dialogue`, the settings class
+and `CompRimMindDialogue`; they do not copy the admission or completion algorithm.
 
-```xml
-<PropertyGroup>
-  <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-</PropertyGroup>
-<ItemGroup>
-  <Compile Include="Contracts\**\*.cs" />
-  <Compile Include="..\..\RimMind-Core\TestSupport\ContractCaseRunner.cs"
-           Link="Support\ContractCaseRunner.cs" />
-  <Compile Include="RimWorldStubs.cs" />
-  <Compile Include="UnityEngineStubs.cs" />
-  <Compile Include="VerseStubs.cs" />
-  <Compile Include="..\Source\Core\ResponseJsonParser.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialogueTypes.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialogueClassifier.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialogueLogEntry.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialogueFlowPolicy.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialogueRequestReservations.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialogueActiveRecipientRegistry.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Core\DialoguePairRateLimiter.cs" LinkBase="Core" />
-  <Compile Include="..\Source\Thoughts\ThoughtInjector.cs" LinkBase="Thoughts" />
-  <Compile Include="..\Source\Thoughts\Thought_RimMindDialogue.cs" LinkBase="Thoughts" />
-  <Compile Include="..\Source\Thoughts\Thought_RelationDialogue.cs" LinkBase="Thoughts" />
-</ItemGroup>
+`DialogueBoundaryStubs.cs`, `VerseStubs.cs`, `RimWorldStubs.cs` and
+`UnityEngineStubs.cs` replace only external Core facade and game-engine dependencies.
+The request boundary captures real envelopes and delivers controlled terminal
+results. GUI input is driven through `DoWindowContents`, with no private-field
+reflection. These tests do not validate real Unity rendering or a loaded game.
+
+From the repository root:
+
+```powershell
+dotnet test RimMind-Dialogue/Tests/RimMindDialogue.Tests.csproj -c Release
+dotnet build RimMind-Dialogue/Source/RimMindDialogue.csproj -c Release
 ```
-
-Legacy compile categories superseded by these contracts are:
-
-- classifier, parser, and parser edge-case tests;
-- monologue, quota, lifecycle, log-entry, and pair-key tests;
-- Thought mapping, key convention, concurrency, and injection tests.
 
 ## Retired legacy tests
 

@@ -21,9 +21,8 @@
     <Compile Include="RimWorldStubs.cs" />
     <Compile Include="UnityEngineStubs.cs" />
     <Compile Include="VerseStubs.cs" />
+    <Compile Include="DialogueBoundaryStubs.cs" />
     <Compile Include="Contracts\**\*.cs" />
-    <Compile Include="..\..\RimMind-Core\TestSupport\ContractCaseRunner.cs"
-             Link="Support\ContractCaseRunner.cs" />
     <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
@@ -32,6 +31,15 @@
     <Compile Include="../Source/Core/DialogueRequestReservations.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueActiveRecipientRegistry.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialoguePairRateLimiter.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueRequestCoordinator.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueActivityState.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueLogStore.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/RimMindDialogueService.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueService.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/NpcResponseHandler.cs" LinkBase="Core" />
+    <Compile Include="../Source/Settings/RimMindDialogueSettings.cs" LinkBase="Settings" />
+    <Compile Include="../Source/UI/Window_Dialogue.cs" LinkBase="UI" />
+    <Compile Include="../Source/Comps/CompRimMindDialogue.cs" LinkBase="Comps" />
     <Compile Include="../Source/Core/DialogueOverlayLayout.cs" LinkBase="Core" />
     <Compile Include="../Source/Thoughts/ThoughtInjector.cs" LinkBase="Thoughts" />
     <Compile Include="../Source/Thoughts/Thought_RimMindDialogue.cs" LinkBase="Thoughts" />
@@ -40,6 +48,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../RimMind-Core/Source/Domain/RimMindCore.Domain.csproj" />
+    <ProjectReference Include="../../RimMind-Core/Source/Application/RimMindCore.Application.csproj" />
   </ItemGroup>
 
 </Project>

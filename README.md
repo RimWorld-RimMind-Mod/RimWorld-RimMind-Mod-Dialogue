@@ -115,6 +115,8 @@ cd RimWorld-RimMind-Mod-Dialogue
 
 - Gizmo 按钮 + 右键菜单两种方式发起对话
 - 支持多轮对话，保留会话历史
+- 玩家输入与自动对话共用开关、AI 条件、Pawn/Pair 预约和并发上限；玩家多轮输入不消耗自动每日配额或独白冷却
+- 关闭对话窗口会取消当前请求，失败或被门控拒绝后可以重新发送
 - 对话回复链：A 对话后自动触发 B 的回复
 
 ### 对话日志
@@ -150,7 +152,7 @@ RimMind-Dialogue 提供以下公共 API 供其他 mod 集成：
 | 独白冷却 | 10 游戏小时 | 同一小人同类型独白的最小间隔 |
 | 每日每对最大对话轮数 | 6 | 每对殖民者每天最多对话轮数 |
 | AI对话历史保留轮数 | 20 | ⚠️ 预留设置，当前版本未生效 |
-| 全局对话并发上限 | 3 | ⚠️ 预留设置，并发由 Core 全局控制 |
+| 全局对话并发上限 | 3 | 玩家与自动请求共享的 Dialogue 在途上限，同时受 Core 全局队列限制 |
 | 启用对话回复 | 开启 | 收到对话后自动生成回复 |
 | 游戏开始延迟 | 10 秒 | 加载存档后暂不触发对话 |
 | 注入 Thought 时显示通知 | 关闭 | 注入心情 Thought 时屏幕通知 |
@@ -173,7 +175,7 @@ A: 可以。在模组设置中可单独开关每种触发类型。
 A: 可以直接拖拽浮窗标题栏移动位置，拖拽右下角调整大小，位置和大小会自动保存。
 
 **Q: 全局并发上限在哪里设置？**
-A: 在 RimMind-Core 的模组设置中，Dialogue 使用 Core 的全局并发控制。
+A: Dialogue 设置控制玩家与自动对话共享的在途上限；Core 设置还控制整个套件的全局并发。
 
 ## 致谢
 
@@ -260,6 +262,9 @@ cd RimWorld-RimMind-Mod-Dialogue
 - **Thought Injection**: Dialogue impacts are injected as in-game Thoughts, actually affecting colonist mood; dialogue can also change opinion between pawns via `relation_delta`
 - **Role Constraints**: Automatically adds tone constraints for Prisoner/Slave/Enemy/Visitor pawns
 - **Player-Initiated Dialogue**: Gizmo button + right-click context menu, with multi-turn history
+- **Shared Request Lifecycle**: Player and automatic requests share enablement, AI gates,
+  Pawn/pair reservations and concurrency limits. Player turns do not consume automatic
+  daily quotas or monologue cooldowns; closing the window cancels its pending request.
 - **Dialogue Reply Chain**: Automatic reply generation creates two-way conversations
 - **Dialogue Log**: Categorized log with dual-column dialogue view and real-time overlay
 
@@ -289,7 +294,8 @@ A: Yes. Each trigger type can be toggled individually in mod settings.
 A: Yes. Drag the title bar to move, drag the bottom-right corner to resize. Position and size are saved automatically.
 
 **Q: Where is the global concurrent limit?**
-A: In RimMind-Core mod settings. Dialogue uses Core's global concurrency control.
+A: Dialogue settings cap pending player and automatic dialogue requests together;
+Core settings additionally cap concurrency across the whole suite.
 
 ## Acknowledgments
 
