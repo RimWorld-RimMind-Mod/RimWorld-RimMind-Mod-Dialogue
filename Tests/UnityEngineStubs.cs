@@ -9,5 +9,13 @@ namespace UnityEngine
         public static float Max(float a, float b) => Math.Max(a, b);
         public static float Clamp(float value, float min, float max) =>
             value < min ? min : (value > max ? max : value);
+        public static float Clamp01(float value) =>
+            value < 0f ? 0f : (value > 1f ? 1f : value);
+    }
+
+    public static class Random
+    {
+        private static readonly System.Random _rnd = new();
+        public static float value => (float)_rnd.NextDouble();
     }
 }

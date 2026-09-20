@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
+  <RimMind.Dialogue.SettingsTitle>RimMind - Dialogue</RimMind.Dialogue.SettingsTitle>
   <!-- CompRimMindDialogue.cs -->
   <RimMind.Dialogue.Context.IdleState>The colonist is currently idle</RimMind.Dialogue.Context.IdleState>
   <RimMind.Dialogue.UI.Gizmo.ChatWith>Chat with {0}</RimMind.Dialogue.UI.Gizmo.ChatWith>

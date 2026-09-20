@@ -23,6 +23,7 @@
     <Compile Include="VerseStubs.cs" />
     <Compile Include="DialogueBoundaryStubs.cs" />
     <Compile Include="Contracts\**\*.cs" />
+    <Compile Include="DialogueCadenceEvaluatorTests.cs" />
     <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
@@ -31,6 +32,7 @@
     <Compile Include="../Source/Core/DialogueRequestReservations.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueActiveRecipientRegistry.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialoguePairRateLimiter.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueCadenceEvaluator.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueRequestCoordinator.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueActivityState.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueLogStore.cs" LinkBase="Core" />

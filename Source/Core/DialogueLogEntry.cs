@@ -2,7 +2,7 @@ using Verse;
 
 namespace RimMind.Dialogue.Core
 {
-    public class DialogueLogEntry
+    public class DialogueLogEntry : IExposable
     {
         public int tick;
         public string initiatorName = string.Empty;
@@ -43,6 +43,23 @@ namespace RimMind.Dialogue.Core
                 float remHours = hours % 24f;
                 return "RimMind.Dialogue.UI.TimeFormat".Translate((days + 1).ToString(), $"{remHours:F1}");
             }
+        }
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref tick, "tick");
+            Scribe_Values.Look(ref initiatorName, "initiatorName", string.Empty);
+            Scribe_Values.Look(ref initiatorId, "initiatorId");
+            Scribe_Values.Look(ref initiatorIsColonist, "initiatorIsColonist");
+            Scribe_Values.Look(ref recipientName, "recipientName");
+            Scribe_Values.Look(ref recipientId, "recipientId");
+            Scribe_Values.Look(ref recipientIsColonist, "recipientIsColonist");
+            Scribe_Values.Look(ref category, "category");
+            Scribe_Values.Look(ref trigger, "trigger", string.Empty);
+            Scribe_Values.Look(ref context, "context", string.Empty);
+            Scribe_Values.Look(ref reply, "reply", string.Empty);
+            Scribe_Values.Look(ref thoughtTag, "thoughtTag", "NONE");
+            Scribe_Values.Look(ref thoughtDesc, "thoughtDesc", string.Empty);
         }
     }
 }

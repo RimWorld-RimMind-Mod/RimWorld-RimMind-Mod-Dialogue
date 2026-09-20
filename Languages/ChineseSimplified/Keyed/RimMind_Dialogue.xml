@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
+  <RimMind.Dialogue.SettingsTitle>RimMind - 对话</RimMind.Dialogue.SettingsTitle>
   <!-- CompRimMindDialogue.cs -->
   <RimMind.Dialogue.Context.IdleState>小人目前处于空闲状态</RimMind.Dialogue.Context.IdleState>
   <RimMind.Dialogue.UI.Gizmo.ChatWith>与 {0} 对话</RimMind.Dialogue.UI.Gizmo.ChatWith>

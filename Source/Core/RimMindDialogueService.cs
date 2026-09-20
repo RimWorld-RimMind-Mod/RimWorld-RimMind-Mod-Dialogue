@@ -20,6 +20,11 @@ namespace RimMind.Dialogue.Core
         private static readonly DialogueLogStore _logStore =
             new DialogueLogStore();
 
+        private static readonly DialogueCadenceEvaluator _cadenceEvaluator =
+            new DialogueCadenceEvaluator();
+
+        public static DialogueCadenceEvaluator CadenceEvaluator => _cadenceEvaluator;
+
         internal static readonly ConcurrentDictionary<string, string> RegisteredTriggerLabels = new ConcurrentDictionary<string, string>();
 
         public static event Action? OnLogUpdated
@@ -56,13 +61,34 @@ namespace RimMind.Dialogue.Core
         internal static (int RecentTriggers, int DailyPairs) ClearAllCooldowns()
             => _activityState.ClearCooldowns();
 
-        public static void ClearLog() => _logStore.Clear();
+        public static void ClearLog()
+        {
+            _logStore.Clear();
+            _cadenceEvaluator.Clear();
+        }
 
-        public static void NotifyGameLoaded()
+        public static List<DialogueLogEntry> ExportLogEntries(int maxCount)
+            => _logStore.ExportEntries(maxCount);
+
+        public static void ImportLogEntries(IEnumerable<DialogueLogEntry>? entries, int maxCount)
+        {
+            _logStore.ImportEntries(entries, maxCount);
+            _cadenceEvaluator.RebuildFromEntries(_logStore.Entries);
+        }
+
+        public static void NotifyGameLoaded(bool clearLog = true)
         {
             _requestCoordinator.Reset();
             _activityState.Reset(Find.TickManager.TicksGame);
-            _logStore.Clear();
+            if (clearLog)
+            {
+                _logStore.Clear();
+                _cadenceEvaluator.Clear();
+            }
+            else
+            {
+                _cadenceEvaluator.RebuildFromEntries(_logStore.Entries);
+            }
         }
 
         public static void HandleTrigger(
@@ -146,6 +172,11 @@ namespace RimMind.Dialogue.Core
             };
 
             _logStore.Add(entry);
+            if (recipient != null && recipient.thingIDNumber > 0)
+            {
+                var pairKey = DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber);
+                _cadenceEvaluator.RecordDialogue(pairKey, entry.tick);
+            }
         }
 
         public static void RecordDailyDialogue(int idA, int idB)

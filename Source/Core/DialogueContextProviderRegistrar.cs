@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimMind.Application.Common.Constants;
 using RimMind.Application.Common.Interfaces.Context;
+using RimMind.Domain.Common;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation.Api;
 using Verse;
@@ -17,8 +19,7 @@ namespace RimMind.Dialogue.Core
                 async (ctx, ct) =>
                 {
                     if (ctx.PawnId <= 0) return null;
-                    var pawn = Find.WorldPawns.AllPawnsAlive.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId)
-                        ?? Find.CurrentMap?.mapPawns?.FreeColonists.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId);
+                    var pawn = RimMindPawnLookup.FindPawnByNumber(ctx.PawnId);
                     if (pawn == null) return null;
                     var memories = pawn.needs?.mood?.thoughts?.memories?.Memories;
                     if (memories == null) return null;
@@ -30,20 +31,19 @@ namespace RimMind.Dialogue.Core
                         if (t.def.defName != "RimMindDialogue_Thought") continue;
 
                         string desc = (t as Thought_RimMindDialogue)?.aiDescription ?? t.def.label;
-                        float hours = t.DurationTicks / 2500f;
+                        float hours = (float)t.DurationTicks / RimMindTime.TicksPerHour;
                         sb.AppendLine("RimMind.Dialogue.Context.ThoughtRemaining".Translate(desc, $"{hours:F1}"));
                         any = true;
                     }
                     return any ? sb.ToString().TrimEnd() : null;
-                }, "RimMind.Dialogue", stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
 
             RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
                 "dialogue_relation", ContextLayer.L3_State, 0.15f,
                 async (ctx, ct) =>
                 {
                     if (ctx.PawnId <= 0) return null;
-                    var pawn = Find.WorldPawns.AllPawnsAlive.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId)
-                        ?? Find.CurrentMap?.mapPawns?.FreeColonists.FirstOrDefault(p => p.thingIDNumber == ctx.PawnId);
+                    var pawn = RimMindPawnLookup.FindPawnByNumber(ctx.PawnId);
                     if (pawn == null) return null;
                     var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
                     if (recipient == null) return null;
@@ -73,7 +73,7 @@ namespace RimMind.Dialogue.Core
                         sb.AppendLine("RimMind.Dialogue.Context.DirectRelation".Translate(directRel.def.label));
 
                     return sb.ToString().TrimEnd();
-                }, "RimMind.Dialogue", stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
 
             RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
                 "dialogue_task", ContextLayer.L0_Static, 0.95f,
@@ -90,7 +90,7 @@ namespace RimMind.Dialogue.Core
                     subKeys.Add(isMonologue ? "OutputMonologue" : "OutputDialogue");
                     if (!isMonologue) subKeys.Add("RelationDelta");
                     return RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray());
-                }, "RimMind.Dialogue", stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
         }
     }
 }

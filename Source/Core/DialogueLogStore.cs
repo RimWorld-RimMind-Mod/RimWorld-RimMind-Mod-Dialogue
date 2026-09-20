@@ -66,6 +66,31 @@ namespace RimMind.Dialogue.Core
                 new ConcurrentBag<DialogueLogEntry>());
             _cachedEntries = null;
             _dirty = true;
+            Updated?.Invoke();
+        }
+
+        public List<DialogueLogEntry> ExportEntries(int maxCount)
+        {
+            return _entries
+                .OrderByDescending(candidate => candidate.tick)
+                .Take(maxCount)
+                .ToList();
+        }
+
+        public void ImportEntries(IEnumerable<DialogueLogEntry>? loadedEntries, int maxCount)
+        {
+            if (loadedEntries == null) return;
+            var kept = loadedEntries
+                .Where(e => e != null)
+                .OrderByDescending(candidate => candidate.tick)
+                .Take(maxCount)
+                .ToList();
+            Interlocked.Exchange(
+                ref _entries,
+                new ConcurrentBag<DialogueLogEntry>(kept));
+            _cachedEntries = null;
+            _dirty = true;
+            Updated?.Invoke();
         }
     }
 }

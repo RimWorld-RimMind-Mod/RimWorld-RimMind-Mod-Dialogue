@@ -10,7 +10,7 @@ namespace RimMind.Dialogue.Patches
         [HarmonyPostfix]
         public static void Postfix()
         {
-            RimMindDialogueService.NotifyGameLoaded();
+            RimMindDialogueService.NotifyGameLoaded(clearLog: false);
         }
     }
 
@@ -20,7 +20,7 @@ namespace RimMind.Dialogue.Patches
         [HarmonyPostfix]
         public static void Postfix()
         {
-            RimMindDialogueService.NotifyGameLoaded();
+            RimMindDialogueService.NotifyGameLoaded(clearLog: true);
         }
     }
 }

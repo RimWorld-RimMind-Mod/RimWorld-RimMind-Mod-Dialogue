@@ -20,8 +20,19 @@ namespace RimMind.Dialogue.Patches
 
             Pawn initiator = ___pawn;
             if (initiator == null || !initiator.IsColonist) return;
+            if (recipient == null) return;
 
-            string context = "RimMind.Dialogue.Context.InteractionContext".Translate(intDef.defName, recipient?.LabelShort ?? "RimMind.Dialogue.Trigger.Auto".Translate());
+            var settings = RimMindDialogueSettings.Get();
+            var pairKey = DialogueClassifier.MakePairKey(initiator.thingIDNumber, recipient.thingIDNumber);
+            float opinion = initiator.relations?.OpinionOf(recipient) ?? 0f;
+            int currentTick = Find.TickManager.TicksGame;
+
+            if (!RimMindDialogueService.CadenceEvaluator.ShouldAdmit(pairKey, currentTick, settings.targetDialogueCadenceDays, opinion))
+            {
+                return;
+            }
+
+            string context = "RimMind.Dialogue.Context.InteractionContext".Translate(intDef.defName, recipient.LabelShort);
             RimMindDialogueService.HandleTrigger(initiator, context, DialogueTriggerType.Chitchat, recipient);
         }
     }

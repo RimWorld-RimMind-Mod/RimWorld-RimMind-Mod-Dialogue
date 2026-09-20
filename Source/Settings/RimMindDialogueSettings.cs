@@ -21,6 +21,9 @@ namespace RimMind.Dialogue.Settings
         public int globalConcurrency = 3;
         public bool showThoughtNotification = false;
 
+        public float targetDialogueCadenceDays = 3.0f;
+        public int maxStoredDialogueHistory = 200;
+
         public bool enableDialogueReply = true;
         public int maxDailyReplyRounds = 12;
 
@@ -65,6 +68,9 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref maxDailyDialogueRounds, "maxDailyDialogueRounds", 6);
             Scribe_Values.Look(ref globalConcurrency, "globalConcurrency", 3);
             Scribe_Values.Look(ref showThoughtNotification, "showThoughtNotification", false);
+
+            Scribe_Values.Look(ref targetDialogueCadenceDays, "targetDialogueCadenceDays", 3.0f);
+            Scribe_Values.Look(ref maxStoredDialogueHistory, "maxStoredDialogueHistory", 200);
 
             Scribe_Values.Look(ref enableDialogueReply, "enableDialogueReply", true);
             Scribe_Values.Look(ref maxDailyReplyRounds, "maxDailyReplyRounds", 12);

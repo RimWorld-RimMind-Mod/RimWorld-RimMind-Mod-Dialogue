@@ -1,5 +1,6 @@
 using HarmonyLib;
 using RimMind.Application.Common.Interfaces.Extension;
+using RimMind.Presentation;
 using RimMind.Presentation.Api;
 using RimMind.Presentation.Settings;
 using RimMind.Dialogue.Core;
@@ -8,16 +9,22 @@ using Verse;
 
 namespace RimMind.Dialogue
 {
-    public class RimMindDialogueMod : Mod
+    public class RimMindDialogueMod : RimMindSubmodBase<RimMindDialogueSettings>
     {
-        public static RimMindDialogueSettings Settings = null!;
+        public static new RimMindDialogueSettings Settings = null!;
 
         public RimMindDialogueMod(ModContentPack content) : base(content)
         {
-            Settings = GetSettings<RimMindDialogueSettings>();
-            new Harmony("mcocdaa.RimMindDialogueStandalone").PatchAll();
+            Settings = base.Settings;
+            InitializeHarmony();
 
             DialogueContextProviderRegistrar.RegisterAll();
+            RimMindAPI.Chat.ActiveDialogueRecipientResolver = pawnId =>
+            {
+                var pawn = RimMindPawnLookup.FindPawnByNumber(pawnId);
+                return pawn != null ? RimMindDialogueService.GetActiveRecipient(pawn)?.thingIDNumber : null;
+            };
+
             RimMindAPI.Extensions<ISettingsTab>().Register(new DialogueSettingsTab());
             RimMindAPI.Extensions<IModCooldown>().Register(new DialogueModCooldown());
             RimMindAPI.Extensions<IToggleBehavior>().Register(new DialogueOverlayToggleBehavior());
@@ -26,8 +33,6 @@ namespace RimMind.Dialogue
 
             Log.Message("[RimMind-Dialogue] Initialized.");
         }
-
-        public override string SettingsCategory() => "RimMind - Dialogue";
 
         public override void DoSettingsWindowContents(UnityEngine.Rect rect)
         {
