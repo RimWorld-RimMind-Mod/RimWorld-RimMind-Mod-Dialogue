@@ -23,6 +23,15 @@ namespace RimMind.Dialogue
 
         public override float MoodOffset() => aiMoodOffset;
 
+        public override bool GroupsWith(Thought other)
+        {
+            if (other is Thought_RimMindDialogue otherDialogue)
+            {
+                return def == otherDialogue.def && aiLabel == otherDialogue.aiLabel && aiMoodOffset == otherDialogue.aiMoodOffset;
+            }
+            return false;
+        }
+
         public override void ExposeData()
         {
             base.ExposeData();

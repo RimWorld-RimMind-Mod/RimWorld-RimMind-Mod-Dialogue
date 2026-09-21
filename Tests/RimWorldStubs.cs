@@ -55,13 +55,19 @@ namespace RimWorld
     {
     }
 
-    // Thought_Memory 存根
-    public class Thought_Memory : Verse.IExposable
+    public class Thought : Verse.IExposable
     {
+        public ThoughtDef? def;
         public virtual string LabelCap => "";
         public virtual string Description => "";
         public virtual float MoodOffset() => 0f;
+        public virtual bool GroupsWith(Thought other) => false;
         public virtual void ExposeData() { }
+    }
+
+    // Thought_Memory 存根
+    public class Thought_Memory : Thought
+    {
     }
 
     // Thought_MemorySocial 存根

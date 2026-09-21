@@ -3,8 +3,8 @@
   <ThoughtDef>
     <defName>RimMindDialogue_Thought</defName>
     <thoughtClass>RimMind.Dialogue.Thought_RimMindDialogue</thoughtClass>
-    <durationDays>0.04</durationDays>
-    <stackLimit>1</stackLimit>
+    <durationDays>0.2</durationDays>
+    <stackLimit>3</stackLimit>
     <stages>
       <li>
         <label>AI dialogue reaction</label>
