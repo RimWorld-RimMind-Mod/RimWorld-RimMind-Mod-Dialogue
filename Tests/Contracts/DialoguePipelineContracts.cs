@@ -117,6 +117,46 @@ namespace RimMind.Dialogue.Tests.Contracts
         }
 
         [Fact]
+        public void NarrationAndMarkdownCodeBlockRepliesAreParsed()
+        {
+            // Case 1: narration field instead of reply
+            string reply = "raw";
+            string? tag = null;
+            string? description = null;
+            int relationDelta = 0;
+
+            ResponseJsonParser.TryParseResponseJson(
+                "{\"narration\":\"你感到全身旧伤\",\"thought\":{\"tag\":\"STRESSED\",\"description\":\"疲惫\"}}",
+                true,
+                ref reply,
+                ref tag,
+                ref description,
+                ref relationDelta);
+
+            Assert.Equal("你感到全身旧伤", reply);
+            Assert.Equal("STRESSED", tag);
+            Assert.Equal("疲惫", description);
+
+            // Case 2: Markdown code block wrapped JSON
+            reply = "raw2";
+            tag = null;
+            description = null;
+            relationDelta = 0;
+
+            ResponseJsonParser.TryParseResponseJson(
+                "```json\n{\"dialogue\":\"Hello friend!\",\"thought\":{\"tag\":\"CONNECTED\",\"description\":\"Joy\"}}\n```",
+                false,
+                ref reply,
+                ref tag,
+                ref description,
+                ref relationDelta);
+
+            Assert.Equal("Hello friend!", reply);
+            Assert.Equal("CONNECTED", tag);
+            Assert.Equal("Joy", description);
+        }
+
+        [Fact]
         public void BoundedLogRetainsNewestEntriesAndIsolatesPublishedSnapshots()
         {
             var store = new DialogueLogStore();
