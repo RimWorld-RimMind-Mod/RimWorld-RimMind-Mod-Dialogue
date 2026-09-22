@@ -341,6 +341,31 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Empty(comp.CompGetGizmosExtra());
         }
 
+        [Fact]
+        public void GetActiveRecipient_works_safely_off_main_thread_without_map_access()
+        {
+            var window = new Window_Dialogue(_pawn, _recipient);
+            SendFromWindow(window, "test message");
+            Assert.Single(RimMindAPI.Sent);
+
+            // Switch to background thread (off-main-thread)
+            UnityData.IsInMainThread = false;
+
+            // Empty the map's pawns to prove it does not touch mapPawns off-thread
+            var map = Find.Maps[0];
+            var savedPawns = map.mapPawns.AllPawns.ToList();
+            map.mapPawns.AllPawns.Clear();
+
+            // Calling GetActiveRecipient off-thread must succeed via cached recipient!
+            var recipient = RimMindDialogueService.GetActiveRecipient(_pawn);
+            Assert.Same(_recipient, recipient);
+
+            // Restore
+            map.mapPawns.AllPawns.AddRange(savedPawns);
+            UnityData.IsInMainThread = true;
+            window.PostClose();
+        }
+
         private static void Complete(int index, string content)
             => RimMindAPI.Sent[index].Complete(Result<LlmResponse, RimMindError>.Ok(new LlmResponse { Content = content }));
 

@@ -15,8 +15,8 @@ namespace RimMind.Dialogue.Core
             new List<(int, int, DialogueTriggerType)>();
         private readonly ConcurrentDictionary<(int, int), List<int>> _dailyDialogueCounts =
             new ConcurrentDictionary<(int, int), List<int>>();
-        private readonly Dictionary<int, Pawn> _pawnCache =
-            new Dictionary<int, Pawn>();
+        private readonly ConcurrentDictionary<int, Pawn> _pawnCache =
+            new ConcurrentDictionary<int, Pawn>();
 
         private int _gameStartTick = -1;
         private int _lastCountDay = -1;
@@ -119,18 +119,33 @@ namespace RimMind.Dialogue.Core
         public void SetRequestRecipient(
             int pawnId,
             int recipientId,
-            long reservationId)
-            => _activeRecipients.SetRequest(pawnId, recipientId, reservationId);
+            long reservationId,
+            Pawn? recipient = null)
+        {
+            _activeRecipients.SetRequest(pawnId, recipientId, reservationId);
+            if (recipient != null)
+            {
+                _pawnCache[recipientId] = recipient;
+                RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
+            }
+        }
 
         public bool ClearRequestRecipientIfOwned(
             int pawnId,
             long reservationId)
             => _activeRecipients.ClearRequestIfOwned(pawnId, reservationId);
 
-        public void SetManualRecipient(int pawnId, int? recipientId)
+        public void SetManualRecipient(int pawnId, int? recipientId, Pawn? recipient = null)
         {
             if (recipientId.HasValue)
+            {
                 _activeRecipients.SetManual(pawnId, recipientId.Value);
+                if (recipient != null)
+                {
+                    _pawnCache[recipientId.Value] = recipient;
+                    RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
+                }
+            }
             else
                 _activeRecipients.ClearManual(pawnId);
         }
@@ -144,12 +159,25 @@ namespace RimMind.Dialogue.Core
                 return null;
             }
 
-            if (_pawnCacheTick < 0 || currentTick - _pawnCacheTick >= 600)
-                RebuildPawnCache(currentTick);
+            if (_pawnCache.TryGetValue(recipientId, out var cached) && cached != null && !cached.DestroyedOrNull())
+            {
+                return cached;
+            }
 
-            return _pawnCache.TryGetValue(recipientId, out var cached)
-                ? cached
-                : null;
+            var lookupPawn = RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(recipientId);
+            if (lookupPawn != null && !lookupPawn.DestroyedOrNull())
+            {
+                _pawnCache[recipientId] = lookupPawn;
+                return lookupPawn;
+            }
+
+            if (UnityData.IsInMainThread && (_pawnCacheTick < 0 || currentTick - _pawnCacheTick >= 600))
+            {
+                RebuildPawnCache(currentTick);
+                return _pawnCache.TryGetValue(recipientId, out var fresh) ? fresh : null;
+            }
+
+            return null;
         }
 
         public (int RecentTriggers, int DailyPairs) ClearCooldowns()
@@ -165,20 +193,32 @@ namespace RimMind.Dialogue.Core
 
         private void RebuildPawnCache(int currentTick)
         {
-            _pawnCache.Clear();
-            foreach (Map map in Find.Maps)
-            {
-                if (map.mapPawns == null)
-                    continue;
+            if (!UnityData.IsInMainThread)
+                return;
 
-                foreach (Pawn candidate in map.mapPawns.AllPawns)
-                    _pawnCache[candidate.thingIDNumber] = candidate;
+            _pawnCache.Clear();
+            if (Find.Maps != null)
+            {
+                foreach (Map map in Find.Maps)
+                {
+                    if (map?.mapPawns == null)
+                        continue;
+
+                    foreach (Pawn candidate in map.mapPawns.AllPawns)
+                    {
+                        _pawnCache[candidate.thingIDNumber] = candidate;
+                        RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(candidate);
+                    }
+                }
             }
 
             if (Find.WorldPawns?.AllPawnsAlive != null)
             {
                 foreach (Pawn candidate in Find.WorldPawns.AllPawnsAlive)
+                {
                     _pawnCache[candidate.thingIDNumber] = candidate;
+                    RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(candidate);
+                }
             }
 
             _pawnCacheTick = currentTick;

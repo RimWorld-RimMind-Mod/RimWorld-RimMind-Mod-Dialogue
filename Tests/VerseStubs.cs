@@ -25,6 +25,7 @@ namespace Verse
     public static class Extensions
     {
         public static bool NullOrEmpty(this string? s) => string.IsNullOrEmpty(s);
+        public static bool DestroyedOrNull(this Thing? thing) => thing == null;
 
         // RimWorld 字符串首字母大写扩展方法存根
         public static string CapitalizeFirst(this string s) =>

@@ -45,10 +45,27 @@ namespace RimMind.Presentation.Api
             }
         }
     }
+
+    public static class RimMindPawnLookup
+    {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, Pawn> _cache = new();
+        public static void CachePawn(Pawn? pawn)
+        {
+            if (pawn != null && pawn.thingIDNumber > 0) _cache[pawn.thingIDNumber] = pawn;
+        }
+        public static Pawn? FindPawnByNumber(int thingIDNumber)
+            => _cache.TryGetValue(thingIDNumber, out var p) ? p : null;
+        public static void ClearCache() => _cache.Clear();
+    }
 }
 
 namespace Verse
 {
+    public static class UnityData
+    {
+        public static bool IsInMainThread = true;
+    }
+
     public class Thing
     {
         public int thingIDNumber;

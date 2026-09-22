@@ -233,12 +233,15 @@ namespace RimMind.Dialogue.Core
                     _activityState.RecordTrigger(currentTick, pawn.thingIDNumber,
                         type, settings.monologueCooldownTicks);
                 }
+                RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(pawn);
                 if (recipient != null)
                 {
                     _activityState.SetRequestRecipient(
                         pawn.thingIDNumber,
                         recipient.thingIDNumber,
-                        reservationId);
+                        reservationId,
+                        recipient);
+                    RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
                 }
 
                 string formattedContext = FormatContext(type, context, recipient);
