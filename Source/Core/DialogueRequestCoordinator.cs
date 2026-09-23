@@ -284,7 +284,6 @@ namespace RimMind.Dialogue.Core
                             ReportFailure("Dialogue participant is unavailable.");
                             return;
                         }
-                        if (string.IsNullOrWhiteSpace(result.Value.Content))
                         if (string.IsNullOrWhiteSpace(result.Value.Content) && string.IsNullOrWhiteSpace(result.Value.ToolCallsJson))
                         {
                             ReportFailure("Empty reply.");

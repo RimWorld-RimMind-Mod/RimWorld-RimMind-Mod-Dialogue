@@ -367,7 +367,16 @@ namespace RimMind.Dialogue.Tests.Contracts
         }
 
         private static void Complete(int index, string content)
-            => RimMindAPI.Sent[index].Complete(Result<LlmResponse, RimMindError>.Ok(new LlmResponse { Content = content }));
+        {
+            string? toolCalls = string.IsNullOrWhiteSpace(content)
+                ? null
+                : "[{\"name\":\"express_dialogue\",\"arguments\":{\"speech\":\"" + content.Replace("\"", "\\\"") + "\"}}]";
+            RimMindAPI.Sent[index].Complete(Result<LlmResponse, RimMindError>.Ok(new LlmResponse
+            {
+                Content = content,
+                ToolCallsJson = toolCalls
+            }));
+        }
 
         private static void SendFromWindow(Window_Dialogue window, string text)
         {

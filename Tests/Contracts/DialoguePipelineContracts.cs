@@ -56,6 +56,7 @@ namespace RimMind.Dialogue.Tests.Contracts
             string? description = null;
             int relationDelta = 0;
 
+            #pragma warning disable CS0618
             ResponseJsonParser.TryParseResponseJson(
                 "{\"reply\":\"Hello\",\"thought\":{\"tag\":\"VALUED\",\"description\":\"Seen\"},\"relation_delta\":2}",
                 false,
@@ -63,6 +64,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ref tag,
                 ref description,
                 ref relationDelta);
+            #pragma warning restore CS0618
 
             Assert.Equal("Hello", reply);
             Assert.Equal("VALUED", tag);
@@ -78,6 +80,7 @@ namespace RimMind.Dialogue.Tests.Contracts
             string? description = null;
             int relationDelta = 9;
 
+            #pragma warning disable CS0618
             ResponseJsonParser.TryParseResponseJson(
                 "{\"reply\":\"Thinking\",\"relation_delta\":-5}",
                 true,
@@ -85,6 +88,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ref tag,
                 ref description,
                 ref relationDelta);
+            #pragma warning restore CS0618
 
             Assert.Equal("Thinking", reply);
             Assert.Equal(9, relationDelta);
@@ -102,6 +106,8 @@ namespace RimMind.Dialogue.Tests.Contracts
             string? tag = "OLD";
             string? description = "old description";
             int relationDelta = 4;
+
+            #pragma warning disable CS0618
             ResponseJsonParser.TryParseResponseJson(
                 "{\"thought\":{\"tag\":\"CONNECTED\"}}",
                 false,
@@ -109,6 +115,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ref tag,
                 ref description,
                 ref relationDelta);
+            #pragma warning restore CS0618
 
             Assert.Equal("before", reply);
             Assert.Equal("CONNECTED", tag);
@@ -125,6 +132,7 @@ namespace RimMind.Dialogue.Tests.Contracts
             string? description = null;
             int relationDelta = 0;
 
+            #pragma warning disable CS0618
             ResponseJsonParser.TryParseResponseJson(
                 "{\"narration\":\"你感到全身旧伤\",\"thought\":{\"tag\":\"STRESSED\",\"description\":\"疲惫\"}}",
                 true,
@@ -150,6 +158,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ref tag,
                 ref description,
                 ref relationDelta);
+            #pragma warning restore CS0618
 
             Assert.Equal("Hello friend!", reply);
             Assert.Equal("CONNECTED", tag);
