@@ -25,6 +25,8 @@
     <Compile Include="Contracts\**\*.cs" />
     <Compile Include="DialogueCadenceEvaluatorTests.cs" />
     <Compile Include="../Source/Core/ResponseJsonParser.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueToolDefinitions.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueToolParser.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueTypes.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueClassifier.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueLogEntry.cs" LinkBase="Core" />

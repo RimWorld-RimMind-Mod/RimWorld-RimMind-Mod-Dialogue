@@ -259,6 +259,8 @@ namespace RimMind.Dialogue.Core
                                 : "RimMind.Dialogue.Prompt.AutoTrigger".Translate()))
                     .ForScenarioId(ScenarioIds.Dialogue)
                     .WithModId("RimMind.Dialogue")
+                    .WithTools(DialogueToolDefinitions.AsList())
+                    .WithToolDispatchMode(ToolCallDispatchMode.Manual)
                     .WithMaxTokens(400)
                     .WithTemperature(type == DialogueTriggerType.PlayerInput ? 0.85f : 0.8f)
                     .WithCancellation(lifetime.Token)
@@ -283,15 +285,27 @@ namespace RimMind.Dialogue.Core
                             return;
                         }
                         if (string.IsNullOrWhiteSpace(result.Value.Content))
+                        if (string.IsNullOrWhiteSpace(result.Value.Content) && string.IsNullOrWhiteSpace(result.Value.ToolCallsJson))
                         {
                             ReportFailure("Empty reply.");
                             return;
                         }
 
-                        NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient,
+                        string? speech = NpcResponseHandler.Handle(result.Value, npcId, pawn, recipient,
                             type == DialogueTriggerType.PlayerInput ? context : formattedContext,
                             type, isReply);
-                        Notify(onReply, result.Value.Content);
+                        if (!string.IsNullOrWhiteSpace(speech))
+                        {
+                            Notify(onReply, speech!);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(result.Value.Content))
+                        {
+                            Notify(onReply, result.Value.Content!.Trim());
+                        }
+                        else
+                        {
+                            ReportFailure("Empty reply.");
+                        }
                     }
                     catch (Exception ex)
                     {

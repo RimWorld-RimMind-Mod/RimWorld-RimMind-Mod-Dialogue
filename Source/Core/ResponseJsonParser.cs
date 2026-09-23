@@ -7,6 +7,7 @@ using RimMind.Domain.ValueObjects;
 
 namespace RimMind.Dialogue.Core
 {
+    [Obsolete("Use DialogueToolParser instead. RimMind mainline dialogue is now unified under native express_dialogue tool calls.")]
     public static class ResponseJsonParser
     {
         private static readonly string[] ReplyFieldNames =

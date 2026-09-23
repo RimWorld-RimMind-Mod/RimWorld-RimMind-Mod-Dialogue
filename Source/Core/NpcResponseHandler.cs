@@ -14,25 +14,35 @@ namespace RimMind.Dialogue.Core
 {
     public static class NpcResponseHandler
     {
-        public static void Handle(LlmResponse response, string npcId, Pawn pawn, Pawn? recipient,
+        public static string? Handle(LlmResponse response, string npcId, Pawn pawn, Pawn? recipient,
             string context, DialogueTriggerType type, bool isReply = false)
         {
-            if (pawn.Dead || pawn.Destroyed) return;
-
-            string replyText = response.Content ?? string.Empty;
-            if (replyText.NullOrEmpty())
-            {
-                RimMindErrors.Warn($"[RimMind-Dialogue] Empty reply for {pawn.LabelShort}, context: {context}");
-                return;
-            }
+            if (pawn.Dead || pawn.Destroyed) return null;
 
             bool isMonologue = DialogueFlowPolicy.IsMonologue(type, recipient != null);
 
+            string replyText;
             string? thoughtTag = null;
             string? thoughtDesc = null;
             int relationDelta = 0;
 
-            ResponseJsonParser.TryParseResponseJson(replyText, isMonologue, ref replyText, ref thoughtTag, ref thoughtDesc, ref relationDelta);
+            if (DialogueToolParser.TryParse(response.ToolCallsJson, isMonologue, out var output)
+                || DialogueToolParser.TryParse(response.Content, isMonologue, out output))
+            {
+                replyText = output.Speech;
+                thoughtTag = output.ThoughtTag;
+                thoughtDesc = output.ThoughtDesc;
+                relationDelta = output.RelationDelta;
+            }
+            else if (!string.IsNullOrWhiteSpace(response.Content))
+            {
+                replyText = response.Content!.Trim();
+            }
+            else
+            {
+                RimMindErrors.Warn($"[RimMind-Dialogue] No valid express_dialogue tool call found for {pawn.LabelShort}, context: {context}");
+                return null;
+            }
 
             // 显示气泡
             RimMindDialogueService.DisplayInteraction(pawn, recipient, replyText);
@@ -101,6 +111,7 @@ namespace RimMind.Dialogue.Core
             }
 
             RimMindDialogueService.RaiseOnDialogueCompleted(pawn, recipient, replyText, thoughtTag);
+            return replyText;
         }
     }
 }

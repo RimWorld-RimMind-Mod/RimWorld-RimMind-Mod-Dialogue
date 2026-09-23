@@ -89,6 +89,7 @@ namespace RimMind.Dialogue.Core
                     subKeys.Add(isMonologue ? "ExampleMonologue" : "ExampleDialogue");
                     subKeys.Add(isMonologue ? "OutputMonologue" : "OutputDialogue");
                     if (!isMonologue) subKeys.Add("RelationDelta");
+                    subKeys.Add(isMonologue ? "ToolCallMonologue" : "ToolCallDialogue");
                     return RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, subKeys.ToArray());
                 }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
         }
