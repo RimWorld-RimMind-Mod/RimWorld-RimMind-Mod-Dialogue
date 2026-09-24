@@ -9,7 +9,6 @@ namespace RimMind.Dialogue
     {
         public string Id => "Dialogue";
         public string OwnerModId => "RimMind.Dialogue";
-        public int CooldownTicks => 1500;
         public int CooldownTicks
         {
             get

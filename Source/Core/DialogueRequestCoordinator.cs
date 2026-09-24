@@ -211,6 +211,7 @@ namespace RimMind.Dialogue.Core
                 if (!showAutomaticError) return;
                 RimMindErrors.Warn($"[RimMind-Dialogue] Request failed: {error}");
                 if (!DialogueFlowPolicy.IsMonologue(type, recipient != null))
+                if (type == DialogueTriggerType.PlayerInput)
                 {
                     Messages.Message(
                         "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),

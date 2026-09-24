@@ -55,7 +55,6 @@ namespace RimMind.Dialogue.Comps
                 // Dining Encounter (Shared Meal)
                 if (Pawn.CurJob?.def == JobDefOf.Ingest && nearbyCompanion.CurJob?.def == JobDefOf.Ingest)
                 {
-                    float dynamicChance = CalculateDynamicSocialChance(settings.diningSocialChance, Pawn, nearbyCompanion);
                     float dynamicChance = CalculateDynamicSocialChance(settings.diningSocialChance, Pawn, nearbyCompanion, activityScale);
                     if (settings.enableDiningSocial && Rand.Value < dynamicChance)
                     {
@@ -69,7 +68,6 @@ namespace RimMind.Dialogue.Comps
                 // Recreation Encounter (Shared Play / Joy)
                 if (Pawn.CurJob?.def?.joyKind != null && nearbyCompanion.CurJob?.def?.joyKind != null)
                 {
-                    float dynamicChance = CalculateDynamicSocialChance(settings.recreationSocialChance, Pawn, nearbyCompanion);
                     float dynamicChance = CalculateDynamicSocialChance(settings.recreationSocialChance, Pawn, nearbyCompanion, activityScale);
                     if (settings.enableRecreationSocial && Rand.Value < dynamicChance)
                     {
@@ -87,7 +85,6 @@ namespace RimMind.Dialogue.Comps
                         && Pawn.CurJob.def != JobDefOf.Ingest && nearbyCompanion.CurJob.def != JobDefOf.Ingest
                         && Pawn.CurJob.def?.joyKind == null && nearbyCompanion.CurJob.def?.joyKind == null)
                     {
-                        float dynamicChance = CalculateDynamicSocialChance(settings.coworkerSocialChance, Pawn, nearbyCompanion);
                         float dynamicChance = CalculateDynamicSocialChance(settings.coworkerSocialChance, Pawn, nearbyCompanion, activityScale);
                         if (settings.enableCoworkerSocial && Rand.Value < dynamicChance)
                         {
@@ -107,7 +104,6 @@ namespace RimMind.Dialogue.Comps
                 // Solitary contemplation & recreation monologue
                 if (Pawn.CurJobDef?.defName == "Skygaze" || Pawn.CurJobDef?.defName == "Meditate")
                 {
-                    float monologueChance = 0.35f * (mood > 0.8f || mood < 0.3f ? 1.25f : 1.0f) * jitter;
                     float monologueChance = 0.35f * (mood > 0.8f || mood < 0.3f ? 1.25f : 1.0f) * jitter * activityScale;
                     if (settings.autoDialogueEnabled && Rand.Value < monologueChance)
                     {
@@ -119,7 +115,6 @@ namespace RimMind.Dialogue.Comps
                 }
                 else if (Pawn.CurJob?.def?.joyKind != null)
                 {
-                    float monologueChance = (settings.recreationSocialChance * 0.4f) * jitter;
                     float monologueChance = (settings.recreationSocialChance * 0.4f) * jitter * activityScale;
                     if (settings.autoDialogueEnabled && Rand.Value < monologueChance)
                     {
@@ -132,7 +127,6 @@ namespace RimMind.Dialogue.Comps
             }
 
             // 3. Fallback idle monologue
-            if (settings.autoDialogueEnabled && (currentTick - _lastTriggerTick >= settings.AutoDialogueCooldownTicks))
             float idleCdMult = activityScale > 0.01f ? (1.0f / activityScale) : 1.0f;
             int idleCooldown = Mathf.RoundToInt(settings.AutoDialogueCooldownTicks * Mathf.Clamp(idleCdMult, 0.35f, 3.5f));
             if (settings.autoDialogueEnabled && (currentTick - _lastTriggerTick >= idleCooldown))
@@ -151,10 +145,8 @@ namespace RimMind.Dialogue.Comps
         /// 4. Organic ±15% natural daily jitter.
         /// 5. Global ActivityFrequencyScale setting multiplier.
         /// </summary>
-        public static float CalculateDynamicSocialChance(float baseChance, Pawn speaker, Pawn listener)
         public static float CalculateDynamicSocialChance(float baseChance, Pawn speaker, Pawn listener, float activityScale = 1.0f)
         {
-            float chance = baseChance;
             float chance = baseChance * activityScale;
 
             // 1. Social relations & opinion modifier (-100 to +100)
@@ -183,7 +175,6 @@ namespace RimMind.Dialogue.Comps
             float jitter = Rand.Range(0.85f, 1.15f);
             chance *= jitter;
 
-            return Mathf.Clamp(chance, 0.05f, 0.95f);
             return Mathf.Clamp(chance, 0.01f, 0.98f);
         }
 
