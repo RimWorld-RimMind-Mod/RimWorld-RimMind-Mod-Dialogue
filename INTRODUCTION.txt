@@ -1,18 +1,43 @@
 ═══════════════════════════════════════════════════════════════
   RimMind-Dialogue — 你的殖民者，终于会说话了
 ═══════════════════════════════════════════════════════════════
+[h1]RimMind - Dialogue (生动对话与社交)[/h1]
 
+[i]你的殖民者，终于开口说话了——充满人情味的日常闲聊、晨曦独白与灵魂倾诉。[/i]
+[i]Your colonists finally speak — Contextual banter, dawn soliloquies, and dynamic social bonds.[/i]
 
 ▌ 他们不再是沉默的棋子
+[hr]
+[h2]📖 中文介绍 / Chinese Overview[/h2]
 
 你有没有注意过——殖民者受伤了只会趴下，心情崩溃了只会掉效率，技能升级了只是数字跳动。他们从不表达。
+[b]RimMind-Dialogue[/b] 赋予殖民者生动的语言与社交能力。无论是并肩劳作、食堂用餐，还是在娱乐室掷马蹄铁，殖民者都会根据彼此的关系与心境自然展开交谈。
 
 RimMind-Dialogue 改变了这一点。
+[h3]🌟 核心特性[/h3]
+[list]
+[*] [b]情境化自然社交[/b]：自动识别殖民地日常场景（食堂共餐、工坊同工、娱乐室对弈、晨光初现），自然促发对话与独白，杜绝机械化定时打卡。
+[*] [b]原生 ToolCall 架构[/b]：全面收敛至 `express_dialogue` 工具调用，彻底消除原始 JSON 报文残留，只呈现纯粹口语化的人情味对白。
+[*] [b]真实好感度与心情回响[/b]：每句对白都会根据情感倾向实时增减双方好感度（-5 到 +5），并在心情面板生成对应的心理 Thought。
+[*] [b]玩家直接交互[/b]：右键小人即可直接开启对话窗口，自由打字交流，听小人倾诉烦恼或表达忠诚。
+[*] [b]精美头顶气泡与浮窗[/b]：沉浸式游戏内对白气泡，配合轻量日志浮窗，绝不错过任何精彩互动。
+[/list]
 
 受伤的殖民者会喊疼，被救回来会庆幸，心情跌到谷底会倾诉委屈，技能突破会忍不住炫耀。这些不是预设台词——AI 根据每个人的人格、关系和处境实时生成，每次都不一样。
+[hr]
+[h2]🌐 English Overview[/h2]
 
+[b]RimMind-Dialogue[/b] brings true voice and organic relationships to your colony. Colonists actively converse while sharing meals, working side-by-side in crafting rooms, relaxing in recreation halls, or greeting the morning sun.
 
 ▌ 他们会互相说话——而且真的影响关系
+[h3]🌟 Key Highlights[/h3]
+[list]
+[*] [b]Context-Aware Organic Interactions[/b]: Automatically triggers lively chatter during dining, recreation, crafting, or dawn contemplation.
+[*] [b]Native ToolCall Pipeline[/b]: Powered by the robust `express_dialogue` schema, ensuring natural dialogue free from JSON formatting artifacts.
+[*] [b]Meaningful Social & Mood Impacts[/b]: Every conversation actively modifies mutual pawn relationships and injects psychological thoughts.
+[*] [b]Direct Player-to-Colonist Chat[/b]: Right-click any pawn to open a direct interactive dialog window and converse freely.
+[*] [b]In-Game Overhead Bubbles[/b]: Beautiful floating speech bubbles above pawns' heads keep the colony vibrant without clutter.
+[/list]
 
 两个殖民者闲聊时，AI 生成真正的对话。不是"他们聊了聊"就完了——一句话可能让对方感到被重视，也可能无意中刺痛了对方。
 
@@ -57,3 +82,9 @@ RimMind-Dialogue 可独立运行，同时安装其他 RimMind 模组效果更佳
 ═══════════════════════════════════════════════════════════════
   一句话：让殖民者从沉默的数据变成有血有肉的角色。
 ═══════════════════════════════════════════════════════════════
+[hr]
+[h2]⚙️ 依赖与推荐 / Requirements & Recommendations[/h2]
+[list]
+[*] [b]必需前置 (Required)[/b]: Harmony, [b]RimMind-Core[/b]
+[*] [b]推荐搭配 (Recommended)[/b]: [b]RimMind-Personality[/b]（赋予差异化口吻）、[b]RimMind-Memory[/b]（对话记入长期记忆）
+[/list]
