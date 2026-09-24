@@ -1,7 +1,8 @@
-using System;
 using System.Collections.Generic;
+using System.Threading;
+using RimMind.Domain.ValueObjects;
 using RimMind.Dialogue.Core;
-using RimMind.Dialogue.Settings;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -11,9 +12,11 @@ namespace RimMind.Dialogue.UI
     {
         private readonly Pawn _pawn;
         private readonly Pawn? _initiator;
-        private readonly DialogueSession _session;
+        private readonly List<(string role, string content)> _messages = new List<(string, string)>();
         private string _inputText = string.Empty;
         private bool _isWaiting;
+        private bool _closed;
+        private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
         private Vector2 _scrollPosition;
         private bool _autoScroll = true;
         private const float InputHeight = 36f;
@@ -33,8 +36,7 @@ namespace RimMind.Dialogue.UI
         {
             _pawn = pawn;
             _initiator = initiator;
-            _session = DialogueSessionManager.GetOrCreate(pawn);
-            _session.Recipient = initiator;
+            RimMindDialogueService.SetActiveRecipient(pawn, initiator);
             doCloseX = true;
             closeOnAccept = false;
             forcePause = false;
@@ -43,8 +45,25 @@ namespace RimMind.Dialogue.UI
             draggable = true;
         }
 
+        public override void PostClose()
+        {
+            if (_closed) return;
+            _closed = true;
+            _isWaiting = false;
+            _lifetime.Cancel();
+            _lifetime.Dispose();
+            RimMindDialogueService.SetActiveRecipient(_pawn, null);
+            base.PostClose();
+        }
+
         public override void DoWindowContents(Rect inRect)
         {
+            if (_pawn.Dead || _pawn.Destroyed)
+            {
+                Close();
+                return;
+            }
+
             Text.Font = GameFont.Small;
 
             float statusH = _isWaiting ? StatusHeight + Padding : 0f;
@@ -104,11 +123,10 @@ namespace RimMind.Dialogue.UI
 
         private void DrawChatHistory(Rect rect)
         {
-            var messages = _session.Messages;
-            if (messages.Count == 0) return;
+            if (_messages.Count == 0) return;
 
             float contentWidth = rect.width - ScrollbarWidth;
-            float contentHeight = CalcMessagesHeight(messages, contentWidth - Padding * 2);
+            float contentHeight = CalcMessagesHeight(_messages, contentWidth - Padding * 2);
             Rect viewRect = new Rect(0f, 0f, contentWidth, contentHeight);
 
             float prevScrollY = _scrollPosition.y;
@@ -116,7 +134,7 @@ namespace RimMind.Dialogue.UI
 
             float y = 0f;
             int index = 0;
-            foreach (var (role, content) in messages)
+            foreach (var (role, content) in _messages)
             {
                 string prefix = role == "user"
                     ? (_initiator != null
@@ -171,23 +189,33 @@ namespace RimMind.Dialogue.UI
 
         private void SendMessage()
         {
+            if (_closed) return;
             string message = _inputText.Trim();
             _inputText = string.Empty;
             _isWaiting = true;
             _autoScroll = true;
 
-            DialogueService.RequestReply(_session, message, _initiator,
+            // 本地记录用户消息用于显示
+            _messages.Add(("user", message));
+
+            DialogueService.RequestReply(_pawn, message, _initiator,
                 onReply: reply =>
                 {
+                    if (_closed) return;
+                    _messages.Add(("assistant", reply));
                     _isWaiting = false;
                     _autoScroll = true;
                 },
                 onError: error =>
                 {
+                    if (_closed) return;
                     _isWaiting = false;
                     _autoScroll = true;
-                    Log.Warning($"[RimMind-Dialogue] Player dialogue error: {error}");
-                });
+                    RimMindErrors.Warn($"[RimMind-Dialogue] Player dialogue error: {error}");
+                    Messages.Message(
+                        "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(_pawn.Name.ToStringShort),
+                        MessageTypeDefOf.RejectInput, false);
+                }, cancellationToken: _lifetime.Token);
         }
     }
 }

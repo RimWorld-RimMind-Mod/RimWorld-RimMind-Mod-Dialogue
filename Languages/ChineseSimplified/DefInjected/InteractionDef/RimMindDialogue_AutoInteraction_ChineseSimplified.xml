@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LanguageData>
-    <RimMindDialogue_AutoInteraction.label>AI对话</RimMindDialogue_AutoInteraction.label>
-    <RimMindDialogue_AutoInteraction.logRulesInitiator.rulesStrings.0>r_logentry->PAWN_initiator进行了AI对话。</RimMindDialogue_AutoInteraction.logRulesInitiator.rulesStrings.0>
-</LanguageData>

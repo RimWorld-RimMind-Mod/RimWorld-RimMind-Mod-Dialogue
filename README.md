@@ -17,10 +17,13 @@ RimMind 是一套 AI 驱动的 RimWorld 模组套件，通过接入大语言模�
 | RimMind-Memory | 记忆采集与上下文注入 | Core | [链接](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Memory) |
 | RimMind-Personality | AI 生成人格与想法 | Core | [链接](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Personality) |
 | RimMind-Storyteller | AI 叙事者，智能选择事件 | Core | [链接](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Storyteller) |
+| RimMind-Bridge-RimChat | RimChat 桥接 | Core, Dialogue | [链接](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimChat) |
+| RimMind-Bridge-RimTalk | RimTalk 桥接 | Core, Dialogue | [链接](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimTalk) |
 
 ```
 Core ── Actions ── Advisor
-  ├── Dialogue
+  ├── Dialogue ── Bridge-RimChat
+  │            └── Bridge-RimTalk
   ├── Memory
   ├── Personality
   └── Storyteller
@@ -51,8 +54,6 @@ cd RimWorld-RimMind-Mod-Dialogue
 3. 安装 RimMind-Dialogue
 4. 在模组管理器中确保加载顺序：Harmony → Core → Dialogue
 
-<!-- ![安装步骤](images/install-steps.png) -->
-
 ## 快速开始
 
 ### 填写 API Key
@@ -68,14 +69,6 @@ cd RimWorld-RimMind-Mod-Dialogue
 - **自动对话**：殖民者受伤、技能升级、心情变化时会自动生成内心独白
 - **主动对话**：右键点击其他殖民者，选择"对话"选项；或点击殖民者身上的 Gizmo 按钮
 - **对话浮窗**：屏幕角落实时显示最近对话
-
-<!-- ![对话窗口](images/screenshot-dialogue-window.png) -->
-
-## 截图展示
-
-<!-- ![对话浮窗](images/screenshot-dialogue-overlay.png) -->
-<!-- ![对话日志](images/screenshot-dialogue-log.png) -->
-<!-- ![Thought注入](images/screenshot-dialogue-thought.png) -->
 
 ## 核心功能
 
@@ -122,6 +115,8 @@ cd RimWorld-RimMind-Mod-Dialogue
 
 - Gizmo 按钮 + 右键菜单两种方式发起对话
 - 支持多轮对话，保留会话历史
+- 玩家输入与自动对话共用开关、AI 条件、Pawn/Pair 预约和并发上限；玩家多轮输入不消耗自动每日配额或独白冷却
+- 关闭对话窗口会取消当前请求，失败或被门控拒绝后可以重新发送
 - 对话回复链：A 对话后自动触发 B 的回复
 
 ### 对话日志
@@ -129,6 +124,17 @@ cd RimWorld-RimMind-Mod-Dialogue
 - 分类查看：殖民者独白/对话、非殖民者独白/对话、玩家对话
 - 对话以双栏视图展示，独白以列表视图展示
 - 浮窗覆盖：屏幕角落实时显示最近对话，支持拖拽和缩放
+
+## Mod 开发者 API
+
+RimMind-Dialogue 提供以下公共 API 供其他 mod 集成：
+
+| API | 说明 |
+|-----|------|
+| `RimMindDialogueService.OnDialogueCompleted` | 对话完成事件，签名 `(Pawn, Pawn?, string, string?)` |
+| `RimMindDialogueService.GetDialogueHistory(pawnId, maxCount)` | 查询指定小人的对话历史 |
+| `RimMindDialogueService.RegisterTriggerType(typeId, labelKey)` | 注册自定义触发类型标签翻译 |
+| `ThoughtInjector.RegisterThoughtTag(tag, moodOffset, labelKey)` | 注册自定义 Thought 标签及心情映射 |
 
 ## 设置项
 
@@ -145,16 +151,14 @@ cd RimWorld-RimMind-Mod-Dialogue
 | 玩家主动对话 | 开启 | Gizmo 按钮 + 右键菜单对话选项 |
 | 独白冷却 | 10 游戏小时 | 同一小人同类型独白的最小间隔 |
 | 每日每对最大对话轮数 | 6 | 每对殖民者每天最多对话轮数 |
-| 对话上下文轮数 | 5 | 发送给 AI 的历史对话轮数（-1=全部） |
+| AI对话历史保留轮数 | 20 | ⚠️ 预留设置，当前版本未生效 |
+| 全局对话并发上限 | 3 | 玩家与自动请求共享的 Dialogue 在途上限，同时受 Core 全局队列限制 |
 | 启用对话回复 | 开启 | 收到对话后自动生成回复 |
 | 游戏开始延迟 | 10 秒 | 加载存档后暂不触发对话 |
-| 自定义对话 Prompt | 空 | 追加在系统 Prompt 末尾 |
 | 注入 Thought 时显示通知 | 关闭 | 注入心情 Thought 时屏幕通知 |
 | 显示对话浮窗 | 开启 | 屏幕角落实时对话 |
 | 浮窗透明度 | 75% | 浮窗不透明度 |
 | 浮窗最大消息数 | 8 | 浮窗同时显示的最大对话条数 |
-| 独白请求过期 | 0.25 游戏天 | 独白请求超时自动取消 |
-| 对话请求过期 | 1 游戏天 | 对话请求超时自动取消 |
 
 ## 常见问题
 
@@ -171,7 +175,7 @@ A: 可以。在模组设置中可单独开关每种触发类型。
 A: 可以直接拖拽浮窗标题栏移动位置，拖拽右下角调整大小，位置和大小会自动保存。
 
 **Q: 全局并发上限在哪里设置？**
-A: 在 RimMind-Core 的模组设置中，Dialogue 使用 Core 的全局并发控制。
+A: Dialogue 设置控制玩家与自动对话共享的在途上限；Core 设置还控制整个套件的全局并发。
 
 ## 致谢
 
@@ -208,6 +212,8 @@ RimMind is an AI-driven RimWorld mod suite that connects to Large Language Model
 | RimMind-Memory | Memory collection & context injection | Core | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Memory) |
 | RimMind-Personality | AI-generated personality & thoughts | Core | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Personality) |
 | RimMind-Storyteller | AI storyteller, smart event selection | Core | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Storyteller) |
+| RimMind-Bridge-RimChat | RimChat bridge | Core, Dialogue | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimChat) |
+| RimMind-Bridge-RimTalk | RimTalk bridge | Core, Dialogue | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimTalk) |
 
 ## Installation
 
@@ -256,8 +262,22 @@ cd RimWorld-RimMind-Mod-Dialogue
 - **Thought Injection**: Dialogue impacts are injected as in-game Thoughts, actually affecting colonist mood; dialogue can also change opinion between pawns via `relation_delta`
 - **Role Constraints**: Automatically adds tone constraints for Prisoner/Slave/Enemy/Visitor pawns
 - **Player-Initiated Dialogue**: Gizmo button + right-click context menu, with multi-turn history
+- **Shared Request Lifecycle**: Player and automatic requests share enablement, AI gates,
+  Pawn/pair reservations and concurrency limits. Player turns do not consume automatic
+  daily quotas or monologue cooldowns; closing the window cancels its pending request.
 - **Dialogue Reply Chain**: Automatic reply generation creates two-way conversations
 - **Dialogue Log**: Categorized log with dual-column dialogue view and real-time overlay
+
+## Mod Developer API
+
+RimMind-Dialogue provides public APIs for other mods to integrate:
+
+| API | Description |
+|-----|-------------|
+| `RimMindDialogueService.OnDialogueCompleted` | Dialogue completion event, signature `(Pawn, Pawn?, string, string?)` |
+| `RimMindDialogueService.GetDialogueHistory(pawnId, maxCount)` | Query dialogue history for a specific pawn |
+| `RimMindDialogueService.RegisterTriggerType(typeId, labelKey)` | Register custom trigger type label translation |
+| `ThoughtInjector.RegisterThoughtTag(tag, moodOffset, labelKey)` | Register custom Thought tag with mood mapping |
 
 ## FAQ
 
@@ -274,7 +294,8 @@ A: Yes. Each trigger type can be toggled individually in mod settings.
 A: Yes. Drag the title bar to move, drag the bottom-right corner to resize. Position and size are saved automatically.
 
 **Q: Where is the global concurrent limit?**
-A: In RimMind-Core mod settings. Dialogue uses Core's global concurrency control.
+A: Dialogue settings cap pending player and automatic dialogue requests together;
+Core settings additionally cap concurrency across the whole suite.
 
 ## Acknowledgments
 

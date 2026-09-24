@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
-using RimMind.Core;
+using RimMind.Presentation.Api;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimWorld;
@@ -117,7 +117,7 @@ namespace RimMind.Dialogue.Patches
                     }
                     string context = "RimMind.Dialogue.Context.PlayerInitiate".Translate(
                         initiator.Name.ToStringShort, target.Name.ToStringShort);
-                    RimMindDialogueService.HandleTrigger(initiator, context, DialogueTriggerType.Chitchat, target, isImmediate: true);
+                    RimMindDialogueService.HandleTrigger(initiator, context, DialogueTriggerType.Chitchat, target);
                 },
                 MenuOptionPriority.Default,
                 null,

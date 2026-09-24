@@ -114,7 +114,9 @@ namespace RimMind.Dialogue.UI
                 if (selected)
                     Widgets.DrawBoxSolid(tabRect, new Color(0.25f, 0.35f, 0.55f, 0.6f));
 
-                if (Widgets.ButtonText(tabRect.ContractedBy(2f), tab))
+                // 标签键基于 ID，但显示文本仍为小人名字
+                string displayLabel = GetTabDisplayLabel(tab, entries);
+                if (Widgets.ButtonText(tabRect.ContractedBy(2f), displayLabel))
                     _selectedTab = tab;
 
                 y += TabHeight;
@@ -187,9 +189,14 @@ namespace RimMind.Dialogue.UI
 
         private void DrawDialogueContent(Rect rect, List<DialogueLogEntry> entries)
         {
-            string[] names = _selectedTab!.Split('|');
-            string leftName = names.Length > 0 ? names[0] : "";
-            string rightName = names.Length > 1 ? names[1] : "";
+            // _selectedTab 是基于 ID 的 PairKey（如 "101|202"），解析为左右 ID
+            string[] parts = _selectedTab!.Split('|');
+            int leftId = parts.Length > 0 && int.TryParse(parts[0], out var l) ? l : -1;
+            int rightId = parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : -1;
+
+            // 表头仍显示名字（通过 ID 查表），保持用户可读性
+            string leftName = leftId >= 0 ? GetPawnNameForId(entries, leftId) : "";
+            string rightName = rightId >= 0 ? GetPawnNameForId(entries, rightId) : "";
 
             float halfWidth = (rect.width - 16f - Padding) / 2f;
 
@@ -223,7 +230,8 @@ namespace RimMind.Dialogue.UI
             for (int i = entries.Count - 1; i >= 0; i--)
             {
                 var entry = entries[i];
-                bool isLeft = entry.initiatorName == leftName;
+                // 用 ID 判定左右列，避免重名导致列归属错误
+                bool isLeft = entry.initiatorId == leftId;
 
                 string timeStr = entry.TimeStr;
                 float entryHeight = heights[i];
@@ -259,11 +267,11 @@ namespace RimMind.Dialogue.UI
             if (category == DialogueCategory.PlayerDialogue)
             {
                 return RimMindDialogueService.LogEntries
-                    .Where(e => e.trigger == "RimMind.Dialogue.Trigger.PlayerInput".Translate())
+                    .Where(e => e.trigger == "PlayerInput")
                     .ToList();
             }
             return RimMindDialogueService.LogEntries
-                .Where(e => e.category == category && e.trigger != "RimMind.Dialogue.Trigger.PlayerInput".Translate())
+                .Where(e => e.category == category && e.trigger != "PlayerInput")
                 .ToList();
         }
 
@@ -272,9 +280,11 @@ namespace RimMind.Dialogue.UI
             if (_selectedCategory == DialogueCategory.ColonistDialogue
                 || _selectedCategory == DialogueCategory.NonColonistDialogue)
             {
+                // 对话：PairKey 已基于 ID
                 return entries.Select(e => e.PairKey).Distinct().ToList();
             }
-            return entries.Select(e => e.initiatorName).Distinct().ToList();
+            // 独白：用 initiatorId 作为标签键，避免重名小人合并到同一标签
+            return entries.Select(e => e.initiatorId.ToString()).Distinct().ToList();
         }
 
         private List<DialogueLogEntry> GetFilteredEntries(List<DialogueLogEntry> entries, string tab)
@@ -284,26 +294,91 @@ namespace RimMind.Dialogue.UI
             {
                 return entries.Where(e => e.PairKey == tab).ToList();
             }
-            return entries.Where(e => e.initiatorName == tab).ToList();
+            // 独白：按 initiatorId 过滤
+            if (int.TryParse(tab, out int id))
+                return entries.Where(e => e.initiatorId == id).ToList();
+            return new List<DialogueLogEntry>();
+        }
+
+        /// <summary>
+        /// 将基于 ID 的标签键转换为用户可读的名字标签。
+        /// 对话标签键形如 "101|202"，独白标签键形如 "303"。
+        /// </summary>
+        private string GetTabDisplayLabel(string tabKey, List<DialogueLogEntry> entries)
+        {
+            if (_selectedCategory == DialogueCategory.ColonistDialogue
+                || _selectedCategory == DialogueCategory.NonColonistDialogue)
+            {
+                string[] parts = tabKey.Split('|');
+                if (parts.Length >= 2
+                    && int.TryParse(parts[0], out int leftId)
+                    && int.TryParse(parts[1], out int rightId))
+                {
+                    string leftName = GetPawnNameForId(entries, leftId);
+                    string rightName = GetPawnNameForId(entries, rightId);
+                    return $"{leftName} | {rightName}";
+                }
+                return tabKey;
+            }
+            // 独白：tabKey 即 initiatorId
+            if (int.TryParse(tabKey, out int monoId))
+                return GetPawnNameForId(entries, monoId);
+            return tabKey;
+        }
+
+        /// <summary>
+        /// 从日志条目中按小人 ID 反查显示名字。
+        /// 优先匹配 initiatorId，其次 recipientId；找不到则回退为 ID 字符串。
+        /// </summary>
+        private static string GetPawnNameForId(List<DialogueLogEntry> entries, int id)
+        {
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var e = entries[i];
+                if (e.initiatorId == id) return e.initiatorName;
+                if (e.recipientId == id && e.recipientName != null) return e.recipientName;
+            }
+            return id.ToString();
         }
 
         private static string FormatEntry(DialogueLogEntry entry)
         {
-            string result = $"[{entry.TimeStr}] ({entry.trigger}) {entry.reply}";
+            string triggerLabel = TranslateTrigger(entry.trigger);
+            string result = $"[{entry.TimeStr}] ({triggerLabel}) {entry.reply}";
             if (entry.thoughtTag != "NONE")
                 result += $" [{entry.thoughtTag}]";
             return result;
         }
 
+        private static string TranslateTrigger(string triggerKey)
+        {
+            if (RimMindDialogueService.RegisteredTriggerLabels.TryGetValue(triggerKey, out var labelKey))
+                return labelKey.Translate();
+
+            return triggerKey switch
+            {
+                "Chitchat" => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
+                "Hediff" => "RimMind.Dialogue.Trigger.Hediff".Translate(),
+                "LevelUp" => "RimMind.Dialogue.Trigger.LevelUp".Translate(),
+                "Thought" => "RimMind.Dialogue.Trigger.Thought".Translate(),
+                "Auto" => "RimMind.Dialogue.Trigger.Auto".Translate(),
+                "PlayerInput" => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
+                _ => triggerKey,
+            };
+        }
+
         private static Color GetTriggerColor(string trigger)
         {
-            if (trigger == "RimMind.Dialogue.Trigger.Chitchat".Translate()) return new Color(0.7f, 0.85f, 1f);
-            if (trigger == "RimMind.Dialogue.Trigger.Hediff".Translate()) return new Color(1f, 0.6f, 0.6f);
-            if (trigger == "RimMind.Dialogue.Trigger.LevelUp".Translate()) return new Color(0.6f, 1f, 0.6f);
-            if (trigger == "RimMind.Dialogue.Trigger.Thought".Translate()) return new Color(1f, 0.95f, 0.6f);
-            if (trigger == "RimMind.Dialogue.Trigger.Auto".Translate()) return new Color(0.8f, 0.8f, 0.8f);
-            if (trigger == "RimMind.Dialogue.Trigger.PlayerInput".Translate()) return new Color(0.85f, 0.7f, 1f);
-            return Color.white;
+            return trigger switch
+            {
+                "Chitchat" => new Color(0.7f, 0.85f, 1f),
+                "Hediff" => new Color(1f, 0.6f, 0.6f),
+                "LevelUp" => new Color(0.6f, 1f, 0.6f),
+                "Thought" => new Color(1f, 0.95f, 0.6f),
+                "Auto" => new Color(0.8f, 0.8f, 0.8f),
+                "PlayerInput" => new Color(0.85f, 0.7f, 1f),
+                _ => Color.white,
+            };
         }
     }
 }
