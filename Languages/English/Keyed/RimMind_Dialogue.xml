@@ -3,6 +3,11 @@
   <RimMind.Dialogue.SettingsTitle>RimMind - Dialogue</RimMind.Dialogue.SettingsTitle>
   <!-- CompRimMindDialogue.cs -->
   <RimMind.Dialogue.Context.IdleState>The colonist is currently idle</RimMind.Dialogue.Context.IdleState>
+  <RimMind.Dialogue.Context.DiningEncounter>Dining together with {0}, enjoying a shared meal</RimMind.Dialogue.Context.DiningEncounter>
+  <RimMind.Dialogue.Context.RecreationEncounter>Engaging in recreation with {0} in a relaxed atmosphere</RimMind.Dialogue.Context.RecreationEncounter>
+  <RimMind.Dialogue.Context.RecreationMonologue>Enjoying leisure time and relaxing moments</RimMind.Dialogue.Context.RecreationMonologue>
+  <RimMind.Dialogue.Context.CoworkerEncounter>Working side-by-side near {0}</RimMind.Dialogue.Context.CoworkerEncounter>
+  <RimMind.Dialogue.Context.ContemplationMonologue>Silently gazing at the horizon and contemplating life</RimMind.Dialogue.Context.ContemplationMonologue>
   <RimMind.Dialogue.UI.Gizmo.ChatWith>Chat with {0}</RimMind.Dialogue.UI.Gizmo.ChatWith>
   <RimMind.Dialogue.Context.ReplyTrigger>{0} said to you: {1}</RimMind.Dialogue.Context.ReplyTrigger>
   <RimMind.Dialogue.UI.TimeFormat>Day {0} {1}h</RimMind.Dialogue.UI.TimeFormat>

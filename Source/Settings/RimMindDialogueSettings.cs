@@ -27,7 +27,17 @@ namespace RimMind.Dialogue.Settings
         public bool enableDialogueReply = true;
         public int maxDailyReplyRounds = 12;
 
-        public int monologueCooldownTicks = 36000;
+        public int monologueCooldownTicks = 2500;
+
+        // State-transition social encounter triggers & probabilities
+        public bool enableRecreationSocial = true;
+        public float recreationSocialChance = 0.35f;
+
+        public bool enableDiningSocial = true;
+        public float diningSocialChance = 0.30f;
+
+        public bool enableCoworkerSocial = true;
+        public float coworkerSocialChance = 0.25f;
 
         public bool startDelayEnabled = true;
         public int startDelaySeconds = 10;
@@ -76,6 +86,13 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref maxDailyReplyRounds, "maxDailyReplyRounds", 12);
 
             Scribe_Values.Look(ref monologueCooldownTicks, "monologueCooldownTicks", 36000);
+            Scribe_Values.Look(ref monologueCooldownTicks, "monologueCooldownTicks", 2500);
+            Scribe_Values.Look(ref enableRecreationSocial, "enableRecreationSocial", true);
+            Scribe_Values.Look(ref recreationSocialChance, "recreationSocialChance", 0.35f);
+            Scribe_Values.Look(ref enableDiningSocial, "enableDiningSocial", true);
+            Scribe_Values.Look(ref diningSocialChance, "diningSocialChance", 0.30f);
+            Scribe_Values.Look(ref enableCoworkerSocial, "enableCoworkerSocial", true);
+            Scribe_Values.Look(ref coworkerSocialChance, "coworkerSocialChance", 0.25f);
             Scribe_Values.Look(ref startDelayEnabled, "startDelayEnabled", true);
             Scribe_Values.Look(ref startDelaySeconds, "startDelaySeconds", 10);
             Scribe_Values.Look(ref overlayEnabled, "overlayEnabled", true);
@@ -208,6 +225,13 @@ namespace RimMind.Dialogue.Settings
                 s.enableDialogueReply = true;
                 s.maxDailyReplyRounds = 12;
                 s.monologueCooldownTicks = 36000;
+                s.monologueCooldownTicks = 2500;
+                s.enableRecreationSocial = true;
+                s.recreationSocialChance = 0.35f;
+                s.enableDiningSocial = true;
+                s.diningSocialChance = 0.30f;
+                s.enableCoworkerSocial = true;
+                s.coworkerSocialChance = 0.25f;
                 s.startDelayEnabled = true;
                 s.startDelaySeconds = 10;
                 s.overlayEnabled = true;

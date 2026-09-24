@@ -24,6 +24,10 @@ namespace RimMind.Presentation.Api
         public static bool ShouldSkipDialogue(Pawn pawn, string type) => Skip;
         public static void PublishPerception(int pawnId, string type, string text, float salience)
             => Perceptions.Add((pawnId, text));
+        public static class Settings
+        {
+            public static float ActivityFrequencyScale { get; set; } = 1.0f;
+        }
         public static class Request
         {
             public static void Send(LlmRequestEnvelope envelope,
@@ -75,6 +79,7 @@ namespace Verse
     }
     public class Map { public MapPawns mapPawns = new(); }
     public class MapPawns { public List<Pawn> AllPawns = new(); }
+    public class MapPawns { public List<Pawn> AllPawns = new(); public List<Pawn> FreeColonistsSpawned = new(); }
     public class WorldPawns { public List<Pawn> AllPawnsAlive = new(); }
     public class TickManager { public int TicksGame; }
     public static class Find

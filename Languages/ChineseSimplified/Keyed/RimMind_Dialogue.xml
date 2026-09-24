@@ -3,6 +3,11 @@
   <RimMind.Dialogue.SettingsTitle>RimMind - 对话</RimMind.Dialogue.SettingsTitle>
   <!-- CompRimMindDialogue.cs -->
   <RimMind.Dialogue.Context.IdleState>小人目前处于空闲状态</RimMind.Dialogue.Context.IdleState>
+  <RimMind.Dialogue.Context.DiningEncounter>与 {0} 坐在一起用餐，共度惬意时光</RimMind.Dialogue.Context.DiningEncounter>
+  <RimMind.Dialogue.Context.RecreationEncounter>与 {0} 一起参与娱乐活动，气氛轻松愉快</RimMind.Dialogue.Context.RecreationEncounter>
+  <RimMind.Dialogue.Context.RecreationMonologue>享受当下的闲暇与娱乐时光</RimMind.Dialogue.Context.RecreationMonologue>
+  <RimMind.Dialogue.Context.CoworkerEncounter>与 {0} 在附近并肩劳作</RimMind.Dialogue.Context.CoworkerEncounter>
+  <RimMind.Dialogue.Context.ContemplationMonologue>独自凝望天空与远方，陷入深思</RimMind.Dialogue.Context.ContemplationMonologue>
   <RimMind.Dialogue.UI.Gizmo.ChatWith>与 {0} 对话</RimMind.Dialogue.UI.Gizmo.ChatWith>
   <RimMind.Dialogue.Context.ReplyTrigger>{0} 对你说：{1}</RimMind.Dialogue.Context.ReplyTrigger>
   <RimMind.Dialogue.UI.TimeFormat>第{0}天 {1}时</RimMind.Dialogue.UI.TimeFormat>

@@ -11,6 +11,8 @@ namespace UnityEngine
             value < min ? min : (value > max ? max : value);
         public static float Clamp01(float value) =>
             value < 0f ? 0f : (value > 1f ? 1f : value);
+        public static int RoundToInt(float f) => (int)Math.Round(f);
+        public static bool Approximately(float a, float b) => Math.Abs(a - b) < 0.00001f;
     }
 
     public static class Random

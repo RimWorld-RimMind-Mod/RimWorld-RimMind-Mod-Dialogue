@@ -9,6 +9,7 @@ namespace Verse
         public bool Dead;
         public bool Destroyed;
         public RimWorld.Pawn_NeedsTracker? needs;
+        public RimWorld.Pawn_RelationsTracker? relations;
         public NameTriple Name => new NameTriple();
         public bool IsPrisoner;
         public bool IsSlave;
@@ -17,6 +18,10 @@ namespace Verse
         public RimWorld.Pawn_DraftController? drafter;
         public Map? Map;
         public UnityEngine.Vector3 DrawPos;
+        public IntVec3 Position;
+        public bool Awake() => true;
+        public RimWorld.Job? CurJob;
+        public RimWorld.JobDef? CurJobDef;
         public bool IsHashIntervalTick(int interval) => true;
     }
 
@@ -28,6 +33,33 @@ namespace Verse
 
 namespace RimWorld
 {
+    public class Pawn_RelationsTracker
+    {
+        public int OpinionOf(Verse.Pawn other) => 0;
+    }
+
+    public static class LovePartnerRelationUtility
+    {
+        public static bool LovePartnerRelationExists(Verse.Pawn a, Verse.Pawn b) => false;
+    }
+
+    public class Job
+    {
+        public JobDef? def;
+    }
+
+    public class JobDef : Verse.Def
+    {
+        public object? joyKind;
+        public string? label;
+    }
+
+    public static class JobDefOf
+    {
+        public static JobDef Ingest = new JobDef { defName = "Ingest" };
+        public static JobDef Skygaze = new JobDef { defName = "Skygaze" };
+    }
+
     public class Pawn_DraftController { public bool Drafted; }
 
     public class Pawn_NeedsTracker
@@ -37,6 +69,7 @@ namespace RimWorld
 
     public class Need_Mood
     {
+        public float CurLevel = 0.5f;
         public ThoughtHandler? thoughts;
     }
 

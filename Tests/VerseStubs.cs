@@ -63,4 +63,18 @@ namespace Verse
         public static void Look<T>(ref T value, string label, T defaultValue = default!)
             => Calls.Add((label, defaultValue));
     }
+
+    public static class Rand
+    {
+        public static float Value => 0.5f;
+        public static float Range(float min, float max) => (min + max) / 2f;
+    }
+
+    public struct IntVec3
+    {
+        public int x;
+        public int y;
+        public int z;
+        public bool InHorDistOf(IntVec3 other, float dist) => true;
+    }
 }
