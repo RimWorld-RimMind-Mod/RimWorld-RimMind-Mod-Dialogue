@@ -78,7 +78,6 @@ namespace Verse
         public string ThingID => "Thing_" + thingIDNumber;
     }
     public class Map { public MapPawns mapPawns = new(); }
-    public class MapPawns { public List<Pawn> AllPawns = new(); }
     public class MapPawns { public List<Pawn> AllPawns = new(); public List<Pawn> FreeColonistsSpawned = new(); }
     public class WorldPawns { public List<Pawn> AllPawnsAlive = new(); }
     public class TickManager { public int TicksGame; }
