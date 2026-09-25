@@ -35,6 +35,13 @@ graph TD
     Core --> BridgeRimTalk["Bridge-RimTalk"]
 ```
 
+## 🎮 实机特性展示 / In-Game Showcase
+
+![RimMind-Dialogue In-Game Showcase](docs/images/showcase.jpg)
+
+- **结构化 ToolCall 对话体系 (`express_dialogue`)**：全面废弃原始 Markdown 字符串拼接，通过结构化工具调用输出纯净台词与内心独白，杜绝 JSON 标签外泄。
+- **生动的头顶气泡与动态好感**：对话实时在角色头顶升起说话文字特效与关系修正指示，并根据交谈内容动态演进殖民者好感度（`relation_delta`）。
+
 ## 安装步骤
 
 ### 从源码安装
@@ -221,6 +228,13 @@ RimMind is an AI-driven RimWorld mod suite that connects to Large Language Model
 | RimMind-Bridge-RimChat | Coordination & mutual exclusion layer with RimChat mod | Core, RimChat | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimChat) |
 | RimMind-Bridge-RimTalk | Dialogue bubbles & context bridge with RimTalk mod | Core, RimTalk | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimTalk) |
 | RimMind-Extension-ModelService | Extended model gateway, OpenCode Go subscription & multi-endpoint load balancing | Core | [Link](https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Extension-ModelService) |
+
+## 🎮 In-Game Showcase / Feature Demonstration
+
+![RimMind-Dialogue In-Game Showcase](docs/images/showcase.jpg)
+
+- **Structured ToolCall Dialogue (`express_dialogue`)**: Replaced raw string parsing with native function calling, ensuring clean spoken lines, psychological inner thoughts, and zero JSON markup leakage in HUD.
+- **Speech Motes & Dynamic Relationship Shifts**: Spoken lines display smoothly as floating speech bubbles above colonists, paired with real-time opinion adjustments (`relation_delta`) calculated directly from conversation sentiment.
 
 ## Installation
 
