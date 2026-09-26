@@ -14,7 +14,8 @@ namespace RimMind.Dialogue
             get
             {
                 if (aiLabel.NullOrEmpty()) return base.LabelCap;
-                return $"[RimMind] {aiLabel.CapitalizeFirst()}";
+                string translated = aiLabel.CanTranslate() ? aiLabel.Translate().ToString() : aiLabel;
+                return $"[RimMind] {translated.CapitalizeFirst()}";
             }
         }
 
