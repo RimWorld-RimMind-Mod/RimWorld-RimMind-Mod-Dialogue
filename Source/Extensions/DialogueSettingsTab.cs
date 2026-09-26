@@ -9,7 +9,7 @@ namespace RimMind.Dialogue
     {
         public string Id => "dialogue";
         public string OwnerModId => "RimMindDialogue";
-        public string Label => "RimMind.Dialogue.Settings.TabLabel".Translate();
+        public string Label => LanguageDatabase.activeLanguage?.folderName == "ChineseSimplified" ? "对话" : "Dialogue";
         public void Draw(Rect rect) => RimMindDialogueSettings.DrawSettingsContent(rect);
     }
 }
