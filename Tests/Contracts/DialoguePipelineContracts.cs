@@ -254,5 +254,30 @@ namespace RimMind.Dialogue.Tests.Contracts
                 80f));
         }
 
+        [Fact]
+        public void DialogueOverlayLayoutClampsRightMargin()
+        {
+            // When overlay X + width exceeds screenWidth - rightMargin, X is clamped
+            OverlayBounds clamped = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(1800f, 200f, 300f, 100f),
+                1920f,
+                1080f,
+                300f,
+                100f,
+                170f);
+            // safeWidth = 1920, rightMargin = 170, maxX = 1920 - 300 - 170 = 1450
+            Assert.Equal(new OverlayBounds(1450f, 200f, 300f, 100f), clamped);
+
+            // When overlay width itself exceeds safeWidth - rightMargin, width is clamped
+            OverlayBounds clampedWidth = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(0f, 0f, 1900f, 200f),
+                1920f,
+                1080f,
+                300f,
+                100f,
+                170f);
+            Assert.Equal(new OverlayBounds(0f, 0f, 1750f, 200f), clampedWidth);
+        }
+
     }
 }

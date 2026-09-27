@@ -36,15 +36,18 @@ namespace RimMind.Dialogue.Core
             float screenWidth,
             float screenHeight,
             float minWidth,
-            float minHeight)
+            float minHeight,
+            float rightMargin = 0f)
         {
             float safeWidth = Math.Max(1f, screenWidth);
             float safeHeight = Math.Max(1f, screenHeight);
-            float width = Clamp(value.Width, Math.Min(minWidth, safeWidth), safeWidth);
+            float maxAllowedWidth = Math.Max(1f, safeWidth - rightMargin);
+            float width = Clamp(value.Width, Math.Min(minWidth, maxAllowedWidth), maxAllowedWidth);
             float height = Clamp(value.Height, Math.Min(minHeight, safeHeight), safeHeight);
+            float maxX = Math.Max(0f, safeWidth - width - rightMargin);
 
             return new OverlayBounds(
-                Clamp(value.X, 0f, safeWidth - width),
+                Clamp(value.X, 0f, maxX),
                 Clamp(value.Y, 0f, safeHeight - height),
                 width,
                 height);

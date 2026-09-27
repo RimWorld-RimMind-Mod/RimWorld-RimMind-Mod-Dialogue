@@ -141,43 +141,38 @@ namespace RimMind.Dialogue.Settings
                 "RimMind.Dialogue.Settings.AutoMonologue.Desc".Translate());
             if (s.autoDialogueEnabled)
             {
-                GUI.color = Color.gray;
-                listing.Label("  " + "RimMind.Dialogue.Settings.AutoMonologueDesc".Translate());
-                GUI.color = Color.white;
-                listing.Label("  " + "RimMind.Dialogue.Settings.AutoInterval".Translate(s.autoDialogueCooldownHours));
+                listing.LabelWithTooltip(
+                    "  " + "RimMind.Dialogue.Settings.AutoInterval".Translate(s.autoDialogueCooldownHours),
+                    "RimMind.Dialogue.Settings.AutoMonologueDesc".Translate());
                 s.autoDialogueCooldownHours = (int)listing.Slider(s.autoDialogueCooldownHours, 1f, 24f);
             }
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.PlayerDialogueGizmo".Translate(), ref s.playerDialogueEnabled,
                 "RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc".Translate());
 
             SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
-            listing.Label("RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
-            GUI.color = Color.white;
+            listing.LabelWithTooltip(
+                "RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"),
+                "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
             s.monologueCooldownTicks = (int)listing.Slider(s.monologueCooldownTicks, 3600f, 72000f);
             s.monologueCooldownTicks = (s.monologueCooldownTicks / 600) * 600;
 
-            listing.Label("RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxDailyDialogueRounds));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.MaxDailyDialogues.Desc".Translate());
-            GUI.color = Color.white;
+            listing.LabelWithTooltip(
+                "RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxDailyDialogueRounds),
+                "RimMind.Dialogue.Settings.MaxDailyDialogues.Desc".Translate());
             s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
 
-            listing.Label("RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
-            GUI.color = Color.white;
+            listing.LabelWithTooltip(
+                "RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency),
+                "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
             s.globalConcurrency = (int)listing.Slider(s.globalConcurrency, 1f, 10f);
 
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
                 "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
             if (s.enableDialogueReply)
             {
-                listing.Label("RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds));
-                GUI.color = Color.gray;
-                listing.Label("  " + "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
-                GUI.color = Color.white;
+                listing.LabelWithTooltip(
+                    "RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds),
+                    "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
                 s.maxDailyReplyRounds = (int)listing.Slider(s.maxDailyReplyRounds, 1f, 50f);
             }
 
@@ -194,15 +189,13 @@ namespace RimMind.Dialogue.Settings
                 "RimMind.Dialogue.Settings.ShowNotification.Desc".Translate());
             listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
                 "RimMind.Dialogue.Settings.ShowOverlay.Desc".Translate());
-            listing.Label("RimMind.Dialogue.Settings.OverlayOpacity".Translate($"{s.overlayOpacity:P0}"));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.OverlayOpacity.Desc".Translate());
-            GUI.color = Color.white;
+            listing.LabelWithTooltip(
+                "RimMind.Dialogue.Settings.OverlayOpacity".Translate($"{s.overlayOpacity:P0}"),
+                "RimMind.Dialogue.Settings.OverlayOpacity.Desc".Translate());
             s.overlayOpacity = listing.Slider(s.overlayOpacity, 0.1f, 1f);
-            listing.Label("RimMind.Dialogue.Settings.OverlayMaxMessages".Translate(s.overlayMaxMessages));
-            GUI.color = Color.gray;
-            listing.Label("  " + "RimMind.Dialogue.Settings.OverlayMaxMessages.Desc".Translate());
-            GUI.color = Color.white;
+            listing.LabelWithTooltip(
+                "RimMind.Dialogue.Settings.OverlayMaxMessages".Translate(s.overlayMaxMessages),
+                "RimMind.Dialogue.Settings.OverlayMaxMessages.Desc".Translate());
             s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
 
             listing.End();
@@ -250,20 +243,29 @@ namespace RimMind.Dialogue.Settings
         {
             var s = Get();
             float h = 30f;
-            h += 24f;
-            h += 24f + 24f * 6;
+            h += 24f; // Enable
+            h += 38f + 24f * 4; // Trigger sources header + 4 checkboxes
             if (s.thoughtEnabled)
                 h += 24f + 32f;
+            h += 24f; // AutoMonologue
             if (s.autoDialogueEnabled)
-                h += 24f + 24f + 32f;
-            h += 24f + 24f + 32f + 24f + 32f;
-            h += 24f + 24f + 32f;
-            h += 24f + 24f;
+                h += 24f + 32f;
+            h += 24f; // PlayerDialogueGizmo
+            h += 38f; // Behavior header
+            h += 24f + 32f; // MonologueCooldown
+            h += 24f + 32f; // MaxDailyDialogues
+            h += 24f + 32f; // GlobalConcurrency
+            h += 24f; // EnableDialogueReply
             if (s.enableDialogueReply)
-                h += 24f + 24f + 32f;
+                h += 24f + 32f;
+            h += 24f; // StartDelay
             if (s.startDelayEnabled)
                 h += 24f + 32f;
-            h += 24f + 24f + 24f + 24f + 32f + 24f + 32f;
+            h += 38f; // Display header
+            h += 24f; // ShowNotification
+            h += 24f; // ShowOverlay
+            h += 24f + 32f; // OverlayOpacity
+            h += 24f + 32f; // OverlayMaxMessages
             return h + 40f;
         }
     }

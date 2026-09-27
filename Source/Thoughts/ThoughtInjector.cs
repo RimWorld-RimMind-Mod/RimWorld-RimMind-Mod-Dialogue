@@ -64,7 +64,11 @@ namespace RimMind.Dialogue
 
         public static string MapTagToLabel(string tag)
         {
-            return LabelMap.TryGetValue(tag.ToUpperInvariant(), out string? v) ? v.Translate() : tag;
+            if (LabelMap.TryGetValue(tag.ToUpperInvariant(), out string? key) && !string.IsNullOrEmpty(key))
+            {
+                return key.CanTranslate() ? key.Translate().ToString() : tag;
+            }
+            return tag;
         }
 
         public static void RegisterThoughtTag(string tag, int moodOffset, string labelKey)

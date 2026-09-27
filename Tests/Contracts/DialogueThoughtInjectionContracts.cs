@@ -40,6 +40,62 @@ namespace RimMind.Dialogue.Tests.Contracts
         }
 
         [Fact]
+        public void MapTagToLabelFallsBackToTagWhenKeyCannotTranslate()
+        {
+            string tag = "UNTRANSLATED_TAG_" + Guid.NewGuid().ToString("N");
+            string key = "RimMind.Dialogue.Thought.MissingTranslation";
+            ThoughtInjector.RegisterThoughtTag(tag, 1, key);
+
+            try
+            {
+                Extensions.UntranslatableKeys.Add(key);
+                // When key cannot be translated, raw key is NOT returned; falls back to tag
+                string result = ThoughtInjector.MapTagToLabel(tag);
+                Assert.Equal(tag, result);
+            }
+            finally
+            {
+                Extensions.UntranslatableKeys.Remove(key);
+            }
+        }
+
+        [Fact]
+        public void ThoughtRimMindDialogueLabelCapHandlesFallback()
+        {
+            var thought = new Thought_RimMindDialogue();
+
+            // Case 1: Can translate
+            thought.aiLabel = "TestLabel";
+            Assert.Equal("[RimMind] TestLabel", thought.LabelCap);
+
+            // Case 2: Cannot translate and starts with RimMind. -> strips to last segment
+            string missingKey = "RimMind.Dialogue.Thought.SPECIAL_MOOD";
+            try
+            {
+                Extensions.UntranslatableKeys.Add(missingKey);
+                thought.aiLabel = missingKey;
+                Assert.Equal("[RimMind] SPECIAL_MOOD", thought.LabelCap);
+            }
+            finally
+            {
+                Extensions.UntranslatableKeys.Remove(missingKey);
+            }
+
+            // Case 3: Cannot translate and does NOT start with RimMind. -> uses text directly
+            string rawTag = "CUSTOM_EMOTE";
+            try
+            {
+                Extensions.UntranslatableKeys.Add(rawTag);
+                thought.aiLabel = rawTag;
+                Assert.Equal("[RimMind] CUSTOM_EMOTE", thought.LabelCap);
+            }
+            finally
+            {
+                Extensions.UntranslatableKeys.Remove(rawTag);
+            }
+        }
+
+        [Fact]
         public void LifecycleQuotaSemanticsRemainExplicit()
         {
             Assert.True(DialogueFlowPolicy.IsMonologue(DialogueTriggerType.Auto, hasRecipient: false));

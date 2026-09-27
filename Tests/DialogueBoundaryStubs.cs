@@ -242,5 +242,6 @@ namespace RimMind.Presentation.UI
         public static Rect SplitBottomBar(Rect rect) => rect;
         public static void DrawSectionHeader(Listing_Standard listing, string text) { }
         public static void DrawBottomBar(Rect rect, Action reset) { }
+        public static void LabelWithTooltip(this Verse.Listing_Standard listing, string label, string? tooltip, UnityEngine.Color? textColor = null) { }
     }
 }
