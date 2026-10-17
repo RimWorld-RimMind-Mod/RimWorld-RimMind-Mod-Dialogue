@@ -30,13 +30,17 @@ namespace RimMind.Dialogue.Core
             }
         }
 
+        private static long _sequenceCounter;
+
         public void Add(DialogueLogEntry entry)
         {
+            entry.sequence = Interlocked.Increment(ref _sequenceCounter);
             _entries.Add(entry);
             if (_entries.Count > MaximumEntries)
             {
                 List<DialogueLogEntry> kept = _entries
                     .OrderByDescending(candidate => candidate.tick)
+                    .ThenByDescending(candidate => candidate.sequence)
                     .Take(MaximumEntries)
                     .ToList();
                 Interlocked.Exchange(
@@ -55,6 +59,7 @@ namespace RimMind.Dialogue.Core
             return _entries
                 .Where(entry => entry.initiatorId == pawnId || entry.recipientId == pawnId)
                 .OrderByDescending(entry => entry.tick)
+                .ThenByDescending(entry => entry.sequence)
                 .Take(maximumCount)
                 .ToList();
         }
@@ -73,6 +78,7 @@ namespace RimMind.Dialogue.Core
         {
             return _entries
                 .OrderByDescending(candidate => candidate.tick)
+                .ThenByDescending(candidate => candidate.sequence)
                 .Take(maxCount)
                 .ToList();
         }
@@ -83,8 +89,14 @@ namespace RimMind.Dialogue.Core
             var kept = loadedEntries
                 .Where(e => e != null)
                 .OrderByDescending(candidate => candidate.tick)
+                .ThenByDescending(candidate => candidate.sequence)
                 .Take(maxCount)
                 .ToList();
+            foreach (var entry in kept)
+            {
+                if (entry.sequence == 0)
+                    entry.sequence = Interlocked.Increment(ref _sequenceCounter);
+            }
             Interlocked.Exchange(
                 ref _entries,
                 new ConcurrentBag<DialogueLogEntry>(kept));

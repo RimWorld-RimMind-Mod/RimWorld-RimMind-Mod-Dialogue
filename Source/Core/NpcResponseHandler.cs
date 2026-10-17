@@ -17,7 +17,8 @@ namespace RimMind.Dialogue.Core
         public static string? Handle(LlmResponse response, string npcId, Pawn pawn, Pawn? recipient,
             string context, DialogueTriggerType type, bool isReply = false)
         {
-            if (pawn.Dead || pawn.Destroyed) return null;
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn)) return null;
+            if (recipient != null && !RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient)) return null;
 
             bool isMonologue = DialogueFlowPolicy.IsMonologue(type, recipient != null);
 
@@ -41,6 +42,14 @@ namespace RimMind.Dialogue.Core
             else
             {
                 RimMindErrors.Warn($"[RimMind-Dialogue] No valid express_dialogue tool call found for {pawn.LabelShort}, context: {context}");
+                return null;
+            }
+
+            string? precedingText = FindPrecedingDialogueText(pawn, recipient, context);
+            replyText = SanitizeReply(replyText, precedingText);
+            if (string.IsNullOrWhiteSpace(replyText))
+            {
+                RimMindErrors.Warn($"[RimMind-Dialogue] Sanitized reply is empty for {pawn.LabelShort}, context: {context}");
                 return null;
             }
 
@@ -95,8 +104,9 @@ namespace RimMind.Dialogue.Core
             // Thought 通知
             if (RimMindDialogueSettings.Get().showThoughtNotification && thoughtTag != "NONE" && !thoughtTag.NullOrEmpty())
             {
+                string notifText = replyText.Length > 60 ? replyText.Substring(0, 60) + "..." : replyText;
                 Messages.Message(
-                    $"[RimMind] {pawn.Name.ToStringShort}: {replyText}",
+                    $"[RimMind] {pawn.Name.ToStringShort}: {notifText}",
                     pawn, MessageTypeDefOf.SilentInput, historical: false);
             }
 
@@ -112,6 +122,45 @@ namespace RimMind.Dialogue.Core
 
             RimMindDialogueService.RaiseOnDialogueCompleted(pawn, recipient, replyText, thoughtTag);
             return replyText;
+        }
+
+        /// <summary>
+        /// Sanitizes reply text by stripping mirrored parenthetical stage directions and cleaning formatting glitches.
+        /// </summary>
+        public static string SanitizeReply(string replyText, string? previousDialogueText = null)
+        {
+            return DialogueTextSanitizer.SanitizeReply(replyText, previousDialogueText);
+        }
+
+        internal static string? FindPrecedingDialogueText(Pawn pawn, Pawn? recipient, string? context)
+        {
+            if (pawn != null)
+            {
+                var entry = RimMindDialogueService.GetPrecedingDialogueEntry(
+                    pawn.thingIDNumber,
+                    recipient?.thingIDNumber);
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.reply))
+                {
+                    return entry.reply;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(context))
+            {
+                // "\u5bf9\u4f60\u8bf4\uff1a" is the Chinese format for "{0} said to you:"
+                int idx = context!.IndexOf("\u5bf9\u4f60\u8bf4\uff1a", StringComparison.Ordinal);
+                if (idx >= 0)
+                {
+                    return context.Substring(idx + 4).Trim();
+                }
+                idx = context.IndexOf("said to you:", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    return context.Substring(idx + 12).Trim();
+                }
+            }
+
+            return null;
         }
     }
 }

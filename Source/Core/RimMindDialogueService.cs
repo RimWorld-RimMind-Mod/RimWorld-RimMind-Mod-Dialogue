@@ -119,14 +119,11 @@ namespace RimMind.Dialogue.Core
         {
             if (initiator.Map == null) return;
 
-            MoteMaker.ThrowText(initiator.DrawPos, initiator.Map, replyText,
-                new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
+            string moteText = DialogueTextSanitizer.FormatOverheadMoteText(replyText);
+            if (string.IsNullOrWhiteSpace(moteText)) return;
 
-            if (recipient != null && recipient.Map != null && recipient.Map == initiator.Map)
-            {
-                MoteMaker.ThrowText(recipient.DrawPos, recipient.Map, replyText,
-                    new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
-            }
+            MoteMaker.ThrowText(initiator.DrawPos, initiator.Map, moteText,
+                new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
         }
 
         public static void RegisterTriggerType(string typeId, string labelKey)
@@ -138,7 +135,7 @@ namespace RimMind.Dialogue.Core
         {
             string typeStr = type.ToString();
             if (RegisteredTriggerLabels.TryGetValue(typeStr, out var label))
-                return label.Translate();
+                return label.CanTranslate() ? (string)label.Translate() : label;
             return type switch
             {
                 DialogueTriggerType.Chitchat => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
@@ -211,6 +208,19 @@ namespace RimMind.Dialogue.Core
             return _logStore.HistoryFor(pawnId, maxCount).ToList();
         }
 
+        public static DialogueLogEntry? GetPrecedingDialogueEntry(int pawnId, int? recipientId = null)
+        {
+            var history = _logStore.HistoryFor(pawnId, 10);
+            if (recipientId.HasValue && recipientId.Value > 0)
+            {
+                int otherId = recipientId.Value;
+                var direct = history.FirstOrDefault(e =>
+                    (e.initiatorId == otherId && e.recipientId == pawnId) ||
+                    (e.initiatorId == pawnId && e.recipientId == otherId));
+                if (direct != null) return direct;
+            }
+            return history.FirstOrDefault();
+        }
     }
 
 }

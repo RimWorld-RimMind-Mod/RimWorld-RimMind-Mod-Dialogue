@@ -94,5 +94,22 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal("INSPIRED", output.ThoughtTag);
             Assert.Equal("Spark", output.ThoughtDesc);
         }
+
+        [Fact]
+        public void PseudoFunctionCallSyntaxIsParsedAndSanitized()
+        {
+            string leakedCall = "express_dialogue(speech=My toes are gone, Ingrid. Just... gone. Frostbite took them while I was out cold. How am I supposed to haul anything now?, thought_tag=STRESSED, thought_desc=Devastated by losing toes to frostbite and worried about being a burden to the colony, relation_delta=-1)";
+
+            bool success = DialogueToolParser.TryParse(leakedCall, false, out var output);
+
+            Assert.True(success);
+            Assert.Equal("My toes are gone, Ingrid. Just... gone. Frostbite took them while I was out cold. How am I supposed to haul anything now?", output.Speech);
+            Assert.Equal("STRESSED", output.ThoughtTag);
+            Assert.Equal("Devastated by losing toes to frostbite and worried about being a burden to the colony", output.ThoughtDesc);
+            Assert.Equal(-1, output.RelationDelta);
+
+            string sanitized = DialogueTextSanitizer.CleanFormattingGlitches(leakedCall);
+            Assert.Equal("My toes are gone, Ingrid. Just... gone. Frostbite took them while I was out cold. How am I supposed to haul anything now?", sanitized);
+        }
     }
 }

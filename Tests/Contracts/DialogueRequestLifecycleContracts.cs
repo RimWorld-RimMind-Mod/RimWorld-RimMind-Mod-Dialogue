@@ -43,8 +43,9 @@ namespace RimMind.Dialogue.Tests.Contracts
             Find.TickManager.TicksGame = 1000;
             var map = new Map();
             _pawn = new Pawn { thingIDNumber = 1, IsColonist = true, Faction = Faction.OfPlayer, Map = map };
-            _recipient = new Pawn { thingIDNumber = 2, IsColonist = true, Map = map };
+            _recipient = new Pawn { thingIDNumber = 2, IsColonist = true, Faction = Faction.OfPlayer, Map = map };
             map.mapPawns.AllPawns.AddRange(new[] { _pawn, _recipient });
+            map.mapPawns.FreeColonistsSpawned.AddRange(new[] { _pawn, _recipient });
             Find.Maps.Clear();
             Find.Maps.Add(map);
             RimMindDialogueService.NotifyGameLoaded();
@@ -155,7 +156,7 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal("NPC-1", envelope.NpcId);
             Assert.Equal("RimMind.Dialogue", envelope.ModId);
             Assert.Equal(RimMind.Application.Common.Models.Context.ScenarioIds.Dialogue, envelope.ScenarioId);
-            Assert.Equal(400, envelope.MaxTokens);
+            Assert.Equal(800, envelope.MaxTokens);
             Assert.Equal(player ? 0.85f : 0.8f, envelope.Temperature);
             Assert.Contains(player ? "<dialogue_input>" : "<dialogue_trigger>", envelope.GameStateInfo!.ToString());
             Assert.Contains(player ? "player input" : "RimMind.Dialogue.Prompt.AutoTrigger", envelope.GameStateInfo.ToString());

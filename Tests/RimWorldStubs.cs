@@ -23,6 +23,14 @@ namespace Verse
         public RimWorld.Job? CurJob;
         public RimWorld.JobDef? CurJobDef;
         public bool IsHashIntervalTick(int interval) => true;
+        public bool IsKidnapped() => false;
+        public bool InMentalState;
+        public MentalStateDef? MentalStateDef;
+    }
+
+    public class MentalStateDef : Def
+    {
+        public string? label;
     }
 
     public class NameTriple

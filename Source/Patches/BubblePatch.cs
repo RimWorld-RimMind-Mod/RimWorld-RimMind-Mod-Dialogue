@@ -19,8 +19,8 @@ namespace RimMind.Dialogue.Patches
             if (intDef?.defName != "Chitchat" && intDef?.defName != "DeepTalk") return;
 
             Pawn initiator = ___pawn;
-            if (initiator == null || !initiator.IsColonist) return;
-            if (recipient == null) return;
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(initiator)) return;
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient)) return;
 
             var settings = RimMindDialogueSettings.Get();
             var pairKey = DialogueClassifier.MakePairKey(initiator.thingIDNumber, recipient.thingIDNumber);

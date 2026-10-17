@@ -37,18 +37,21 @@ namespace RimMind.Dialogue.Core
             float screenHeight,
             float minWidth,
             float minHeight,
-            float rightMargin = 0f)
+            float rightMargin = 0f,
+            float topMargin = 0f)
         {
             float safeWidth = Math.Max(1f, screenWidth);
             float safeHeight = Math.Max(1f, screenHeight);
             float maxAllowedWidth = Math.Max(1f, safeWidth - rightMargin);
+            float maxAllowedHeight = Math.Max(1f, safeHeight - topMargin);
             float width = Clamp(value.Width, Math.Min(minWidth, maxAllowedWidth), maxAllowedWidth);
-            float height = Clamp(value.Height, Math.Min(minHeight, safeHeight), safeHeight);
+            float height = Clamp(value.Height, Math.Min(minHeight, maxAllowedHeight), maxAllowedHeight);
             float maxX = Math.Max(0f, safeWidth - width - rightMargin);
+            float minY = Math.Min(topMargin, Math.Max(0f, safeHeight - height));
 
             return new OverlayBounds(
                 Clamp(value.X, 0f, maxX),
-                Clamp(value.Y, 0f, safeHeight - height),
+                Clamp(value.Y, minY, Math.Max(minY, safeHeight - height)),
                 width,
                 height);
         }
@@ -73,6 +76,19 @@ namespace RimMind.Dialogue.Core
             }
 
             return first;
+        }
+
+        /// <summary>
+        /// Determines whether the dialogue overlay should be rendered on the HUD.
+        /// When empty and not interacted with (hover/drag/resize), keeps the screen completely clean.
+        /// </summary>
+        public static bool ShouldRender(
+            int entriesCount,
+            bool isMouseOver,
+            bool isDragging,
+            bool isResizing)
+        {
+            return entriesCount > 0 || isMouseOver || isDragging || isResizing;
         }
 
         private static float Clamp(float value, float min, float max) =>

@@ -12,6 +12,10 @@ namespace RimMind.Dialogue.Patches
         new Type[] { typeof(Thought_Memory), typeof(Pawn) })]
     public static class ThoughtPatch
     {
+        private static readonly System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int> LastTriggeredTicks =
+            new System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int>();
+        private const int SameThoughtCooldownTicks = 60000; // 1 in-game day
+
         [HarmonyPostfix]
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory newThought)
         {
@@ -31,7 +35,20 @@ namespace RimMind.Dialogue.Patches
 
             if (newThought.def.defName.StartsWith("RimMindDialogue_")) return;
 
-            string context = "RimMind.Dialogue.Context.MoodChanged".Translate(newThought.def.label, $"{moodEffect:+0;-0}");
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            var key = (pawn.thingIDNumber, newThought.def.defName);
+            if (LastTriggeredTicks.TryGetValue(key, out int lastTick) && nowTick >= lastTick && (nowTick - lastTick) < SameThoughtCooldownTicks)
+            {
+                return;
+            }
+            LastTriggeredTicks[key] = nowTick;
+
+            string rawLabel = newThought.LabelCap ?? newThought.def.label ?? newThought.def.defName;
+            string cleanLabel = System.Text.RegularExpressions.Regex.Replace(
+                rawLabel.Replace("{ROLE_label}", "role").Replace("{0}", ""),
+                @"\{[A-Za-z0-9_]+\}",
+                "").Trim();
+            string context = "RimMind.Dialogue.Context.MoodChanged".Translate(cleanLabel, $"{moodEffect:+0;-0}");
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Thought, null);
         }
     }

@@ -102,9 +102,10 @@ namespace RimMind.Dialogue.Core
             if (!settings.enabled
                 || (type == DialogueTriggerType.PlayerInput && !settings.playerDialogueEnabled))
                 return "Dialogue is disabled.";
-            if (pawn == null || pawn.Dead || pawn.Destroyed
-                || (recipient != null && (recipient.Dead || recipient.Destroyed)))
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn))
                 return "Dialogue participant is unavailable.";
+            if (recipient != null && !RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient))
+                return "Dialogue recipient is unavailable.";
             if (!RimMindAPI.IsConfigured())
                 return "AI is not configured.";
             if (!_activityState.IsReady(settings, currentTick))
@@ -157,8 +158,6 @@ namespace RimMind.Dialogue.Core
                     currentDay,
                     RimMindDialogueSettings.Get().maxDailyReplyRounds))
             {
-                Log.Message(
-                    $"[RimMind-Dialogue] Auto-reply daily limit reached for pair {pairKey.Item1}|{pairKey.Item2}");
                 return;
             }
 
@@ -246,23 +245,31 @@ namespace RimMind.Dialogue.Core
                 }
 
                 string formattedContext = FormatContext(type, context, recipient);
-                string triggerLabel = RimMindDialogueService.GetTriggerLabel(type);
-                Log.Message($"[RimMind-Dialogue] Trigger: {pawn.Name.ToStringShort} | Reason: {triggerLabel}");
 
                 string npcId = $"NPC-{pawn.thingIDNumber}";
+                bool isCrisis = pawn.InMentalState || (pawn.needs?.mood != null && pawn.needs.mood.CurLevel < 0.20f);
+                var gameState = new GameStateInfo();
+                if (isCrisis)
+                {
+                    string mentalReason = pawn.MentalStateDef?.label ?? "Severe Crisis";
+                    gameState.AddSection("crisis_expression",
+                        $"[CRISIS BREAKDOWN: {mentalReason}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.");
+                }
+                gameState.AddSection(
+                    type == DialogueTriggerType.PlayerInput ? "dialogue_input" : "dialogue_trigger",
+                    type == DialogueTriggerType.PlayerInput
+                        ? context
+                        : "RimMind.Dialogue.Prompt.AutoTrigger".Translate());
+
                 var envelope = LlmRequestEnvelopeBuilder
                     .ForNpc(
                         npcId,
-                        gameStateInfo: new GameStateInfo().AddSection(
-                            type == DialogueTriggerType.PlayerInput ? "dialogue_input" : "dialogue_trigger",
-                            type == DialogueTriggerType.PlayerInput
-                                ? context
-                                : "RimMind.Dialogue.Prompt.AutoTrigger".Translate()))
-                    .ForScenarioId(ScenarioIds.Dialogue)
+                        gameStateInfo: gameState)
+                    .ForScenarioId(isCrisis ? ScenarioIds.CrisisDialogue : ScenarioIds.Dialogue)
                     .WithModId("RimMind.Dialogue")
                     .WithTools(DialogueToolDefinitions.AsList())
                     .WithToolDispatchMode(ToolCallDispatchMode.Manual)
-                    .WithMaxTokens(400)
+                    .WithMaxTokens(800)
                     .WithTemperature(type == DialogueTriggerType.PlayerInput ? 0.85f : 0.8f)
                     .WithCancellation(lifetime.Token)
                     .Build();

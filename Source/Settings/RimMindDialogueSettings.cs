@@ -27,7 +27,7 @@ namespace RimMind.Dialogue.Settings
         public bool enableDialogueReply = true;
         public int maxDailyReplyRounds = 12;
 
-        public int monologueCooldownTicks = 2500;
+        public int monologueCooldownTicks = 36000;
 
         // State-transition social encounter triggers & probabilities
         public bool enableRecreationSocial = true;
@@ -47,7 +47,7 @@ namespace RimMind.Dialogue.Settings
         public float overlayOpacity = 0.75f;
         public int overlayMaxMessages = 8;
         public float overlayX = 20f;
-        public float overlayY = 20f;
+        public float overlayY = 320f;
         public float overlayW = 420f;
         public float overlayH = 220f;
 
@@ -86,7 +86,6 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref maxDailyReplyRounds, "maxDailyReplyRounds", 12);
 
             Scribe_Values.Look(ref monologueCooldownTicks, "monologueCooldownTicks", 36000);
-            Scribe_Values.Look(ref monologueCooldownTicks, "monologueCooldownTicks", 2500);
             Scribe_Values.Look(ref enableRecreationSocial, "enableRecreationSocial", true);
             Scribe_Values.Look(ref recreationSocialChance, "recreationSocialChance", 0.35f);
             Scribe_Values.Look(ref enableDiningSocial, "enableDiningSocial", true);
@@ -99,7 +98,7 @@ namespace RimMind.Dialogue.Settings
             Scribe_Values.Look(ref overlayOpacity, "overlayOpacity", 0.75f);
             Scribe_Values.Look(ref overlayMaxMessages, "overlayMaxMessages", 8);
             Scribe_Values.Look(ref overlayX, "overlayX", 20f);
-            Scribe_Values.Look(ref overlayY, "overlayY", 20f);
+            Scribe_Values.Look(ref overlayY, "overlayY", 320f);
             Scribe_Values.Look(ref overlayW, "overlayW", 420f);
             Scribe_Values.Look(ref overlayH, "overlayH", 220f);
         }
@@ -218,7 +217,6 @@ namespace RimMind.Dialogue.Settings
                 s.enableDialogueReply = true;
                 s.maxDailyReplyRounds = 12;
                 s.monologueCooldownTicks = 36000;
-                s.monologueCooldownTicks = 2500;
                 s.enableRecreationSocial = true;
                 s.recreationSocialChance = 0.35f;
                 s.enableDiningSocial = true;
@@ -231,7 +229,7 @@ namespace RimMind.Dialogue.Settings
                 s.overlayOpacity = 0.75f;
                 s.overlayMaxMessages = 8;
                 s.overlayX = 20f;
-                s.overlayY = 20f;
+                s.overlayY = 320f;
                 s.overlayW = 420f;
                 s.overlayH = 220f;
             });

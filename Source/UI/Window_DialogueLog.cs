@@ -353,7 +353,7 @@ namespace RimMind.Dialogue.UI
         private static string TranslateTrigger(string triggerKey)
         {
             if (RimMindDialogueService.RegisteredTriggerLabels.TryGetValue(triggerKey, out var labelKey))
-                return labelKey.Translate();
+                return labelKey.CanTranslate() ? (string)labelKey.Translate() : labelKey;
 
             return triggerKey switch
             {

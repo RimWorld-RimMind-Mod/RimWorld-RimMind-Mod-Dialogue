@@ -161,11 +161,14 @@ namespace RimMind.Dialogue.Core
 
             if (_pawnCache.TryGetValue(recipientId, out var cached) && cached != null && !cached.DestroyedOrNull())
             {
-                return cached;
+                if (RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(cached))
+                    return cached;
+
+                _pawnCache.TryRemove(recipientId, out _);
             }
 
             var lookupPawn = RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(recipientId);
-            if (lookupPawn != null && !lookupPawn.DestroyedOrNull())
+            if (lookupPawn != null && !lookupPawn.DestroyedOrNull() && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(lookupPawn))
             {
                 _pawnCache[recipientId] = lookupPawn;
                 return lookupPawn;
@@ -174,7 +177,8 @@ namespace RimMind.Dialogue.Core
             if (UnityData.IsInMainThread && (_pawnCacheTick < 0 || currentTick - _pawnCacheTick >= 600))
             {
                 RebuildPawnCache(currentTick);
-                return _pawnCache.TryGetValue(recipientId, out var fresh) ? fresh : null;
+                if (_pawnCache.TryGetValue(recipientId, out var fresh) && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(fresh))
+                    return fresh;
             }
 
             return null;
@@ -201,23 +205,17 @@ namespace RimMind.Dialogue.Core
             {
                 foreach (Map map in Find.Maps)
                 {
-                    if (map?.mapPawns == null)
+                    if (map?.mapPawns?.FreeColonistsSpawned == null)
                         continue;
 
-                    foreach (Pawn candidate in map.mapPawns.AllPawns)
+                    foreach (Pawn candidate in map.mapPawns.FreeColonistsSpawned)
                     {
-                        _pawnCache[candidate.thingIDNumber] = candidate;
-                        RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(candidate);
+                        if (candidate != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(candidate))
+                        {
+                            _pawnCache[candidate.thingIDNumber] = candidate;
+                            RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(candidate);
+                        }
                     }
-                }
-            }
-
-            if (Find.WorldPawns?.AllPawnsAlive != null)
-            {
-                foreach (Pawn candidate in Find.WorldPawns.AllPawnsAlive)
-                {
-                    _pawnCache[candidate.thingIDNumber] = candidate;
-                    RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(candidate);
                 }
             }
 

@@ -5,6 +5,7 @@ namespace RimMind.Dialogue.Core
     public class DialogueLogEntry : IExposable
     {
         public int tick;
+        internal long sequence;
         public string initiatorName = string.Empty;
         public int initiatorId;
         public bool initiatorIsColonist;
