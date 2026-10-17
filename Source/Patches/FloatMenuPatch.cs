@@ -76,8 +76,7 @@ namespace RimMind.Dialogue.Patches
 
         private static bool IsValidTarget(Pawn target)
         {
-            if (target == null) return false;
-            if (!target.Spawned || target.Dead) return false;
+            if (!RimMindPawnLookup.IsActiveSpawnedColonist(target)) return false;
             if (!(target.RaceProps?.Humanlike ?? false)) return false;
             return true;
         }

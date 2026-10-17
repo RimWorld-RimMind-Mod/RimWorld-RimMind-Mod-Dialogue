@@ -102,9 +102,9 @@ namespace RimMind.Dialogue.Core
             if (!settings.enabled
                 || (type == DialogueTriggerType.PlayerInput && !settings.playerDialogueEnabled))
                 return "Dialogue is disabled.";
-            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn))
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn) || pawn.Downed)
                 return "Dialogue participant is unavailable.";
-            if (recipient != null && !RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient))
+            if (recipient != null && (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient) || recipient.Downed))
                 return "Dialogue recipient is unavailable.";
             if (!RimMindAPI.IsConfigured())
                 return "AI is not configured.";
