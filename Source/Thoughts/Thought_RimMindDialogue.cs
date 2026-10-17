@@ -14,7 +14,27 @@ namespace RimMind.Dialogue
             get
             {
                 if (aiLabel.NullOrEmpty()) return base.LabelCap;
-                return $"[RimMind] {aiLabel.CapitalizeFirst()}";
+                string text;
+                if (ThoughtInjector.TryGetLabelKey(aiLabel, out string? mappedKey) && !string.IsNullOrEmpty(mappedKey) && mappedKey.CanTranslate())
+                {
+                    text = mappedKey.Translate().ToString();
+                }
+                else if (aiLabel.CanTranslate())
+                {
+                    text = aiLabel.Translate().ToString();
+                }
+                else if (aiLabel.StartsWith("RimMind."))
+                {
+                    int lastDot = aiLabel.LastIndexOf('.');
+                    text = lastDot >= 0 && lastDot < aiLabel.Length - 1
+                        ? aiLabel.Substring(lastDot + 1)
+                        : aiLabel;
+                }
+                else
+                {
+                    text = aiLabel;
+                }
+                return $"[RimMind] {text.CapitalizeFirst()}";
             }
         }
 

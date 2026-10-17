@@ -23,6 +23,7 @@ namespace RimMind.Dialogue
             ["CONNECTED"] = 2,
             ["STRESSED"] = -2,
             ["IRRITATED"] = -1,
+            ["INSPIRED"] = 2,
         };
 
         private static readonly ConcurrentDictionary<string, string> LabelMap = new ConcurrentDictionary<string, string>
@@ -33,6 +34,7 @@ namespace RimMind.Dialogue
             ["CONNECTED"] = "RimMind.Dialogue.Thought.CONNECTED",
             ["STRESSED"] = "RimMind.Dialogue.Thought.STRESSED",
             ["IRRITATED"] = "RimMind.Dialogue.Thought.IRRITATED",
+            ["INSPIRED"] = "RimMind.Dialogue.Thought.INSPIRED",
         };
 
         public static void Inject(Pawn pawn, Pawn? recipient, string tag, string? description)
@@ -62,9 +64,29 @@ namespace RimMind.Dialogue
             return MoodOffsetMap.TryGetValue(tag.ToUpperInvariant(), out int v) ? v : 0;
         }
 
+        public static bool TryGetLabelKey(string tag, out string? key)
+        {
+            if (string.IsNullOrEmpty(tag))
+            {
+                key = null;
+                return false;
+            }
+            return LabelMap.TryGetValue(tag.ToUpperInvariant(), out key);
+        }
+
         public static string MapTagToLabel(string tag)
         {
-            return LabelMap.TryGetValue(tag.ToUpperInvariant(), out string? v) ? v.Translate() : tag;
+            if (string.IsNullOrEmpty(tag)) return string.Empty;
+            string upperTag = tag.ToUpperInvariant();
+            if (LabelMap.TryGetValue(upperTag, out string? key) && !string.IsNullOrEmpty(key))
+            {
+                return key.CanTranslate() ? key.Translate().ToString() : tag;
+            }
+            if (tag.StartsWith("RimMind.", StringComparison.OrdinalIgnoreCase))
+            {
+                return tag.CanTranslate() ? tag.Translate().ToString() : tag;
+            }
+            return tag;
         }
 
         public static void RegisterThoughtTag(string tag, int moodOffset, string labelKey)
@@ -90,9 +112,13 @@ namespace RimMind.Dialogue
             var thought = (Thought_RelationDialogue)ThoughtMaker.MakeThought(thoughtDef);
             thought.otherPawn = recipient;
             thought.opinionOffset = delta;
+
+            const string posKey = "RimMind.Dialogue.Relation.Positive";
+            const string negKey = "RimMind.Dialogue.Relation.Negative";
+            string pawnName = recipient.Name.ToStringShort;
             thought.aiLabel = delta > 0
-                ? "RimMind.Dialogue.Relation.Positive".Translate(recipient.Name.ToStringShort)
-                : "RimMind.Dialogue.Relation.Negative".Translate(recipient.Name.ToStringShort);
+                ? (posKey.CanTranslate() ? posKey.Translate(pawnName).ToString() : $"pleasant conversation with {pawnName}")
+                : (negKey.CanTranslate() ? negKey.Translate(pawnName).ToString() : $"unpleasant conversation with {pawnName}");
 
             pawn.needs?.mood?.thoughts?.memories?.TryGainMemory(thought);
         }

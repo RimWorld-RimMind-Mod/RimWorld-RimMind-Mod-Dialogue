@@ -34,6 +34,11 @@ namespace Verse
         // RimWorld 翻译扩展方法存根，测试中直接返回原字符串
         public static TaggedString Translate(this string s) => new TaggedString { Value = s };
 
+        public static readonly HashSet<string> UntranslatableKeys = new HashSet<string>();
+
+        // RimWorld 翻译判定扩展方法存根
+        public static bool CanTranslate(this string s) => !string.IsNullOrEmpty(s) && !UntranslatableKeys.Contains(s);
+
         // RimWorld 带参数的翻译扩展方法存根，测试中简单拼接
         public static TaggedString Translate(this string s, params object[] args) =>
             new TaggedString { Value = string.Format(s, args) };

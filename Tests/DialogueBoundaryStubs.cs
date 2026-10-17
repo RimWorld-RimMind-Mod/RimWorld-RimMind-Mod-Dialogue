@@ -6,6 +6,9 @@ using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using UnityEngine;
 using Verse;
+using Xunit;
+
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace RimMind.Presentation.Api
 {
@@ -60,6 +63,17 @@ namespace RimMind.Presentation.Api
         public static Pawn? FindPawnByNumber(int thingIDNumber)
             => _cache.TryGetValue(thingIDNumber, out var p) ? p : null;
         public static void ClearCache() => _cache.Clear();
+
+        public static bool IsActiveSpawnedColonist(Pawn? pawn)
+        {
+            if (pawn == null) return false;
+            if (pawn.Dead || pawn.Destroyed) return false;
+            if (!pawn.Spawned || pawn.Map == null) return false;
+            if (!pawn.IsColonist || pawn.IsPrisoner || pawn.IsSlave) return false;
+            if (pawn.Faction != RimWorld.Faction.OfPlayer) return false;
+            if (pawn.IsKidnapped()) return false;
+            return true;
+        }
     }
 }
 
@@ -73,7 +87,8 @@ namespace Verse
     public class Thing
     {
         public int thingIDNumber;
-        public RimWorld.Faction? Faction;
+        public RimWorld.Faction? Faction = RimWorld.Faction.OfPlayer;
+        public bool Spawned = true;
         public string LabelShort => "TestPawn";
         public string ThingID => "Thing_" + thingIDNumber;
     }
@@ -242,5 +257,6 @@ namespace RimMind.Presentation.UI
         public static Rect SplitBottomBar(Rect rect) => rect;
         public static void DrawSectionHeader(Listing_Standard listing, string text) { }
         public static void DrawBottomBar(Rect rect, Action reset) { }
+        public static void LabelWithTooltip(this Verse.Listing_Standard listing, string label, string? tooltip, UnityEngine.Color? textColor = null) { }
     }
 }

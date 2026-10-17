@@ -22,12 +22,15 @@ namespace RimMind.Dialogue.Overlay
         private bool _temporarilyClosed;
         private bool _lastEnabledState;
         private List<DialogueLogEntry> _cachedEntries = new List<DialogueLogEntry>();
+        private int _cachedLiveColonistsHash;
 
         private const float OptionsBarHeight = 24f;
         private const float ResizeHandleSize = 24f;
         private const float TextPadding = 4f;
         private const float MinWidth = 300f;
         private const float MinHeight = 100f;
+        private const float AlertsMargin = 245f;
+        private const float TopColonistBarMargin = 96f;
 
         public DialogueOverlay(Map map) : base(map)
         {
@@ -59,10 +62,21 @@ namespace RimMind.Dialogue.Overlay
             if (!currentlyEnabled || _temporarilyClosed) return;
 
             NormalizeWindowRect();
+            EnsureCachedEntries(settings);
             HandleInput();
             NormalizeWindowRect();
 
             bool isMouseOver = Mouse.IsOver(_windowRect);
+
+            if (!DialogueOverlayLayout.ShouldRender(_cachedEntries.Count, isMouseOver, _isDragging, _isResizing))
+            {
+                if (_positionDirty)
+                {
+                    SavePositionToSettings();
+                    _positionDirty = false;
+                }
+                return;
+            }
 
             Color previousColor = GUI.color;
             GameFont previousFont = Text.Font;
@@ -76,7 +90,7 @@ namespace RimMind.Dialogue.Overlay
 
                 DrawMessages(inRect);
 
-                if (isMouseOver)
+                if (isMouseOver || _isDragging || _isResizing)
                 {
                     DrawOptionsBar(inRect);
 
@@ -101,19 +115,56 @@ namespace RimMind.Dialogue.Overlay
             }
         }
 
-        private void DrawMessages(Rect inRect)
+        private void EnsureCachedEntries(RimMindDialogueSettings settings)
         {
-            var settings = RimMindDialogueSettings.Get();
             int maxMessages = Math.Max(0, settings.overlayMaxMessages);
-            if (_cacheDirty || _cachedMaxMessages != maxMessages)
+
+            HashSet<int>? liveColonistIds = null;
+            int liveHash = 0;
+            if (map?.mapPawns?.FreeColonistsSpawned != null)
             {
+                liveColonistIds = new HashSet<int>();
+                var spawned = map.mapPawns.FreeColonistsSpawned;
+                for (int i = 0; i < spawned.Count; i++)
+                {
+                    var p = spawned[i];
+                    if (p != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(p))
+                    {
+                        liveColonistIds.Add(p.thingIDNumber);
+                        liveHash = unchecked(liveHash * 397 ^ p.thingIDNumber);
+                    }
+                }
+            }
+
+            if (_cacheDirty || _cachedMaxMessages != maxMessages || _cachedLiveColonistsHash != liveHash)
+            {
+                bool IsPawnActiveOnCurrentMap(int pawnId, bool isColonist)
+                {
+                    if (isColonist)
+                        return liveColonistIds != null && liveColonistIds.Contains(pawnId);
+
+                    var p = RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(pawnId);
+                    return p != null && !p.Dead && !p.Destroyed && p.Spawned && p.Map == map;
+                }
+
+                int nowTick = Find.TickManager?.TicksGame ?? 0;
+                const int MaxEntryAgeTicks = 60000; // 1 in-game day
+
                 _cachedEntries = RimMindDialogueService.LogEntries
+                    .Where(entry =>
+                        (nowTick <= 0 || entry.tick <= 0 || (nowTick - entry.tick) <= MaxEntryAgeTicks)
+                        && IsPawnActiveOnCurrentMap(entry.initiatorId, entry.initiatorIsColonist)
+                        && (entry.recipientId <= 0 || IsPawnActiveOnCurrentMap(entry.recipientId, entry.recipientIsColonist)))
                     .TakeLast(maxMessages)
                     .ToList();
                 _cachedMaxMessages = maxMessages;
+                _cachedLiveColonistsHash = liveHash;
                 _cacheDirty = false;
             }
+        }
 
+        private void DrawMessages(Rect inRect)
+        {
             if (_cachedEntries.Count == 0) return;
 
             var contentRect = inRect.ContractedBy(TextPadding);
@@ -172,7 +223,9 @@ namespace RimMind.Dialogue.Overlay
                 Verse.UI.screenWidth,
                 Verse.UI.screenHeight,
                 MinWidth,
-                MinHeight);
+                MinHeight,
+                AlertsMargin,
+                TopColonistBarMargin);
             Rect normalized = new Rect(value.X, value.Y, value.Width, value.Height);
             if (normalized.x == _windowRect.x && normalized.y == _windowRect.y &&
                 normalized.width == _windowRect.width && normalized.height == _windowRect.height)
@@ -255,7 +308,7 @@ namespace RimMind.Dialogue.Overlay
                     float desiredWidth = currentEvent.mousePosition.x - _windowRect.x;
                     float desiredHeight = currentEvent.mousePosition.y - _windowRect.y;
 
-                    float maxWidth = Verse.UI.screenWidth - _windowRect.x;
+                    float maxWidth = Mathf.Max(MinWidth, Verse.UI.screenWidth - _windowRect.x - AlertsMargin);
                     float maxHeight = Verse.UI.screenHeight - _windowRect.y;
 
                     _windowRect.width = Mathf.Clamp(desiredWidth, MinWidth, maxWidth);
@@ -265,8 +318,10 @@ namespace RimMind.Dialogue.Overlay
                 else if (_isDragging)
                 {
                     _windowRect.position = currentEvent.mousePosition - _dragStartOffset;
-                    _windowRect.x = Mathf.Clamp(_windowRect.x, 0, Verse.UI.screenWidth - _windowRect.width);
-                    _windowRect.y = Mathf.Clamp(_windowRect.y, 0, Verse.UI.screenHeight - _windowRect.height);
+                    float maxX = Mathf.Max(0f, Verse.UI.screenWidth - _windowRect.width - AlertsMargin);
+                    float minY = Mathf.Min(TopColonistBarMargin, Mathf.Max(0f, Verse.UI.screenHeight - _windowRect.height));
+                    _windowRect.x = Mathf.Clamp(_windowRect.x, 0f, maxX);
+                    _windowRect.y = Mathf.Clamp(_windowRect.y, minY, Mathf.Max(minY, Verse.UI.screenHeight - _windowRect.height));
                     currentEvent.Use();
                 }
             }

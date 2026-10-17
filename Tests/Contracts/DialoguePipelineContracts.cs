@@ -254,5 +254,118 @@ namespace RimMind.Dialogue.Tests.Contracts
                 80f));
         }
 
+        [Fact]
+        public void DialogueOverlayLayoutClampsRightMargin()
+        {
+            // When overlay X + width exceeds screenWidth - rightMargin, X is clamped
+            OverlayBounds clamped = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(1800f, 200f, 300f, 100f),
+                1920f,
+                1080f,
+                300f,
+                100f,
+                170f);
+            // safeWidth = 1920, rightMargin = 170, maxX = 1920 - 300 - 170 = 1450
+            Assert.Equal(new OverlayBounds(1450f, 200f, 300f, 100f), clamped);
+
+            // When overlay width itself exceeds safeWidth - rightMargin, width is clamped
+            OverlayBounds clampedWidth = DialogueOverlayLayout.Normalize(
+                new OverlayBounds(0f, 0f, 1900f, 200f),
+                1920f,
+                1080f,
+                300f,
+                100f,
+                170f);
+            Assert.Equal(new OverlayBounds(0f, 0f, 1750f, 200f), clampedWidth);
+        }
+
+        [Fact]
+        public void DialogueOverlayLayoutShouldRenderCorrectness()
+        {
+            // When empty and not interacted with: keep screen completely clean (prevent ghost box leak)
+            Assert.False(DialogueOverlayLayout.ShouldRender(0, isMouseOver: false, isDragging: false, isResizing: false));
+
+            // When there are dialogue messages: always render
+            Assert.True(DialogueOverlayLayout.ShouldRender(1, isMouseOver: false, isDragging: false, isResizing: false));
+            Assert.True(DialogueOverlayLayout.ShouldRender(5, isMouseOver: true, isDragging: false, isResizing: false));
+
+            // When empty but hovered: render box & controls
+            Assert.True(DialogueOverlayLayout.ShouldRender(0, isMouseOver: true, isDragging: false, isResizing: false));
+
+            // When empty but dragging: render box & controls
+            Assert.True(DialogueOverlayLayout.ShouldRender(0, isMouseOver: false, isDragging: true, isResizing: false));
+
+            // When empty but resizing: render box & controls
+            Assert.True(DialogueOverlayLayout.ShouldRender(0, isMouseOver: false, isDragging: false, isResizing: true));
+        }
+
+        [Fact]
+        public void NpcResponseHandler_ReturnsNull_WhenPawnOrRecipientNotActiveSpawnedColonist()
+        {
+            var map = new Verse.Map();
+            var pawn = new Verse.Pawn { thingIDNumber = 1, IsColonist = true, Faction = RimWorld.Faction.OfPlayer, Map = map, Spawned = true };
+            var recipient = new Verse.Pawn { thingIDNumber = 2, IsColonist = true, Faction = RimWorld.Faction.OfPlayer, Map = map, Spawned = true };
+            var response = new RimMind.Domain.Llm.LlmResponse { Content = "Hello there" };
+
+            // When both are active spawned colonists, dialogue succeeds
+            var success = NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat);
+            Assert.Equal("Hello there", success);
+
+            // Initiator dead -> null
+            pawn.Dead = true;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+            pawn.Dead = false;
+
+            // Initiator destroyed -> null
+            pawn.Destroyed = true;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+            pawn.Destroyed = false;
+
+            // Initiator off-map (not spawned) -> null
+            pawn.Spawned = false;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+            pawn.Spawned = true;
+
+            // Initiator Map null -> null
+            pawn.Map = null;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+            pawn.Map = map;
+
+            // Recipient dead -> null
+            recipient.Dead = true;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+            recipient.Dead = false;
+
+            // Recipient off-map -> null
+            recipient.Spawned = false;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+            recipient.Spawned = true;
+
+            // Recipient Map null -> null
+            recipient.Map = null;
+            Assert.Null(NpcResponseHandler.Handle(response, "NPC-1", pawn, recipient, "test", DialogueTriggerType.Chitchat));
+        }
+
+        [Fact]
+        public void DialogueActivityState_GetActiveRecipient_FiltersDeadOrOffMapRecipients()
+        {
+            var state = new DialogueActivityState();
+            var map = new Verse.Map();
+            var pawn = new Verse.Pawn { thingIDNumber = 10, IsColonist = true, Faction = RimWorld.Faction.OfPlayer, Map = map, Spawned = true };
+            var recipient = new Verse.Pawn { thingIDNumber = 20, IsColonist = true, Faction = RimWorld.Faction.OfPlayer, Map = map, Spawned = true };
+
+            state.SetRequestRecipient(10, 20, 12345, recipient);
+            Assert.Same(recipient, state.GetActiveRecipient(pawn, 100));
+
+            // Mark recipient dead -> GetActiveRecipient must return null and prune cache
+            recipient.Dead = true;
+            Assert.Null(state.GetActiveRecipient(pawn, 100));
+
+            // Mark recipient unspawned (off-map) -> GetActiveRecipient must return null
+            recipient.Dead = false;
+            recipient.Spawned = false;
+            state.SetRequestRecipient(10, 20, 12346, recipient);
+            Assert.Null(state.GetActiveRecipient(pawn, 100));
+        }
     }
 }
