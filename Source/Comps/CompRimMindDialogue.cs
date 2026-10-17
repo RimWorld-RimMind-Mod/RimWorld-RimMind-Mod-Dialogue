@@ -31,21 +31,7 @@ namespace RimMind.Dialogue.Comps
             if (currentTick - _lastTriggerTick < settings.monologueCooldownTicks) return;
 
             // 1. Check for nearby awake colonist companion
-            Pawn? nearbyCompanion = null;
-            Map? map = Pawn.Map;
-            if (map != null)
-            {
-                var spawnedColonists = map.mapPawns.FreeColonistsSpawned;
-                for (int i = 0; i < spawnedColonists.Count; i++)
-                {
-                    Pawn other = spawnedColonists[i];
-                    if (other != Pawn && !other.Dead && !other.Downed && other.Awake() && Pawn.Position.InHorDistOf(other.Position, 6.9f))
-                    {
-                        nearbyCompanion = other;
-                        break;
-                    }
-                }
-            }
+            Pawn? nearbyCompanion = FindNearbyCompanion();
 
             float activityScale = RimMindAPI.Settings.ActivityFrequencyScale;
 
@@ -185,9 +171,26 @@ namespace RimMind.Dialogue.Comps
             return name.Contains("Wait") || name.Contains("Wander") || name == "LayDown";
         }
 
+        private Pawn? FindNearbyCompanion()
+        {
+            Map? map = Pawn.Map;
+            if (map == null) return null;
+
+            var spawnedColonists = RimMindPawnLookup.GetSpawnedColonistsSafe(map);
+            for (int i = 0; i < spawnedColonists.Count; i++)
+            {
+                Pawn other = spawnedColonists[i];
+                if (other != Pawn && RimMindPawnLookup.IsEligibleColonist(other) && RestUtility.Awake(other) && Pawn.Position.InHorDistOf(other.Position, 6.9f))
+                {
+                    return other;
+                }
+            }
+            return null;
+        }
+
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
-            if (!(parent.Faction?.IsPlayer ?? false)) yield break;
+            if (!IsEligible()) yield break;
             if (!RimMindDialogueSettings.Get().enabled) yield break;
             if (!RimMindDialogueSettings.Get().playerDialogueEnabled) yield break;
 
@@ -207,11 +210,9 @@ namespace RimMind.Dialogue.Comps
 
         private bool IsEligible()
         {
-            return Pawn.IsFreeNonSlaveColonist
-                && !Pawn.Dead
-                && !Pawn.Downed
+            return RimMindPawnLookup.IsEligibleColonist(Pawn)
+                && RestUtility.Awake(Pawn)
                 && !(Pawn.drafter?.Drafted ?? false)
-                && Pawn.Map != null
                 && Pawn.needs?.mood != null;
         }
     }

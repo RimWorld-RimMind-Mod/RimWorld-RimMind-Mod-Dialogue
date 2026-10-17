@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
+using RimMind.Presentation.Api;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -12,7 +13,7 @@ namespace RimMind.Dialogue.Patches
         new Type[] { typeof(Thought_Memory), typeof(Pawn) })]
     public static class ThoughtPatch
     {
-        private static readonly System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int> LastTriggeredTicks =
+        internal static readonly System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int> LastTriggeredTicks =
             new System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int>();
         private const int SameThoughtCooldownTicks = 60000; // 1 in-game day
 
@@ -31,7 +32,7 @@ namespace RimMind.Dialogue.Patches
             if (Mathf.Abs(moodEffect) < RimMindDialogueSettings.Get().moodChangeThreshold) return;
 
             Pawn pawn = __instance.pawn;
-            if (pawn == null || !pawn.IsColonist || pawn.Map == null) return;
+            if (!RimMindPawnLookup.IsEligibleColonist(pawn) || pawn.Downed) return;
 
             if (newThought.def.defName.StartsWith("RimMindDialogue_")) return;
 

@@ -17,8 +17,8 @@ namespace RimMind.Dialogue.Core
         public static string? Handle(LlmResponse response, string npcId, Pawn pawn, Pawn? recipient,
             string context, DialogueTriggerType type, bool isReply = false)
         {
-            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn)) return null;
-            if (recipient != null && !RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient)) return null;
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn) || pawn.Downed) return null;
+            if (recipient != null && (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient) || recipient.Downed)) return null;
 
             bool isMonologue = DialogueFlowPolicy.IsMonologue(type, recipient != null);
 

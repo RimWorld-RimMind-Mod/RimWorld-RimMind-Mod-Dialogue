@@ -8,7 +8,7 @@ AI对话系统，拦截游戏事件生成上下文对话，注入Thought，支�
 
 ## 项目定位
 
-通过Harmony Patch监听Chitchat/Hediff/技能升级/心情变化 → `RimMindDialogueService.HandleTrigger` → `DialogueRequestCoordinator` → `RimMindAPI.Request.Send` → `NpcResponseHandler.Handle` 解析JSON响应(reply/thought/relation_delta) → `ThoughtInjector` 注入独白/关系Thought。请求、活动状态、日志和响应副作用各有单一入口。
+通过Harmony Patch监听Chitchat/Hediff/技能升级/心情变化 → `RimMindDialogueService.HandleTrigger` → `DialogueRequestCoordinator`（挂载 `DialogueToolDefinitions.ExpressDialogue` 原生工具定义） → `RimMindAPI.Request.Send` → `NpcResponseHandler.Handle`（调用 `DialogueToolParser.Parse` 与 `DialogueTextSanitizer` 防污染清洗解析 `reply`/`thought`/`relation_delta`） → `ThoughtInjector` 注入独白/关系Thought。请求、活动状态、日志和响应副作用各有单一入口。
 
 依赖: Core(编译期)。可选 Memory 集成使用 Core 公共 `RimMindAPI.Memory`，不引用 Memory 实现程序集。
 
@@ -32,25 +32,30 @@ Source/
 │   ├── README.md                     对话生命周期入口地图
 │   ├── RimMindDialogueService.cs    公共兼容门面与轻量事件边界
 │   ├── DialogueRequestCoordinator.cs 请求门控、派发与完成清理
-│   ├── DialogueActivityState.cs     冷却、配额、接收者与Pawn查询
+│   ├── DialogueActivityState.cs     冷却、配额、接收者与Pawn查询(委托 RimMindPawnLookup)
 │   ├── DialogueLogStore.cs          有界日志与只读快照
 │   ├── DialogueService.cs           玩家兼容入口，直接进入同一请求协调器
-│   ├── NpcResponseHandler.cs        统一响应处理(自动+玩家对话共用,含感知发布)
-├── Comps/CompRimMindDialogue.cs     ThingComp(非殖民者首行return, 1000tick检查)
+│   ├── DialogueToolDefinitions.cs   express_dialogue 原生 ToolCall 定义
+│   ├── DialogueToolParser.cs        双模式工具调用解析器(优先 ToolCalls，回退结构化内容)
+│   ├── DialogueTextSanitizer.cs     多级防污染文本清洗管线(剥离 <think>/代码围栏/裸JSON)
+│   ├── NpcResponseHandler.cs        统一响应处理(自动+玩家对话共用,含感知发布与存活/倒地校验)
+├── Comps/CompRimMindDialogue.cs     ThingComp(RimMindPawnLookup.IsEligibleColonist + Awake 过滤, 1000tick检查)
 ├── UI/Window_Dialogue.cs / Window_DialogueLog.cs / DialogueOverlay.cs
 ├── Thoughts/ThoughtInjector.cs + Thought_RimMindDialogue.cs + Thought_RelationDialogue.cs
 ├── Patches/                         7个Patch(Bubble/Hediff/SkillLearn/Thought/FloatMenu/GameLoad/AddComp)
 ├── Debug/DialogueDebugActions.cs    调试操作(Force触发/状态查看/冷却清除)
-└── Settings/RimMindDialogueSettings.cs
+└── Settings/
+    ├── RimMindDialogueSettings.cs   设置模型与持久化
+    └── DialogueSettingsDrawer.cs    设置页UI绘制(全Tooltip提示)
 ```
 
 ## 统一请求生命周期
 
-自动触发通过 `RimMindDialogueService.HandleTrigger`，玩家输入通过 `DialogueService.RequestReply`，两者直接进入同一个 `DialogueRequestCoordinator`：总开关（玩家另查玩家开关）→ 参与者有效性 → API配置 → IsReady → Pawn pending → ShouldSkipDialogue → 自动冷却/配额策略 → 原子 Pawn/Pair/全局容量预约 → 唯一 `RimMindAPI.Request.Send`。
+自动触发通过 `RimMindDialogueService.HandleTrigger`，玩家输入通过 `DialogueService.RequestReply`，两者直接进入同一个 `DialogueRequestCoordinator`：总开关（玩家另查玩家开关）→ 参与者有效性（`RimMindPawnLookup.IsEligibleColonist` 且 `!Downed`）→ API配置 → IsReady → Pawn pending → ShouldSkipDialogue → 自动冷却/配额策略 → 原子 Pawn/Pair/全局容量预约 → 唯一 `RimMindAPI.Request.Send`（携带 `DialogueToolDefinitions.ExpressDialogue`）。
 
 玩家多轮输入不消耗自动每日配额或独白冷却；自动 A-B 回复仍连续进行，由独立 pair reply limiter 限制。
 
-入口、窗口取消与游戏重置均在主线程调用。Core 已在主线程交付完成回调，不再通过 `LongEventHandler` 重复调度。拒绝、同步抛错、失败、取消均结束玩家等待；关闭窗口或游戏重置会取消在途请求，旧/重复回调不执行响应副作用。清理先释放预约再调用 `NpcResponseHandler`，允许下一轮 A-B 回复获取同一 pair。
+入口、窗口取消与游戏重置均在主线程调用。Core 已在主线程交付完成回调，不再通过 `LongEventHandler` 重复调度。异步回调到达时再次验证说话者与接收者存活且未倒地（`!Downed`），且当 `NpcResponseHandler.Handle` 解析失败返回 `null` 时绝不将未清洗的原始 `result.Value.Content` 回退展示到 UI 或气泡。
 
 ## Thought标签与心情映射
 

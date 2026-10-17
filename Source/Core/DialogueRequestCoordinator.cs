@@ -209,7 +209,6 @@ namespace RimMind.Dialogue.Core
                 }
                 if (!showAutomaticError) return;
                 RimMindErrors.Warn($"[RimMind-Dialogue] Request failed: {error}");
-                if (!DialogueFlowPolicy.IsMonologue(type, recipient != null))
                 if (type == DialogueTriggerType.PlayerInput)
                 {
                     Messages.Message(
@@ -286,8 +285,8 @@ namespace RimMind.Dialogue.Core
                             ReportFailure(result.Error.ToString());
                             return;
                         }
-                        if (pawn.Dead || pawn.Destroyed
-                            || (recipient != null && (recipient.Dead || recipient.Destroyed)))
+                        if (pawn.Dead || pawn.Destroyed || pawn.Downed
+                            || (recipient != null && (recipient.Dead || recipient.Destroyed || recipient.Downed)))
                         {
                             ReportFailure("Dialogue participant is unavailable.");
                             return;
@@ -304,10 +303,6 @@ namespace RimMind.Dialogue.Core
                         if (!string.IsNullOrWhiteSpace(speech))
                         {
                             Notify(onReply, speech!);
-                        }
-                        else if (!string.IsNullOrWhiteSpace(result.Value.Content))
-                        {
-                            Notify(onReply, result.Value.Content!.Trim());
                         }
                         else
                         {

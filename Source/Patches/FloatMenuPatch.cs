@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using RimMind.Domain.ValueObjects;
 using RimMind.Presentation.Api;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
@@ -42,8 +43,8 @@ namespace RimMind.Dialogue.Patches
             if (result == null) return;
             if (!RimMindDialogueSettings.Get().enabled) return;
             if (!RimMindDialogueSettings.Get().playerDialogueEnabled) return;
-            if (selectedPawn == null || selectedPawn.Drafted) return;
-            if (!selectedPawn.Spawned || selectedPawn.Dead) return;
+            if (selectedPawn == null || selectedPawn.Drafted || selectedPawn.Downed) return;
+            if (!RimMindPawnLookup.IsEligibleColonist(selectedPawn)) return;
 
             Map map = selectedPawn.Map;
             if (map == null) return;
@@ -76,7 +77,8 @@ namespace RimMind.Dialogue.Patches
 
         private static bool IsValidTarget(Pawn target)
         {
-            if (!RimMindPawnLookup.IsActiveSpawnedColonist(target)) return false;
+            if (target == null || target.Downed) return false;
+            if (!RimMindPawnLookup.IsEligibleColonist(target)) return false;
             if (!(target.RaceProps?.Humanlike ?? false)) return false;
             return true;
         }
@@ -116,7 +118,19 @@ namespace RimMind.Dialogue.Patches
                     }
                     string context = "RimMind.Dialogue.Context.PlayerInitiate".Translate(
                         initiator.Name.ToStringShort, target.Name.ToStringShort);
-                    RimMindDialogueService.HandleTrigger(initiator, context, DialogueTriggerType.Chitchat, target);
+                    RimMindDialogueService.HandleTrigger(
+                        initiator,
+                        context,
+                        DialogueTriggerType.Chitchat,
+                        target,
+                        onError: error =>
+                        {
+                            RimMindErrors.Warn($"[RimMind-Dialogue] FloatMenu dialogue error: {error}");
+                            Messages.Message(
+                                "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(initiator.Name.ToStringShort),
+                                MessageTypeDefOf.RejectInput,
+                                false);
+                        });
                 },
                 MenuOptionPriority.Default,
                 null,

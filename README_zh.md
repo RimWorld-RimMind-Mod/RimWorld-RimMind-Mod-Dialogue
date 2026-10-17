@@ -23,8 +23,9 @@
 **RimMind-Dialogue** 让殖民者之间的交流变得充满人情味。基于原生 `express_dialogue` 函数调用契约，小人们在食堂用餐、工作台做工或篝火旁休憩时能够自然产生有话则长、无话则短的情境闲聊。
 
 ### 核心特性
-- **原生 `express_dialogue` 工具调用**：台词内容、潜台词心理活动以及好感变动值（`relation_delta: [-5, 5]`）作为标准化结构参数回传，彻底杜绝原始 JSON 字符泄露在头顶气泡中。
-- **情境社交触发感知**：基于物理半径（6.9 格范围内近距接触）、共同活动（就餐、娱乐、并肩劳作）与当前社交关系自然投骰触发。
+- **原生 `express_dialogue` 工具调用（`DialogueToolDefinitions` 与 `DialogueToolParser`）**：台词内容（`reply`）、潜台词心理标签（`thought`）以及好感变动值（`relation_delta: [-5, 5]`）通过 `DialogueToolDefinitions.ExpressDialogue` 标准函数调用定义回传，由 `DialogueToolParser` 执行双模式结构化解析。
+- **对话气泡防污染与多级清洗管线（`DialogueTextSanitizer`）**：在进入头顶气泡或对话窗口渲染前，自动剥离 `<think>` 推理块、Markdown 代码围栏、残留 JSON/XML 载荷碎片与系统提示词回声，彻底杜绝未解析原始文本泄露到玩家视野。
+- **情境社交触发与存活门控**：基于物理半径（6.9 格范围内近距接触）、共同活动与社交关系自然触发，并统一通过 `RimMindPawnLookup` 与清醒/未倒地状态校验，确保昏迷、睡眠或离图小人绝不产生幽灵对话。
 - **动态社交关系演进**：对话不仅停留在文本层面，还会实质性影响殖民者之间的好感度，促成深厚友谊、浪漫恋情或宿命敌对。
 - **平滑头顶气泡渲染**：支持自适应折行、渐变浮现与平滑消隐动画，提供生动的视听沉浸体验。
 
@@ -41,10 +42,10 @@
 
 ```mermaid
 flowchart TD
-    NearbyPawns["周围同伴 (半径 < 6.9)"] --> Trigger["情境感知触发器 (就餐 / 劳作)"]
-    Trigger --> CoreReq["向 RimMind-Core 提交请求"]
+    NearbyPawns["周围同伴 (半径 < 6.9, 存活且清醒)"] --> Trigger["情境感知触发器 (就餐 / 劳作)"]
+    Trigger --> CoreReq["向 RimMind-Core 提交请求 (DialogueToolDefinitions)"]
     CoreReq --> ToolCall["大模型回传 express_dialogue 工具调用"]
-    ToolCall --> Parser["DialogueToolParser (双模式解析与清洗)"]
+    ToolCall --> Parser["DialogueToolParser 解析与 DialogueTextSanitizer 防污染清洗"]
     Parser --> Bubble["头顶对话气泡文字渲染"]
     Parser --> Social["更新社交好感度 / 关系偏好"]
     Parser --> Thought["注入心理 Thought 影响短期心情"]
@@ -65,7 +66,7 @@ flowchart TD
 
 ## 🧪 开发者测试指南
 
-运行单元测试（涵盖 Schema 校验、JSON 转义防御与数值边界截断）：
+运行单元测试（涵盖 `express_dialogue` 工具调用解析、`DialogueTextSanitizer` 防污染清洗与好感度边界截断，共 113 个用例）：
 
 ```powershell
 dotnet test RimMind-Dialogue/Tests/RimMindDialogue.Tests.csproj -c Release

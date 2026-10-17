@@ -74,6 +74,16 @@ namespace RimMind.Presentation.Api
             if (pawn.IsKidnapped()) return false;
             return true;
         }
+
+        public static bool IsEligibleColonist(Pawn? pawn)
+        {
+            if (!IsActiveSpawnedColonist(pawn)) return false;
+            if (pawn!.Downed || pawn.InMentalState) return false;
+            return true;
+        }
+
+        public static IReadOnlyList<Pawn> GetSpawnedColonistsSafe(Map? map)
+            => map?.mapPawns?.FreeColonistsSpawned ?? (IReadOnlyList<Pawn>)Array.Empty<Pawn>();
     }
 }
 

@@ -59,7 +59,7 @@ namespace RimMind.Dialogue.UI
 
         public override void DoWindowContents(Rect inRect)
         {
-            if (!RimMindPawnLookup.IsActiveSpawnedColonist(_pawn))
+            if (!RimMindPawnLookup.IsEligibleColonist(_pawn) || _pawn.Downed)
             {
                 Close();
                 return;
