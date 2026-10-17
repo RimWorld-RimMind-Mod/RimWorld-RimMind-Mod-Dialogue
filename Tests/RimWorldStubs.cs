@@ -8,7 +8,7 @@ namespace Verse
         public bool IsColonist;
         public bool Dead;
         public bool Destroyed;
-        public RimWorld.Pawn_NeedsTracker? needs;
+        public RimWorld.Pawn_NeedsTracker? needs = new RimWorld.Pawn_NeedsTracker { mood = new RimWorld.Need_Mood() };
         public RimWorld.Pawn_RelationsTracker? relations;
         public NameTriple Name => new NameTriple();
         public bool IsPrisoner;
@@ -41,6 +41,11 @@ namespace Verse
 
 namespace RimWorld
 {
+    public static class RestUtility
+    {
+        public static bool Awake(Verse.Pawn p) => p != null && p.Awake();
+    }
+
     public class Pawn_RelationsTracker
     {
         public int OpinionOf(Verse.Pawn other) => 0;

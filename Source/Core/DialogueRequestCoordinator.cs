@@ -102,9 +102,9 @@ namespace RimMind.Dialogue.Core
             if (!settings.enabled
                 || (type == DialogueTriggerType.PlayerInput && !settings.playerDialogueEnabled))
                 return "Dialogue is disabled.";
-            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn))
+            if (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(pawn) || pawn.Downed)
                 return "Dialogue participant is unavailable.";
-            if (recipient != null && !RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient))
+            if (recipient != null && (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient) || recipient.Downed))
                 return "Dialogue recipient is unavailable.";
             if (!RimMindAPI.IsConfigured())
                 return "AI is not configured.";
@@ -209,7 +209,6 @@ namespace RimMind.Dialogue.Core
                 }
                 if (!showAutomaticError) return;
                 RimMindErrors.Warn($"[RimMind-Dialogue] Request failed: {error}");
-                if (!DialogueFlowPolicy.IsMonologue(type, recipient != null))
                 if (type == DialogueTriggerType.PlayerInput)
                 {
                     Messages.Message(
@@ -286,8 +285,8 @@ namespace RimMind.Dialogue.Core
                             ReportFailure(result.Error.ToString());
                             return;
                         }
-                        if (pawn.Dead || pawn.Destroyed
-                            || (recipient != null && (recipient.Dead || recipient.Destroyed)))
+                        if (pawn.Dead || pawn.Destroyed || pawn.Downed
+                            || (recipient != null && (recipient.Dead || recipient.Destroyed || recipient.Downed)))
                         {
                             ReportFailure("Dialogue participant is unavailable.");
                             return;
@@ -304,10 +303,6 @@ namespace RimMind.Dialogue.Core
                         if (!string.IsNullOrWhiteSpace(speech))
                         {
                             Notify(onReply, speech!);
-                        }
-                        else if (!string.IsNullOrWhiteSpace(result.Value.Content))
-                        {
-                            Notify(onReply, result.Value.Content!.Trim());
                         }
                         else
                         {

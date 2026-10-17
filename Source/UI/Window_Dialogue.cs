@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using RimMind.Domain.ValueObjects;
 using RimMind.Dialogue.Core;
+using RimMind.Presentation.Api;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -58,7 +59,7 @@ namespace RimMind.Dialogue.UI
 
         public override void DoWindowContents(Rect inRect)
         {
-            if (_pawn.Dead || _pawn.Destroyed)
+            if (!RimMindPawnLookup.IsEligibleColonist(_pawn) || _pawn.Downed)
             {
                 Close();
                 return;

@@ -167,7 +167,7 @@ namespace RimMind.Dialogue.Core
                 _pawnCache.TryRemove(recipientId, out _);
             }
 
-            var lookupPawn = RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(recipientId);
+            var lookupPawn = FindPawnByNumber(recipientId);
             if (lookupPawn != null && !lookupPawn.DestroyedOrNull() && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(lookupPawn))
             {
                 _pawnCache[recipientId] = lookupPawn;
@@ -183,6 +183,9 @@ namespace RimMind.Dialogue.Core
 
             return null;
         }
+
+        public static Pawn? FindPawnByNumber(int pawnNumber)
+            => RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(pawnNumber);
 
         public (int RecentTriggers, int DailyPairs) ClearCooldowns()
         {
@@ -205,10 +208,11 @@ namespace RimMind.Dialogue.Core
             {
                 foreach (Map map in Find.Maps)
                 {
-                    if (map?.mapPawns?.FreeColonistsSpawned == null)
+                    var spawned = RimMind.Presentation.Api.RimMindPawnLookup.GetSpawnedColonistsSafe(map);
+                    if (spawned == null)
                         continue;
 
-                    foreach (Pawn candidate in map.mapPawns.FreeColonistsSpawned)
+                    foreach (Pawn candidate in spawned)
                     {
                         if (candidate != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(candidate))
                         {

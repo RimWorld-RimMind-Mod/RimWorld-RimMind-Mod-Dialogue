@@ -23,8 +23,9 @@
 **RimMind-Dialogue** brings RimWorld colonists to life through organic, natural spoken interactions. Powered by the native `express_dialogue` function call architecture, colonists talk to each other while eating in dining halls, laboring at craft benches, or resting by campfires.
 
 ### Core Capabilities
-- **Native `express_dialogue` ToolCall**: Transmits spoken dialogue, internal psychological subtext, and relationship delta modifiers (`relation_delta: [-5, 5]`) as structured function parameters, completely eliminating JSON prompt leakage.
-- **Contextual Spoken Triggers**: Conversational opportunities trigger organically based on physical proximity (radius 6.9 tiles), shared activities (dining, recreation), and mutual social opinions.
+- **Native `express_dialogue` ToolCall (`DialogueToolDefinitions` & `DialogueToolParser`)**: Transmits spoken dialogue (`reply`), internal psychological subtext (`thought`), and relationship delta modifiers (`relation_delta: [-5, 5]`) as structured function parameters via `DialogueToolDefinitions.ExpressDialogue`, parsed deterministically by `DialogueToolParser` with dual-mode tool call and fallback support.
+- **Dialogue Bubble Anti-Pollution & Sanitization Pipeline (`DialogueTextSanitizer`)**: Multi-stage sanitization strips `<think>` reasoning blocks, markdown code fences, raw JSON/XML fragments, and prompt metadata before any bubble or dialogue window renders, strictly blocking unparsed LLM artifacts from appearing over colonists' heads.
+- **Contextual Spoken Triggers & Liveness Gating**: Conversational opportunities trigger organically based on physical proximity (radius 6.9 tiles), shared activities, and mutual social opinions, strictly guarded by `RimMindPawnLookup` liveness and consciousness checks so downed, sleeping, or off-map pawns never speak.
 - **Dynamic Relationship Evolution**: Conversations dynamically impact mutual pawn opinions, fostering deep romances, bitter rivalries, or lasting camaraderie.
 - **Smooth Overhead Speech Bubbles**: Renders text motes directly above colonists' heads with word wrapping and gentle fading animations.
 
@@ -41,10 +42,10 @@
 
 ```mermaid
 flowchart TD
-    NearbyPawns["Nearby Colonists (Radius < 6.9)"] --> Trigger["Social Context Trigger (Dining / Crafting)"]
-    Trigger --> CoreReq["Submit Request via RimMind-Core"]
+    NearbyPawns["Nearby Colonists (Radius < 6.9, Awake & Active)"] --> Trigger["Social Context Trigger (Dining / Crafting)"]
+    Trigger --> CoreReq["Submit Request via RimMind-Core (DialogueToolDefinitions)"]
     CoreReq --> ToolCall["LLM Returns express_dialogue ToolCall"]
-    ToolCall --> Parser["DialogueToolParser (Dual Mode & Sanitization)"]
+    ToolCall --> Parser["DialogueToolParser & DialogueTextSanitizer"]
     Parser --> Bubble["Overhead Speech Bubble Rendering"]
     Parser --> Social["Update Pawn Opinion / Relationship"]
     Parser --> Thought["Inject Dialogue Thought into Mind"]
@@ -65,7 +66,7 @@ flowchart TD
 
 ## 🧪 Developer Guide & Testing
 
-Run unit tests covering dialogue schema parsing, arguments unescaping, and opinion delta boundaries:
+Run unit tests covering `express_dialogue` tool call parsing, `DialogueTextSanitizer` anti-pollution filtering, and opinion delta boundaries (113 test cases):
 
 ```powershell
 dotnet test RimMind-Dialogue/Tests/RimMindDialogue.Tests.csproj -c Release

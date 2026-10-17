@@ -96,13 +96,17 @@ namespace RimMind.Dialogue.Core
             string context,
             DialogueTriggerType type,
             Pawn? recipient,
-            bool isReply = false)
+            bool isReply = false,
+            Action<string>? onReply = null,
+            Action<string>? onError = null)
             => _requestCoordinator.HandleTrigger(
                 pawn,
                 context,
                 type,
                 recipient,
-                isReply);
+                isReply,
+                onReply,
+                onError);
 
         // ── 供 NpcResponseHandler 调用的公共方法 ──
 

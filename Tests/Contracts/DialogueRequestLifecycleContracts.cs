@@ -60,6 +60,8 @@ namespace RimMind.Dialogue.Tests.Contracts
         [InlineData("startup delay")]
         [InlineData("skip policy")]
         [InlineData("dead pawn")]
+        [InlineData("downed participant")]
+        [InlineData("downed recipient")]
         public void Player_entry_rejects_shared_gates_and_completes_the_waiter(string gate)
         {
             switch (gate)
@@ -70,6 +72,8 @@ namespace RimMind.Dialogue.Tests.Contracts
                 case "startup delay": _settings.startDelayEnabled = true; break;
                 case "skip policy": RimMindAPI.Skip = true; break;
                 case "dead pawn": _pawn.Dead = true; break;
+                case "downed participant": _pawn.Downed = true; break;
+                case "downed recipient": _recipient.Downed = true; break;
             }
             int replies = 0, errors = 0;
             DialogueService.RequestReply(_pawn, "hello", _recipient, _ => replies++, _ => errors++);
