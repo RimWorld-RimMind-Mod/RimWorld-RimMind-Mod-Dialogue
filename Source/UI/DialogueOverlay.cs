@@ -174,6 +174,7 @@ namespace RimMind.Dialogue.Overlay
             Text.Anchor = TextAnchor.UpperLeft;
 
             var labels = new string[_cachedEntries.Count];
+            var displayReplies = new string[_cachedEntries.Count];
             var labelWidths = new float[_cachedEntries.Count];
             var lineHeights = new float[_cachedEntries.Count];
             float maxLabelWidth = Mathf.Max(60f, contentRect.width * 0.4f);
@@ -184,11 +185,12 @@ namespace RimMind.Dialogue.Overlay
                 labels[i] = entry.IsMonologue
                     ? $"[{name}]"
                     : $"[{name}→{entry.recipientName ?? string.Empty}]";
+                displayReplies[i] = FormatCompactOverlayText(entry.reply);
                 labelWidths[i] = Mathf.Min(maxLabelWidth, Text.CalcSize(labels[i]).x);
                 float replyWidth = Mathf.Max(1f, contentRect.width - labelWidths[i] - TextPadding);
                 lineHeights[i] = Mathf.Max(
                     Text.CalcHeight(labels[i], Mathf.Max(1f, labelWidths[i])),
-                    Text.CalcHeight(entry.reply ?? string.Empty, replyWidth)) + 2f;
+                    Text.CalcHeight(displayReplies[i], replyWidth)) + 2f;
             }
 
             int firstVisible = DialogueOverlayLayout.FindFirstVisibleIndex(lineHeights, contentRect.height);
@@ -208,12 +210,29 @@ namespace RimMind.Dialogue.Overlay
                 GUI.color = nameColor;
                 Widgets.Label(labelRect, labels[i]);
                 GUI.color = Color.white;
-                Widgets.Label(replyRect, entry.reply ?? string.Empty);
+                Widgets.Label(replyRect, displayReplies[i]);
 
                 y += lineHeight;
             }
 
             Text.Anchor = TextAnchor.UpperLeft;
+        }
+
+        internal static string FormatCompactOverlayText(string? rawText, int maxChars = 140)
+        {
+            if (string.IsNullOrWhiteSpace(rawText))
+                return string.Empty;
+
+            string normalized = rawText!
+                .Replace("\r\n", " ")
+                .Replace('\n', ' ')
+                .Replace('\r', ' ')
+                .Trim();
+
+            if (normalized.Length <= maxChars)
+                return normalized;
+
+            return normalized.Substring(0, maxChars).TrimEnd() + "...";
         }
 
         private void NormalizeWindowRect()
