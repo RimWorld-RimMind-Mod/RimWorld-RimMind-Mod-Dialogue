@@ -10,18 +10,16 @@ namespace RimMind.Dialogue.Patches
     [HarmonyPatch(typeof(SkillRecord), "Learn")]
     public static class SkillLearnPatch
     {
-        private static int _levelBefore;
-
         [HarmonyPrefix]
-        public static void Prefix(SkillRecord __instance)
+        public static void Prefix(SkillRecord __instance, float xp, out int __state)
         {
-            _levelBefore = __instance.Level;
+            __state = xp > 0f && !__instance.TotallyDisabled ? __instance.Level : -1;
         }
 
         [HarmonyPostfix]
-        public static void Postfix(SkillRecord __instance)
+        public static void Postfix(SkillRecord __instance, float xp, int __state)
         {
-            if (__instance.Level <= _levelBefore) return;
+            if (__state < 0 || __instance.Level <= __state) return;
             if (!RimMindDialogueSettings.Get().levelUpEnabled) return;
 
             Pawn pawn = __instance.Pawn;

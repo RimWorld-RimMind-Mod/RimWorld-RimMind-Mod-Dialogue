@@ -371,6 +371,84 @@ namespace RimMind.Dialogue.Tests.Contracts
             window.PostClose();
         }
 
+        [Fact]
+        public void CompRimMindDialogue_only_updates_lastTriggerTick_when_trigger_is_accepted()
+        {
+            int lastTriggerTick = -99999;
+            _settings.enabled = false;
+            bool rejectedResult = CompRimMindDialogue.TryDispatchTrigger(
+                _pawn,
+                "rejected context",
+                DialogueTriggerType.Auto,
+                null,
+                1500,
+                ref lastTriggerTick);
+
+            Assert.False(rejectedResult);
+            Assert.Equal(-99999, lastTriggerTick);
+            Assert.Empty(RimMindAPI.Sent);
+
+            _settings.enabled = true;
+            bool acceptedResult = CompRimMindDialogue.TryDispatchTrigger(
+                _pawn,
+                "accepted context",
+                DialogueTriggerType.Auto,
+                null,
+                1750,
+                ref lastTriggerTick);
+
+            Assert.True(acceptedResult);
+            Assert.Equal(1750, lastTriggerTick);
+            Assert.Single(RimMindAPI.Sent);
+            Complete(0, "ack");
+        }
+
+        [Fact]
+        public void DialogueLogStore_maintains_chronological_order_and_increments_revision_without_bag_sort()
+        {
+            var store = new DialogueLogStore();
+            int initialRevision = store.Revision;
+            int initialGlobal = DialogueLogStore.CurrentRevision;
+
+            store.Add(new DialogueLogEntry { tick = 100, initiatorId = 1, reply = "first" });
+            store.Add(new DialogueLogEntry { tick = 200, initiatorId = 2, reply = "second" });
+            store.Add(new DialogueLogEntry { tick = 150, initiatorId = 1, reply = "middle" });
+
+            Assert.True(store.Revision >= initialRevision + 3);
+            Assert.True(DialogueLogStore.CurrentRevision >= initialGlobal + 3);
+            Assert.Equal(new[] { "first", "middle", "second" }, store.Entries.Select(e => e.reply));
+
+            var historyForPawn1 = store.HistoryFor(1, 10);
+            Assert.Equal(new[] { "middle", "first" }, historyForPawn1.Select(e => e.reply));
+
+            int beforeClear = store.Revision;
+            store.Clear();
+            Assert.True(store.Revision > beforeClear);
+            Assert.Empty(store.Entries);
+        }
+
+        [Fact]
+        public void Crisis_dialogue_uses_localized_crisis_keys_with_english_fallback()
+        {
+            _pawn.InMentalState = true;
+            _pawn.MentalStateDef = null;
+            Verse.Extensions.UntranslatableKeys.Add("RimMind.Dialogue.Prompt.SevereCrisis");
+            Verse.Extensions.UntranslatableKeys.Add("RimMind.Dialogue.Prompt.CrisisBreakdown");
+            try
+            {
+                DialogueService.RequestReply(_pawn, "help", null, _ => { }, _ => { });
+                var envelope = Assert.Single(RimMindAPI.Sent).Envelope;
+                string stateXml = envelope.GameStateInfo!.ToString();
+                Assert.Contains("[CRISIS BREAKDOWN: Severe Crisis]", stateXml, StringComparison.Ordinal);
+                Complete(0, "ack");
+            }
+            finally
+            {
+                Verse.Extensions.UntranslatableKeys.Clear();
+                _pawn.InMentalState = false;
+            }
+        }
+
         private static void Complete(int index, string content)
         {
             string? toolCalls = string.IsNullOrWhiteSpace(content)

@@ -15,7 +15,38 @@ namespace RimMind.Dialogue.Patches
     {
         internal static readonly System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int> LastTriggeredTicks =
             new System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int>();
-        private const int SameThoughtCooldownTicks = 60000; // 1 in-game day
+        internal const int SameThoughtCooldownTicks = 60000; // 1 in-game day
+        internal const int MaxTrackedThoughtEntries = 256;
+
+        internal static void PruneIfNeeded(int nowTick)
+        {
+            if (LastTriggeredTicks.Count <= MaxTrackedThoughtEntries) return;
+
+            var toRemove = new System.Collections.Generic.List<(int PawnId, string ThoughtDefName)>();
+            foreach (var kvp in LastTriggeredTicks)
+            {
+                if (nowTick < kvp.Value || (nowTick - kvp.Value) >= SameThoughtCooldownTicks)
+                {
+                    toRemove.Add(kvp.Key);
+                }
+            }
+
+            for (int i = 0; i < toRemove.Count; i++)
+            {
+                LastTriggeredTicks.Remove(toRemove[i]);
+            }
+
+            if (LastTriggeredTicks.Count > MaxTrackedThoughtEntries)
+            {
+                var ordered = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<(int PawnId, string ThoughtDefName), int>>(LastTriggeredTicks);
+                ordered.Sort((a, b) => a.Value.CompareTo(b.Value));
+                int excess = LastTriggeredTicks.Count - MaxTrackedThoughtEntries;
+                for (int i = 0; i < excess; i++)
+                {
+                    LastTriggeredTicks.Remove(ordered[i].Key);
+                }
+            }
+        }
 
         [HarmonyPostfix]
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory newThought)
@@ -43,6 +74,7 @@ namespace RimMind.Dialogue.Patches
                 return;
             }
             LastTriggeredTicks[key] = nowTick;
+            PruneIfNeeded(nowTick);
 
             string rawLabel = newThought.LabelCap ?? newThought.def.label ?? newThought.def.defName;
             string cleanLabel = System.Text.RegularExpressions.Regex.Replace(

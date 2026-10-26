@@ -250,15 +250,21 @@ namespace RimMind.Dialogue.Core
                 var gameState = new GameStateInfo();
                 if (isCrisis)
                 {
-                    string mentalReason = pawn.MentalStateDef?.label ?? "Severe Crisis";
-                    gameState.AddSection("crisis_expression",
-                        $"[CRISIS BREAKDOWN: {mentalReason}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.");
+                    string mentalReason = pawn.MentalStateDef?.label ?? ("RimMind.Dialogue.Prompt.SevereCrisis".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.SevereCrisis".Translate().ToString()
+                        : "Severe Crisis");
+                    string crisisSection = "RimMind.Dialogue.Prompt.CrisisBreakdown".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.CrisisBreakdown".Translate(mentalReason).ToString()
+                        : $"[CRISIS BREAKDOWN: {mentalReason}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.";
+                    gameState.AddSection("crisis_expression", crisisSection);
                 }
                 gameState.AddSection(
                     type == DialogueTriggerType.PlayerInput ? "dialogue_input" : "dialogue_trigger",
                     type == DialogueTriggerType.PlayerInput
                         ? context
-                        : "RimMind.Dialogue.Prompt.AutoTrigger".Translate());
+                        : ("RimMind.Dialogue.Prompt.AutoTrigger".CanTranslate()
+                            ? "RimMind.Dialogue.Prompt.AutoTrigger".Translate().ToString()
+                            : "Based on your current state and surroundings, respond naturally."));
 
                 var envelope = LlmRequestEnvelopeBuilder
                     .ForNpc(
@@ -282,7 +288,7 @@ namespace RimMind.Dialogue.Core
                     {
                         if (result.IsErr)
                         {
-                            ReportFailure(result.Error.ToString());
+                            if (result.Error.Code != RimMindErrorCode.Cancelled) ReportFailure(result.Error.ToString());
                             return;
                         }
                         if (pawn.Dead || pawn.Destroyed || pawn.Downed
