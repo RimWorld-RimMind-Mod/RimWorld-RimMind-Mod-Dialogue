@@ -18,12 +18,21 @@ namespace RimMind.Dialogue.Overlay
         private Vector2 _dragStartOffset;
         private Rect _windowRect;
         private bool _cacheDirty = true;
+        private int _cachedLogRevision = -1;
         private int _cachedMaxMessages = -1;
         private bool _temporarilyClosed;
         private bool _lastEnabledState;
         private List<DialogueLogEntry> _cachedEntries = new List<DialogueLogEntry>();
+        private string[] _cachedLabels = Array.Empty<string>();
+        private string[] _cachedDisplayReplies = Array.Empty<string>();
+        private float[] _cachedLabelWidths = Array.Empty<float>();
+        private float[] _cachedLineHeights = Array.Empty<float>();
+        private float _cachedLayoutWidth = -1f;
+        private readonly HashSet<int> _liveColonistIds = new HashSet<int>();
+        private int _lastLiveColonistRefreshTick = -99999;
         private int _cachedLiveColonistsHash;
 
+        private const int LiveColonistCacheIntervalTicks = 60;
         private const float OptionsBarHeight = 24f;
         private const float ResizeHandleSize = 24f;
         private const float TextPadding = 4f;
@@ -34,18 +43,11 @@ namespace RimMind.Dialogue.Overlay
 
         public DialogueOverlay(Map map) : base(map)
         {
-            RimMindDialogueService.OnLogUpdated += OnLogUpdated;
             LoadPositionFromSettings();
-        }
-
-        private void OnLogUpdated()
-        {
-            _cacheDirty = true;
         }
 
         public override void MapRemoved()
         {
-            RimMindDialogueService.OnLogUpdated -= OnLogUpdated;
             base.MapRemoved();
         }
 
@@ -118,36 +120,27 @@ namespace RimMind.Dialogue.Overlay
         private void EnsureCachedEntries(RimMindDialogueSettings settings)
         {
             int maxMessages = Math.Max(0, settings.overlayMaxMessages);
+            int nowTick = Find.TickManager?.TicksGame ?? 0;
+            int currentLogRevision = DialogueLogStore.CurrentRevision;
 
-            HashSet<int>? liveColonistIds = null;
-            int liveHash = 0;
-            if (map?.mapPawns?.FreeColonistsSpawned != null)
+            if (_lastLiveColonistRefreshTick < 0
+                || nowTick < _lastLiveColonistRefreshTick
+                || (nowTick - _lastLiveColonistRefreshTick) >= LiveColonistCacheIntervalTicks)
             {
-                liveColonistIds = new HashSet<int>();
-                var spawned = map.mapPawns.FreeColonistsSpawned;
-                for (int i = 0; i < spawned.Count; i++)
-                {
-                    var p = spawned[i];
-                    if (p != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(p))
-                    {
-                        liveColonistIds.Add(p.thingIDNumber);
-                        liveHash = unchecked(liveHash * 397 ^ p.thingIDNumber);
-                    }
-                }
+                RefreshLiveColonistCache(nowTick);
             }
 
-            if (_cacheDirty || _cachedMaxMessages != maxMessages || _cachedLiveColonistsHash != liveHash)
+            if (_cacheDirty || _cachedLogRevision != currentLogRevision || _cachedMaxMessages != maxMessages)
             {
                 bool IsPawnActiveOnCurrentMap(int pawnId, bool isColonist)
                 {
                     if (isColonist)
-                        return liveColonistIds != null && liveColonistIds.Contains(pawnId);
+                        return _liveColonistIds.Contains(pawnId);
 
                     var p = RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(pawnId);
                     return p != null && !p.Dead && !p.Destroyed && p.Spawned && p.Map == map;
                 }
 
-                int nowTick = Find.TickManager?.TicksGame ?? 0;
                 const int MaxEntryAgeTicks = 60000; // 1 in-game day
 
                 _cachedEntries = RimMindDialogueService.LogEntries
@@ -157,9 +150,52 @@ namespace RimMind.Dialogue.Overlay
                         && (entry.recipientId <= 0 || IsPawnActiveOnCurrentMap(entry.recipientId, entry.recipientIsColonist)))
                     .TakeLast(maxMessages)
                     .ToList();
+
+                int count = _cachedEntries.Count;
+                _cachedLabels = count == 0 ? Array.Empty<string>() : new string[count];
+                _cachedDisplayReplies = count == 0 ? Array.Empty<string>() : new string[count];
+                _cachedLabelWidths = count == 0 ? Array.Empty<float>() : new float[count];
+                _cachedLineHeights = count == 0 ? Array.Empty<float>() : new float[count];
+                for (int i = 0; i < count; i++)
+                {
+                    DialogueLogEntry entry = _cachedEntries[i];
+                    string name = entry.initiatorName ?? string.Empty;
+                    _cachedLabels[i] = entry.IsMonologue
+                        ? $"[{name}]"
+                        : $"[{name}→{entry.recipientName ?? string.Empty}]";
+                    _cachedDisplayReplies[i] = FormatCompactOverlayText(entry.reply);
+                }
+
+                _cachedLayoutWidth = -1f;
+                _cachedLogRevision = currentLogRevision;
                 _cachedMaxMessages = maxMessages;
-                _cachedLiveColonistsHash = liveHash;
                 _cacheDirty = false;
+            }
+        }
+
+        private void RefreshLiveColonistCache(int nowTick)
+        {
+            _lastLiveColonistRefreshTick = nowTick;
+            _liveColonistIds.Clear();
+            int liveHash = 0;
+            var spawned = map?.mapPawns?.FreeColonistsSpawned;
+            if (spawned != null)
+            {
+                for (int i = 0; i < spawned.Count; i++)
+                {
+                    var p = spawned[i];
+                    if (p != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(p))
+                    {
+                        _liveColonistIds.Add(p.thingIDNumber);
+                        liveHash = unchecked(liveHash * 397 ^ p.thingIDNumber);
+                    }
+                }
+            }
+
+            if (liveHash != _cachedLiveColonistsHash)
+            {
+                _cachedLiveColonistsHash = liveHash;
+                _cacheDirty = true;
             }
         }
 
@@ -173,44 +209,38 @@ namespace RimMind.Dialogue.Overlay
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            var labels = new string[_cachedEntries.Count];
-            var displayReplies = new string[_cachedEntries.Count];
-            var labelWidths = new float[_cachedEntries.Count];
-            var lineHeights = new float[_cachedEntries.Count];
-            float maxLabelWidth = Mathf.Max(60f, contentRect.width * 0.4f);
-            for (int i = 0; i < _cachedEntries.Count; i++)
+            if (Mathf.Abs(_cachedLayoutWidth - contentRect.width) > 0.5f)
             {
-                DialogueLogEntry entry = _cachedEntries[i];
-                string name = entry.initiatorName ?? string.Empty;
-                labels[i] = entry.IsMonologue
-                    ? $"[{name}]"
-                    : $"[{name}→{entry.recipientName ?? string.Empty}]";
-                displayReplies[i] = FormatCompactOverlayText(entry.reply);
-                labelWidths[i] = Mathf.Min(maxLabelWidth, Text.CalcSize(labels[i]).x);
-                float replyWidth = Mathf.Max(1f, contentRect.width - labelWidths[i] - TextPadding);
-                lineHeights[i] = Mathf.Max(
-                    Text.CalcHeight(labels[i], Mathf.Max(1f, labelWidths[i])),
-                    Text.CalcHeight(displayReplies[i], replyWidth)) + 2f;
+                float maxLabelWidth = Mathf.Max(60f, contentRect.width * 0.4f);
+                for (int i = 0; i < _cachedEntries.Count; i++)
+                {
+                    _cachedLabelWidths[i] = Mathf.Min(maxLabelWidth, Text.CalcSize(_cachedLabels[i]).x);
+                    float replyWidth = Mathf.Max(1f, contentRect.width - _cachedLabelWidths[i] - TextPadding);
+                    _cachedLineHeights[i] = Mathf.Max(
+                        Text.CalcHeight(_cachedLabels[i], Mathf.Max(1f, _cachedLabelWidths[i])),
+                        Text.CalcHeight(_cachedDisplayReplies[i], replyWidth)) + 2f;
+                }
+                _cachedLayoutWidth = contentRect.width;
             }
 
-            int firstVisible = DialogueOverlayLayout.FindFirstVisibleIndex(lineHeights, contentRect.height);
+            int firstVisible = DialogueOverlayLayout.FindFirstVisibleIndex(_cachedLineHeights, contentRect.height);
             float y = contentRect.y;
             for (int i = firstVisible; i < _cachedEntries.Count; i++)
             {
                 var entry = _cachedEntries[i];
-                float lineHeight = Mathf.Min(lineHeights[i], contentRect.yMax - y);
+                float lineHeight = Mathf.Min(_cachedLineHeights[i], contentRect.yMax - y);
                 if (lineHeight <= 0f)
                     break;
 
-                float availableWidth = Mathf.Max(1f, contentRect.width - labelWidths[i] - TextPadding);
-                var labelRect = new Rect(contentRect.x, y, labelWidths[i], lineHeight);
-                var replyRect = new Rect(contentRect.x + labelWidths[i] + TextPadding, y, availableWidth, lineHeight);
+                float availableWidth = Mathf.Max(1f, contentRect.width - _cachedLabelWidths[i] - TextPadding);
+                var labelRect = new Rect(contentRect.x, y, _cachedLabelWidths[i], lineHeight);
+                var replyRect = new Rect(contentRect.x + _cachedLabelWidths[i] + TextPadding, y, availableWidth, lineHeight);
 
                 Color nameColor = GetCategoryColor(entry.category);
                 GUI.color = nameColor;
-                Widgets.Label(labelRect, labels[i]);
+                Widgets.Label(labelRect, _cachedLabels[i]);
                 GUI.color = Color.white;
-                Widgets.Label(replyRect, displayReplies[i]);
+                Widgets.Label(replyRect, _cachedDisplayReplies[i]);
 
                 y += lineHeight;
             }

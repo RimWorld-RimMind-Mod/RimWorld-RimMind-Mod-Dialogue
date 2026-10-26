@@ -170,4 +170,6 @@
   <RimMind.Dialogue.Prompt.Context.Thought>[触发原因: 情绪变化] {0}</RimMind.Dialogue.Prompt.Context.Thought>
   <RimMind.Dialogue.Prompt.Context.Auto>[触发原因: 自动触发] {0}</RimMind.Dialogue.Prompt.Context.Auto>
   <RimMind.Dialogue.Prompt.AutoTrigger>请根据你当前的状态和周围环境，自然地做出回应。</RimMind.Dialogue.Prompt.AutoTrigger>
+  <RimMind.Dialogue.Prompt.SevereCrisis>严重心理危机</RimMind.Dialogue.Prompt.SevereCrisis>
+  <RimMind.Dialogue.Prompt.CrisisBreakdown>[崩溃危机: {0}] 说话者当前正处于精神崩溃或极度痛苦之中。严禁进行平静礼貌的寒暄闲聊，请输出强烈、真实、情绪化的独白或对峙，展现极度的苦闷、煎熬、恐慌或狂怒。</RimMind.Dialogue.Prompt.CrisisBreakdown>
 </LanguageData>

@@ -44,9 +44,8 @@ namespace RimMind.Dialogue.Comps
                     float dynamicChance = CalculateDynamicSocialChance(settings.diningSocialChance, Pawn, nearbyCompanion, activityScale);
                     if (settings.enableDiningSocial && Rand.Value < dynamicChance)
                     {
-                        _lastTriggerTick = currentTick;
                         string contextMsg = "RimMind.Dialogue.Context.DiningEncounter".Translate(nearbyCompanion.LabelShort);
-                        RimMindDialogueService.HandleTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion);
+                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
@@ -57,9 +56,8 @@ namespace RimMind.Dialogue.Comps
                     float dynamicChance = CalculateDynamicSocialChance(settings.recreationSocialChance, Pawn, nearbyCompanion, activityScale);
                     if (settings.enableRecreationSocial && Rand.Value < dynamicChance)
                     {
-                        _lastTriggerTick = currentTick;
                         string contextMsg = "RimMind.Dialogue.Context.RecreationEncounter".Translate(nearbyCompanion.LabelShort);
-                        RimMindDialogueService.HandleTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion);
+                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
@@ -74,9 +72,8 @@ namespace RimMind.Dialogue.Comps
                         float dynamicChance = CalculateDynamicSocialChance(settings.coworkerSocialChance, Pawn, nearbyCompanion, activityScale);
                         if (settings.enableCoworkerSocial && Rand.Value < dynamicChance)
                         {
-                            _lastTriggerTick = currentTick;
                             string contextMsg = "RimMind.Dialogue.Context.CoworkerEncounter".Translate(nearbyCompanion.LabelShort);
-                            RimMindDialogueService.HandleTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion);
+                            TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
                             return;
                         }
                     }
@@ -93,9 +90,8 @@ namespace RimMind.Dialogue.Comps
                     float monologueChance = 0.35f * (mood > 0.8f || mood < 0.3f ? 1.25f : 1.0f) * jitter * activityScale;
                     if (settings.autoDialogueEnabled && Rand.Value < monologueChance)
                     {
-                        _lastTriggerTick = currentTick;
                         string contextMsg = "RimMind.Dialogue.Context.ContemplationMonologue".Translate();
-                        RimMindDialogueService.HandleTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null);
+                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
@@ -104,9 +100,8 @@ namespace RimMind.Dialogue.Comps
                     float monologueChance = (settings.recreationSocialChance * 0.4f) * jitter * activityScale;
                     if (settings.autoDialogueEnabled && Rand.Value < monologueChance)
                     {
-                        _lastTriggerTick = currentTick;
                         string contextMsg = "RimMind.Dialogue.Context.RecreationMonologue".Translate();
-                        RimMindDialogueService.HandleTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null);
+                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
@@ -117,9 +112,8 @@ namespace RimMind.Dialogue.Comps
             int idleCooldown = Mathf.RoundToInt(settings.AutoDialogueCooldownTicks * Mathf.Clamp(idleCdMult, 0.35f, 3.5f));
             if (settings.autoDialogueEnabled && (currentTick - _lastTriggerTick >= idleCooldown))
             {
-                _lastTriggerTick = currentTick;
                 string contextMsg = "RimMind.Dialogue.Context.IdleState".Translate();
-                RimMindDialogueService.HandleTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null);
+                TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
             }
         }
 
@@ -171,16 +165,51 @@ namespace RimMind.Dialogue.Comps
             return name.Contains("Wait") || name.Contains("Wander") || name == "LayDown";
         }
 
+        internal static bool TryDispatchTrigger(
+            Pawn pawn,
+            string contextMsg,
+            DialogueTriggerType triggerType,
+            Pawn? recipient,
+            int currentTick,
+            ref int lastTriggerTick)
+        {
+            bool inCall = true;
+            bool accepted = true;
+            RimMindDialogueService.HandleTrigger(
+                pawn,
+                contextMsg,
+                triggerType,
+                recipient,
+                onError: error =>
+                {
+                    if (inCall)
+                    {
+                        accepted = false;
+                    }
+                    else if (error != "Dialogue request cancelled.")
+                    {
+                        RimMind.Domain.ValueObjects.RimMindErrors.Warn($"[RimMind-Dialogue] Request failed: {error}");
+                    }
+                });
+            inCall = false;
+
+            if (accepted)
+            {
+                lastTriggerTick = currentTick;
+            }
+            return accepted;
+        }
+
         private Pawn? FindNearbyCompanion()
         {
             Map? map = Pawn.Map;
-            if (map == null) return null;
+            var spawnedColonists = map?.mapPawns?.FreeColonistsSpawned;
+            if (spawnedColonists == null) return null;
 
-            var spawnedColonists = RimMindPawnLookup.GetSpawnedColonistsSafe(map);
             for (int i = 0; i < spawnedColonists.Count; i++)
             {
                 Pawn other = spawnedColonists[i];
-                if (other != Pawn && RimMindPawnLookup.IsEligibleColonist(other) && RestUtility.Awake(other) && Pawn.Position.InHorDistOf(other.Position, 6.9f))
+                if (other != null && other != Pawn && RimMindPawnLookup.IsEligibleColonist(other) && RestUtility.Awake(other) && Pawn.Position.InHorDistOf(other.Position, 6.9f))
                 {
                     return other;
                 }
@@ -196,7 +225,9 @@ namespace RimMind.Dialogue.Comps
 
             yield return new Command_Action
             {
-                defaultLabel = "RimMind.Dialogue.UI.Gizmo.ChatWith".Translate(parent.LabelShort),
+                defaultLabel = "RimMind.Dialogue.UI.Gizmo.ChatWith".CanTranslate()
+                    ? "RimMind.Dialogue.UI.Gizmo.ChatWith".Translate(parent.LabelShort).ToString()
+                    : $"Chat with {parent.LabelShort}",
                 icon = ContentFinder<Texture2D>.Get("UI/RimMindDialogue_Icon", reportFailure: false),
                 action = () => Find.WindowStack.Add(new Window_Dialogue((Pawn)parent))
             };

@@ -170,4 +170,6 @@ Output: {"reply":"Alex, let's haul this last timber stack inside. The stove is l
   <RimMind.Dialogue.Prompt.Context.Thought>[Trigger: Mood Change] {0}</RimMind.Dialogue.Prompt.Context.Thought>
   <RimMind.Dialogue.Prompt.Context.Auto>[Trigger: Auto] {0}</RimMind.Dialogue.Prompt.Context.Auto>
   <RimMind.Dialogue.Prompt.AutoTrigger>Based on your current state and surroundings, respond naturally.</RimMind.Dialogue.Prompt.AutoTrigger>
+  <RimMind.Dialogue.Prompt.SevereCrisis>Severe Crisis</RimMind.Dialogue.Prompt.SevereCrisis>
+  <RimMind.Dialogue.Prompt.CrisisBreakdown>[CRISIS BREAKDOWN: {0}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.</RimMind.Dialogue.Prompt.CrisisBreakdown>
 </LanguageData>

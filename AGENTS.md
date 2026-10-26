@@ -28,12 +28,12 @@ AI对话系统，拦截游戏事件生成上下文对话，注入Thought，支�
 Source/
 ├── RimMindDialogueMod.cs            组合入口、Harmony与Core扩展注册
 ├── Core/
-│   ├── DialogueContextProviderRegistrar.cs  三个Core上下文Provider的唯一注册入口
+│   ├── DialogueContextProviderRegistrar.cs  四个Core上下文Provider的唯一注册入口(经 MainThreadSnapshot 主线程读取)
 │   ├── README.md                     对话生命周期入口地图
 │   ├── RimMindDialogueService.cs    公共兼容门面与轻量事件边界
 │   ├── DialogueRequestCoordinator.cs 请求门控、派发与完成清理
 │   ├── DialogueActivityState.cs     冷却、配额、接收者与Pawn查询(委托 RimMindPawnLookup)
-│   ├── DialogueLogStore.cs          有界日志与只读快照
+│   ├── DialogueLogStore.cs          按时间与序列号有序的有界日志(List + _sync锁, 上限500)与 Revision 版本号
 │   ├── DialogueService.cs           玩家兼容入口，直接进入同一请求协调器
 │   ├── DialogueToolDefinitions.cs   express_dialogue 原生 ToolCall 定义
 │   ├── DialogueToolParser.cs        双模式工具调用解析器(优先 ToolCalls，回退结构化内容)
@@ -72,8 +72,9 @@ Source/
 
 ## 上下文注入
 
-- `dialogue_state` / `dialogue_relation`: ContextKeyRegistry(L3_State)
-- `dialogue_task`: ContextKeyRegistry(L0_Static, 仅ScenarioIds.Dialogue, CurrentSpeakerName为空时触发 → 当前仅独白)
+- `dialogue_state` / `dialogue_relation`: ContextKeyRegistry(L3_State)，通过 `RimMindAPI.MainThreadSnapshot.GetAsync` 在主线程读取思绪与社交关系
+- `dialogue_task`: ContextKeyRegistry(L0_Static, 仅 `ScenarioIds.Dialogue`, `SpeakerName` 为空时通过主线程快照构建 TaskInstruction)
+- `dialogue_history`: ContextKeyRegistry(L4_History)，通过主线程快照读取最近相关对话历史
 
 > 注：原 `player_dialogue_task` provider 已于 2026-07-08 审查删除——Core 的 `ContextOrchestrator` 在所有 `BuildContext` 构造路径中将 `SpeakerName` 硬编码为 null，该 provider 触发条件（SpeakerName 非空）永不满足，属不可达死代码。归档于 `Refs/backup/RimMind-Dialogue/RimMindDialogueMod.player_dialogue_task.cs`。
 
@@ -92,7 +93,11 @@ Source/
 - 翻译键前缀: `RimMind.Dialogue.*`
 - 翻译键大小写: Thought标签翻译键使用全大写（如 `RimMind.Dialogue.Thought.ENCOURAGED`），与XML保持一致
 - Memory 写入只走 Core 公共 `RimMindAPI.Memory`；可选模块未启用时跳过，不新增反射链
-- 日志上限500条(ConcurrentBag + 脏标记缓存)
+- 日志上限500条(`DialogueLogStore` 使用 `_sync` 锁保护的有序 `List<DialogueLogEntry>` + 单调 `sequence` + 数组快照缓存，维护 `Revision` / `CurrentRevision` 供 `DialogueOverlay` 轮询)
+- `DialogueOverlay` 轮询 `DialogueLogStore.CurrentRevision` 并每 60 tick 刷新存活殖民者集合(`_liveColonistIds`)，仅在日志版本、最大消息数、存活集合或窗口宽度变化时重算布局缓存
+- `CompRimMindDialogue.TryDispatchTrigger` 仅在触发被协调器实际接纳后才更新 `lastTriggerTick`
+- `SkillLearnPatch` 使用 Harmony `out int __state` 记录升级前等级；`ThoughtPatch.LastTriggeredTicks` 超过 `MaxTrackedThoughtEntries`(256) 时自动清理过期与最早条目
+- `DialogueRequestCoordinator` 危机崩溃提示(`RimMind.Dialogue.Prompt.SevereCrisis` / `CrisisBreakdown`)使用 `.CanTranslate()` 守卫与英文回退
 - `isMonologue` 判断: `recipient == null && type != PlayerInput`（`HandleTrigger` 与 `NpcResponseHandler.Handle` 统一使用此公式）
 - `reply` 触发: `TryTriggerReply` 用 `isReply: true` 绕过每日限额检查，`NpcResponseHandler.Handle` 对 `isReply=true` 不调用 `RecordDailyDialogue`（reply 是对话链的自然延续，不额外消耗每日额度）
 - `ThoughtInjector.MoodOffsetMap`/`LabelMap` 和 `RimMindDialogueService.RegisteredTriggerLabels` 使用 `ConcurrentDictionary` 保证外部 mod 并发注册安全
