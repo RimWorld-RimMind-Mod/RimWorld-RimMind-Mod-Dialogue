@@ -1,5 +1,6 @@
 using System;
 using HarmonyLib;
+using RimMind.Application.Common.Helpers;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Presentation.Api;
@@ -13,40 +14,10 @@ namespace RimMind.Dialogue.Patches
         new Type[] { typeof(Thought_Memory), typeof(Pawn) })]
     public static class ThoughtPatch
     {
-        internal static readonly System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int> LastTriggeredTicks =
-            new System.Collections.Generic.Dictionary<(int PawnId, string ThoughtDefName), int>();
         internal const int SameThoughtCooldownTicks = 60000; // 1 in-game day
         internal const int MaxTrackedThoughtEntries = 256;
-
-        internal static void PruneIfNeeded(int nowTick)
-        {
-            if (LastTriggeredTicks.Count <= MaxTrackedThoughtEntries) return;
-
-            var toRemove = new System.Collections.Generic.List<(int PawnId, string ThoughtDefName)>();
-            foreach (var kvp in LastTriggeredTicks)
-            {
-                if (nowTick < kvp.Value || (nowTick - kvp.Value) >= SameThoughtCooldownTicks)
-                {
-                    toRemove.Add(kvp.Key);
-                }
-            }
-
-            for (int i = 0; i < toRemove.Count; i++)
-            {
-                LastTriggeredTicks.Remove(toRemove[i]);
-            }
-
-            if (LastTriggeredTicks.Count > MaxTrackedThoughtEntries)
-            {
-                var ordered = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<(int PawnId, string ThoughtDefName), int>>(LastTriggeredTicks);
-                ordered.Sort((a, b) => a.Value.CompareTo(b.Value));
-                int excess = LastTriggeredTicks.Count - MaxTrackedThoughtEntries;
-                for (int i = 0; i < excess; i++)
-                {
-                    LastTriggeredTicks.Remove(ordered[i].Key);
-                }
-            }
-        }
+        internal static readonly KeyedCooldownGate<(int PawnId, string ThoughtDefName)> LastTriggeredTicks =
+            new KeyedCooldownGate<(int PawnId, string ThoughtDefName)>(MaxTrackedThoughtEntries);
 
         [HarmonyPostfix]
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory newThought)
@@ -69,12 +40,10 @@ namespace RimMind.Dialogue.Patches
 
             int nowTick = Find.TickManager?.TicksGame ?? 0;
             var key = (pawn.thingIDNumber, newThought.def.defName);
-            if (LastTriggeredTicks.TryGetValue(key, out int lastTick) && nowTick >= lastTick && (nowTick - lastTick) < SameThoughtCooldownTicks)
+            if (!LastTriggeredTicks.TryEnter(key, nowTick, SameThoughtCooldownTicks))
             {
                 return;
             }
-            LastTriggeredTicks[key] = nowTick;
-            PruneIfNeeded(nowTick);
 
             string rawLabel = newThought.LabelCap ?? newThought.def.label ?? newThought.def.defName;
             string cleanLabel = System.Text.RegularExpressions.Regex.Replace(

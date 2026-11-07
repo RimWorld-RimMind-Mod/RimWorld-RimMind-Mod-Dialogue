@@ -30,6 +30,18 @@ namespace RimMind.Presentation.Api
         public static class Settings
         {
             public static float ActivityFrequencyScale { get; set; } = 1.0f;
+            public static int ScaleCooldown(int baseCooldownTicks, int minFloorTicks = 0)
+                => RimMind.Application.Common.Helpers.ActivityCooldownScaler.Scale(baseCooldownTicks, ActivityFrequencyScale, minFloorTicks);
+        }
+        public static class Thoughts
+        {
+            public static string FormatCleanLabel(string rawTagOrKey, string defaultPrefixToStrip = "RimMind.")
+            {
+                if (string.IsNullOrEmpty(rawTagOrKey)) return string.Empty;
+                if (UnityData.IsInMainThread && rawTagOrKey.CanTranslate())
+                    return rawTagOrKey.Translate().ToString();
+                return RimMind.Application.Common.Models.Psychology.ThoughtSpec.FormatCleanLabelFallback(rawTagOrKey, defaultPrefixToStrip);
+            }
         }
         public static class Request
         {
@@ -50,6 +62,47 @@ namespace RimMind.Presentation.Api
                 Pawns.Add(pawnId);
                 return true;
             }
+        }
+        public static class Bus
+        {
+            public static void RegisterEventType<T>(string name) where T : RimMind.Domain.Events.AgentBusEvent
+                => RimMind.Application.Features.AgentBus.AgentBusImpl.RegisterKnownEventType(name, typeof(T));
+            public static void PublishOnMainThread<T>(T evt) where T : RimMind.Domain.Events.AgentBusEvent { }
+        }
+        public static class MainThreadSnapshot
+        {
+            public static RimMind.Application.Common.Threading.MainThreadReader Reader { get; set; } =
+                new RimMind.Application.Common.Threading.MainThreadReader(a => a(), () => true);
+
+            public static System.Threading.Tasks.Task<T> GetAsync<T>(
+                Func<T> readOnMainThread,
+                T fallback = default!,
+                TimeSpan? timeout = null,
+                System.Threading.CancellationToken ct = default)
+                => Reader.ReadAsync(
+                    readOnMainThread,
+                    fallback,
+                    timeout ?? RimMind.Application.Common.Threading.MainThreadReader.DefaultTimeout,
+                    ct);
+        }
+        public static class Context
+        {
+            public static string ScenarioDialogue => RimMind.Application.Common.Models.Context.ScenarioIds.Dialogue;
+            public static TestContextRegistry ContextKeys { get; } = new();
+        }
+        public sealed class TestContextRegistry
+        {
+            public List<RimMind.Application.Common.Interfaces.Context.ContextProviderDef> Definitions { get; } = new();
+            public void Register(RimMind.Application.Common.Interfaces.Context.ContextProviderDef definition)
+            {
+                Definitions.RemoveAll(d => d.Key == definition.Key);
+                Definitions.Add(definition);
+            }
+        }
+        public static class Prompt
+        {
+            public static string BuildTaskInstruction(string prefix, object? args, params string[] subKeys)
+                => string.Join("\n", System.Linq.Enumerable.Select(subKeys, key => prefix + "." + key));
         }
     }
 

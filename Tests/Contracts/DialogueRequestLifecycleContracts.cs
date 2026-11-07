@@ -449,6 +449,65 @@ namespace RimMind.Dialogue.Tests.Contracts
             }
         }
 
+        [Fact]
+        public async System.Threading.Tasks.Task Automatic_triggers_and_context_provider_preserve_monologue_and_speaker_hints()
+        {
+            Verse.Extensions.UntranslatableKeys.Add("RimMind.Dialogue.Prompt.Context.Hediff");
+            Verse.Extensions.UntranslatableKeys.Add("RimMind.Dialogue.Prompt.Context.Chitchat");
+            try
+            {
+                RimMindDialogueService.HandleTrigger(_pawn, "gunshot wound (torso)", DialogueTriggerType.Hediff, null);
+                var monoEnvelope = Assert.Single(RimMindAPI.Sent).Envelope;
+                Assert.NotNull(monoEnvelope.Hints);
+                Assert.Equal("true", monoEnvelope.Hints!["IsMonologue"]);
+                Assert.False(monoEnvelope.Hints.ContainsKey("SpeakerName"));
+                Assert.Contains("gunshot wound (torso)", monoEnvelope.GameStateInfo!.ToString(), StringComparison.Ordinal);
+                Assert.Contains("RimMind.Dialogue.Prompt.AutoTrigger", monoEnvelope.GameStateInfo.ToString(), StringComparison.Ordinal);
+                Complete(0, "ouch");
+
+                RimMindAPI.Sent.Clear();
+                RimMindDialogueService.HandleTrigger(_pawn, "nice weather", DialogueTriggerType.Chitchat, _recipient);
+                var chatEnvelope = Assert.Single(RimMindAPI.Sent).Envelope;
+                Assert.NotNull(chatEnvelope.Hints);
+                Assert.Equal("false", chatEnvelope.Hints!["IsMonologue"]);
+                Assert.True(chatEnvelope.Hints.ContainsKey("SpeakerName"));
+                Assert.Contains("nice weather", chatEnvelope.GameStateInfo!.ToString(), StringComparison.Ordinal);
+                Complete(0, "indeed");
+            }
+            finally
+            {
+                Verse.Extensions.UntranslatableKeys.Clear();
+            }
+
+            DialogueContextProviderRegistrar.RegisterAll();
+            var taskDef = RimMindAPI.Context.ContextKeys.Definitions.Single(d => d.Key == "dialogue_task");
+            var monoCtx = new RimMind.Application.Common.Interfaces.Context.ProviderContext(RimMindAPI.Context.ScenarioDialogue, "t1")
+            {
+                PawnId = 1,
+                NpcId = "NPC-1",
+                Hints = new System.Collections.Generic.Dictionary<string, object?> { ["IsMonologue"] = "true" }
+            };
+            string? monoTask = await taskDef.Provider(monoCtx, CancellationToken.None);
+            Assert.NotNull(monoTask);
+            Assert.Contains("GoalMonologue", monoTask!, StringComparison.Ordinal);
+            Assert.DoesNotContain("RelationDelta", monoTask, StringComparison.Ordinal);
+
+            var speakerCtx = new RimMind.Application.Common.Interfaces.Context.ProviderContext(RimMindAPI.Context.ScenarioDialogue, "t2")
+            {
+                PawnId = 1,
+                NpcId = "NPC-1",
+                Hints = new System.Collections.Generic.Dictionary<string, object?>
+                {
+                    ["IsMonologue"] = "false",
+                    ["SpeakerName"] = "Player"
+                }
+            };
+            string? speakerTask = await taskDef.Provider(speakerCtx, CancellationToken.None);
+            Assert.NotNull(speakerTask);
+            Assert.Contains("GoalDialogue", speakerTask!, StringComparison.Ordinal);
+            Assert.Contains("RelationDelta", speakerTask, StringComparison.Ordinal);
+        }
+
         private static void Complete(int index, string content)
         {
             string? toolCalls = string.IsNullOrWhiteSpace(content)

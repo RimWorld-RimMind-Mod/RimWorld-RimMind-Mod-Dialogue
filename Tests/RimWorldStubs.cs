@@ -30,7 +30,6 @@ namespace Verse
 
     public class MentalStateDef : Def
     {
-        public string? label;
     }
 
     public class NameTriple
@@ -49,6 +48,19 @@ namespace RimWorld
     public class Pawn_RelationsTracker
     {
         public int OpinionOf(Verse.Pawn other) => 0;
+        public float CompatibilityWith(Verse.Pawn other) => 0.5f;
+        public float SecondaryRomanceChanceFactor(Verse.Pawn other) => 0f;
+        public System.Collections.Generic.List<DirectPawnRelation> DirectRelations { get; } = new();
+    }
+
+    public class DirectPawnRelation
+    {
+        public PawnRelationDef? def;
+        public Verse.Pawn? otherPawn;
+    }
+
+    public class PawnRelationDef : Verse.Def
+    {
     }
 
     public static class LovePartnerRelationUtility
@@ -64,7 +76,6 @@ namespace RimWorld
     public class JobDef : Verse.Def
     {
         public object? joyKind;
-        public string? label;
     }
 
     public static class JobDefOf
@@ -93,6 +104,7 @@ namespace RimWorld
 
     public class MemoryThoughtHandler
     {
+        public System.Collections.Generic.List<Thought_Memory> Memories { get; } = new();
         public void TryGainMemory(Thought_Memory thought) { }
     }
 
@@ -114,6 +126,7 @@ namespace RimWorld
     // Thought_Memory 存根
     public class Thought_Memory : Thought
     {
+        public int DurationTicks = 60000;
     }
 
     // Thought_MemorySocial 存根
