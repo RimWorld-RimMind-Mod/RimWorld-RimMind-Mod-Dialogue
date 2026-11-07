@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using RimMind.Application.Common.Constants;
 using RimMind.Application.Common.Interfaces.Context;
+using RimMind.Application.Common.Models.Context;
+using RimMind.Application.Features.Context;
 using RimMind.Domain.Common;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation.Api;
@@ -16,15 +18,7 @@ namespace RimMind.Dialogue.Core
     internal static class DialogueContextProviderRegistrar
     {
         private static string Tr(string key, params object[] args)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(key)) return string.Empty;
-                string template = key.CanTranslate() ? key.TranslateSimple() : key;
-                return (args == null || args.Length == 0) ? template : string.Format(template, args);
-            }
-            catch { return key ?? string.Empty; }
-        }
+            => RimMindText.TrOr(key, key ?? string.Empty, args);
 
         /// <summary>
         /// Context providers run on pipeline thread-pool threads; pawn memories, relations, dialogue
@@ -35,6 +29,11 @@ namespace RimMind.Dialogue.Core
 
         internal static void RegisterAll()
         {
+            // Register the typed event before any key names it, so the trigger resolves
+            // to a real event (unknown names never fall back to the base bus event).
+            DialogueContextChangedEvent.Register();
+            RegisterScenarios();
+
             RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
                 "dialogue_state", ContextLayer.L3_State, 0.2f,
                 (ctx, ct) =>
@@ -42,7 +41,7 @@ namespace RimMind.Dialogue.Core
                     if (ctx.PawnId <= 0) return Task.FromResult<string?>(null);
                     int pawnId = ctx.PawnId;
                     return OnMainThread(() => BuildStateContext(pawnId), ct);
-                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 750, invalidationTriggers: new[] { DialogueContextChangedEvent.EventName }));
 
             RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
                 "dialogue_relation", ContextLayer.L3_State, 0.15f,
@@ -51,7 +50,7 @@ namespace RimMind.Dialogue.Core
                     if (ctx.PawnId <= 0) return Task.FromResult<string?>(null);
                     int pawnId = ctx.PawnId;
                     return OnMainThread(() => BuildRelationContext(pawnId), ct);
-                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 750, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 750, invalidationTriggers: new[] { DialogueContextChangedEvent.EventName }));
 
             RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
                 "dialogue_task", ContextLayer.L0_Static, 0.95f,
@@ -60,8 +59,9 @@ namespace RimMind.Dialogue.Core
                     if (ctx.PawnId <= 0) return Task.FromResult<string?>(null);
                     if (ctx.Scenario != RimMindAPI.Context.ScenarioDialogue) return Task.FromResult<string?>(null);
                     string? speakerName = ctx.Hints?.TryGetValue("SpeakerName", out var sn) == true ? sn?.ToString() : null;
-                    if (!string.IsNullOrEmpty(speakerName)) return Task.FromResult<string?>(null);
-                    bool isMonologue = ctx.Hints?.TryGetValue("IsMonologue", out var im) == true && im is bool b && b;
+                    bool isMonologue = string.IsNullOrEmpty(speakerName)
+                        && ctx.Hints?.TryGetValue("IsMonologue", out var im) == true
+                        && ((im is bool b && b) || (im is string imStr && bool.TryParse(imStr, out var parsed) && parsed));
                     var subKeys = new List<string> { "Role", "Process", "Constraint", "Fallback", "ThoughtRules" };
                     subKeys.Add(isMonologue ? "GoalMonologue" : "GoalDialogue");
                     subKeys.Add(isMonologue ? "ExampleMonologue" : "ExampleDialogue");
@@ -72,7 +72,7 @@ namespace RimMind.Dialogue.Core
                     return OnMainThread(
                         () => RimMindAPI.Prompt.BuildTaskInstruction("RimMind.Dialogue.Prompt.TaskInstruction", null, keys),
                         ct);
-                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 0));
 
             RimMindAPI.Context.ContextKeys.Register(new ContextProviderDef(
                 "dialogue_history", ContextLayer.L4_History, 0.5f,
@@ -81,7 +81,86 @@ namespace RimMind.Dialogue.Core
                     if (ctx.PawnId <= 0) return Task.FromResult<string?>(null);
                     int pawnId = ctx.PawnId;
                     return OnMainThread(() => BuildHistoryContext(pawnId), ct);
-                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 0, invalidationTriggers: new[] { "DialogueEvent" }));
+                }, RimMindOwnerConsts.DialogueModId, stalenessTicks: 0));
+        }
+
+        private static void RegisterScenarios()
+        {
+            ScenarioRegistry.Register(new ScenarioDescriptor
+            {
+                Id = ScenarioIds.Dialogue,
+                DefaultBaseRounds = 10,
+                Description = "RimMind.Application.Scenario.Dialogue",
+                DefaultBudget = 0.6f,
+                L4Mode = L4Mode.BudgetControlled,
+                DefaultExcludeKeys = new[] { "combat_status", "task_progress" },
+                OwnerModId = RimMindOwnerConsts.DialogueModId,
+                RelevanceWeights = new Dictionary<string, float>(StringComparer.Ordinal)
+                {
+                    ["health"] = 0.6f,
+                    ["mood"] = 0.9f,
+                    ["current_job"] = 0.5f,
+                    ["combat_status"] = 0.4f,
+                    ["target_info"] = 0.3f,
+                    ["task_progress"] = 0.3f,
+                    ["nearby_pawns"] = 0.8f,
+                    ["colony_status"] = 0.5f,
+                    ["current_area"] = 0.6f,
+                    ["weather"] = 0.3f,
+                    ["time_of_day"] = 0.4f,
+                    ["season"] = 0.2f,
+                    ["map_structure"] = 0.2f,
+                    ["pawn_base_info"] = 0.7f,
+                    ["fixed_relations"] = 0.85f,
+                    ["ideology"] = 0.6f,
+                    ["skills_summary"] = 0.4f,
+                    ["memory_pawn"] = 0.7f,
+                    ["working_memory"] = 0.6f,
+                    ["memory_narrator"] = 0.3f,
+                    ["dialogue_state"] = 0.9f,
+                    ["dialogue_relation"] = 0.95f,
+                    ["dialogue_history"] = 0.85f,
+                    ["dialogue_task"] = 0.95f
+                }
+            });
+
+            ScenarioRegistry.Register(new ScenarioDescriptor
+            {
+                Id = ScenarioIds.CrisisDialogue,
+                DefaultBaseRounds = 8,
+                Description = "RimMind.Application.Scenario.CrisisDialogue",
+                DefaultBudget = 0.7f,
+                L4Mode = L4Mode.BudgetControlled,
+                DefaultExcludeKeys = new[] { "task_progress" },
+                OwnerModId = RimMindOwnerConsts.DialogueModId,
+                RelevanceWeights = new Dictionary<string, float>(StringComparer.Ordinal)
+                {
+                    ["health"] = 0.9f,
+                    ["mood"] = 1.0f,
+                    ["current_job"] = 0.6f,
+                    ["combat_status"] = 0.8f,
+                    ["target_info"] = 0.4f,
+                    ["task_progress"] = 0.2f,
+                    ["nearby_pawns"] = 0.85f,
+                    ["colony_status"] = 0.6f,
+                    ["current_area"] = 0.6f,
+                    ["weather"] = 0.4f,
+                    ["time_of_day"] = 0.3f,
+                    ["season"] = 0.2f,
+                    ["map_structure"] = 0.3f,
+                    ["pawn_base_info"] = 0.8f,
+                    ["fixed_relations"] = 0.9f,
+                    ["ideology"] = 0.7f,
+                    ["skills_summary"] = 0.4f,
+                    ["memory_pawn"] = 0.8f,
+                    ["working_memory"] = 0.85f,
+                    ["memory_narrator"] = 0.3f,
+                    ["dialogue_state"] = 0.95f,
+                    ["dialogue_relation"] = 0.85f,
+                    ["dialogue_history"] = 0.5f,
+                    ["dialogue_task"] = 0.95f
+                }
+            });
         }
 
         /// <summary>Main thread only.</summary>
@@ -178,9 +257,9 @@ namespace RimMind.Dialogue.Core
             relevant.Reverse();
 
             var sb = new StringBuilder();
-            sb.AppendLine("RimMind.Dialogue.Context.HistoryHeader".CanTranslate()
-                ? "RimMind.Dialogue.Context.HistoryHeader".Translate().ToString()
-                : "【Recent Dialogue History】(Strictly forbidden to mechanically repeat the same complaint or phrase. Expand on new work details or mutual care):");
+            sb.AppendLine(RimMindText.TrOr(
+                "RimMind.Dialogue.Context.HistoryHeader",
+                "【Recent Dialogue History】(Strictly forbidden to mechanically repeat the same complaint or phrase. Expand on new work details or mutual care):"));
 
             foreach (var entry in relevant)
             {

@@ -22,6 +22,7 @@
     <Compile Include="UnityEngineStubs.cs" />
     <Compile Include="VerseStubs.cs" />
     <Compile Include="DialogueBoundaryStubs.cs" />
+    <Compile Include="../../RimMind-Core/Source/Presentation/Common/RimMindText.cs" Link="Support/RimMindText.cs" />
     <Compile Include="Contracts\**\*.cs" />
     <Compile Include="DialogueCadenceEvaluatorTests.cs" />
     <Compile Include="DialogueAntiHallucinationAndMirroringTests.cs" />
@@ -37,6 +38,8 @@
     <Compile Include="../Source/Core/DialogueActiveRecipientRegistry.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialoguePairRateLimiter.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueCadenceEvaluator.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueContextChangedEvent.cs" LinkBase="Core" />
+    <Compile Include="../Source/Core/DialogueContextProviderRegistrar.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueRequestCoordinator.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueActivityState.cs" LinkBase="Core" />
     <Compile Include="../Source/Core/DialogueLogStore.cs" LinkBase="Core" />

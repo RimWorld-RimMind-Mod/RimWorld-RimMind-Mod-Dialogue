@@ -1,4 +1,5 @@
 using HarmonyLib;
+using RimMind.Application.Features.GameEvents;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Presentation.Api;
@@ -25,7 +26,12 @@ namespace RimMind.Dialogue.Patches
             Pawn pawn = __instance.Pawn;
             if (!RimMindPawnLookup.IsEligibleColonist(pawn) || pawn.Downed) return;
 
-            string context = "RimMind.Dialogue.Context.SkillLevelUp".Translate(__instance.def.label, __instance.Level);
+            RimMindAPI.GameEvents.Publish(new SkillLevelUpGameEvent(
+                pawn.thingIDNumber,
+                __instance.def?.defName ?? string.Empty,
+                __state,
+                __instance.Level));
+            string context = "RimMind.Dialogue.Context.SkillLevelUp".Translate(__instance.def!.label, __instance.Level);
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.LevelUp, null);
         }
     }

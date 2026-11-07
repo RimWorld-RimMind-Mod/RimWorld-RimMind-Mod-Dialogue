@@ -33,6 +33,7 @@ namespace Verse
 
         // RimWorld 翻译扩展方法存根，测试中直接返回原字符串
         public static TaggedString Translate(this string s) => new TaggedString { Value = s };
+        public static string TranslateSimple(this string s) => s;
 
         public static readonly HashSet<string> UntranslatableKeys = new HashSet<string>();
 
@@ -48,6 +49,7 @@ namespace Verse
     public class Def : IExposable
     {
         public string defName = "";
+        public string? label;
         public virtual void ExposeData() { }
     }
 

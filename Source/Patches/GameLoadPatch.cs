@@ -9,6 +9,7 @@ namespace RimMind.Dialogue.Patches
         public static void ClearTriggerCooldowns()
         {
             ThoughtPatch.LastTriggeredTicks.Clear();
+            HediffPatch.LastTriggerTickByPawn.Clear();
         }
     }
 

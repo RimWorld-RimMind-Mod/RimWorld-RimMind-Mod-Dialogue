@@ -1,7 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using RimMind.Application.Common.Helpers;
+using RimMind.Application.Features.GameEvents;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Presentation.Api;
@@ -18,8 +19,7 @@ namespace RimMind.Dialogue.Patches
         public const int HediffCooldownTicks = 2500;
 
         private static readonly FieldInfo? PawnField = AccessTools.Field(typeof(Pawn_HealthTracker), "pawn");
-        private static readonly object CooldownLock = new object();
-        private static readonly Dictionary<int, int> LastTriggerTickByPawn = new Dictionary<int, int>();
+        internal static readonly KeyedCooldownGate<int> LastTriggerTickByPawn = new KeyedCooldownGate<int>();
 
         public static bool ShouldTriggerHediffDialogue(
             bool isBad,
@@ -31,8 +31,16 @@ namespace RimMind.Dialogue.Patches
             int? lastTriggerTick,
             int cooldownTicks = HediffCooldownTicks)
         {
-            if (!isBad && !isTendable && !makesSickThought) return false;
-            if (!isLifeThreatening && severity < MinHediffSeverity) return false;
+            if (!GameEventSignificancePolicy.IsSignificantInjury(
+                    isBad,
+                    isTendable,
+                    makesSickThought,
+                    isLifeThreatening,
+                    severity,
+                    MinHediffSeverity))
+            {
+                return false;
+            }
             if (lastTriggerTick.HasValue
                 && nowTick >= lastTriggerTick.Value
                 && (nowTick - lastTriggerTick.Value) < cooldownTicks)
@@ -69,25 +77,22 @@ namespace RimMind.Dialogue.Patches
 
             int now = Find.TickManager?.TicksGame ?? 0;
             int cooldown = Math.Max(HediffCooldownTicks, settings.monologueCooldownTicks);
-            lock (CooldownLock)
+            if (!LastTriggerTickByPawn.TryEnter(pawn.thingIDNumber, now, cooldown))
             {
-                int? lastTick = LastTriggerTickByPawn.TryGetValue(pawn.thingIDNumber, out int recorded) ? recorded : (int?)null;
-                if (!ShouldTriggerHediffDialogue(
-                        hediff.def.isBad,
-                        hediff.def.tendable,
-                        hediff.def.makesSickThought,
-                        hediff.Severity,
-                        isLifeThreatening,
-                        now,
-                        lastTick,
-                        cooldown))
-                {
-                    return;
-                }
-                LastTriggerTickByPawn[pawn.thingIDNumber] = now;
+                return;
             }
 
             string label = hediff.def.label ?? hediff.def.defName ?? string.Empty;
+            RimMindAPI.GameEvents.Publish(new HediffAddedGameEvent(
+                pawn.thingIDNumber,
+                hediff.def.defName ?? string.Empty,
+                label,
+                hediff.Severity,
+                hediff.def.isBad,
+                hediff.def.tendable,
+                hediff.def.makesSickThought,
+                isLifeThreatening,
+                hediff.Part?.Label));
             string context = "RimMind.Dialogue.Context.HediffOccurred".CanTranslate()
                 ? (string)"RimMind.Dialogue.Context.HediffOccurred".Translate(label)
                 : label;

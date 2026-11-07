@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using RimMind.Application.Common.Constants;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Application.Features.Llm;
 using RimMind.Dialogue.Settings;
@@ -112,7 +113,7 @@ namespace RimMind.Dialogue.Core
                 return "Dialogue startup delay is active.";
             if (_reservations.IsPawnPending(pawn.thingIDNumber))
                 return "A dialogue request is already pending for this pawn.";
-            if (RimMindAPI.ShouldSkipDialogue(pawn, type.ToString()))
+            if (RimMindAPI.ShouldSkipDialogue(pawn, ToTriggerKind(type)))
                 return "AI dialogue condition is not met.";
 
             if (DialogueFlowPolicy.UsesMonologueCooldown(
@@ -143,6 +144,17 @@ namespace RimMind.Dialogue.Core
 
             return null;
         }
+
+        private static string ToTriggerKind(DialogueTriggerType type) => type switch
+        {
+            DialogueTriggerType.Chitchat => DialogueTriggerKinds.Chitchat,
+            DialogueTriggerType.Auto => DialogueTriggerKinds.Auto,
+            DialogueTriggerType.PlayerInput => DialogueTriggerKinds.PlayerInput,
+            DialogueTriggerType.Hediff => DialogueTriggerKinds.Hediff,
+            DialogueTriggerType.LevelUp => DialogueTriggerKinds.LevelUp,
+            DialogueTriggerType.Thought => DialogueTriggerKinds.Thought,
+            _ => type.ToString()
+        };
 
         public void TryTriggerReply(
             Pawn originalSender,
@@ -241,9 +253,15 @@ namespace RimMind.Dialogue.Core
                         reservationId,
                         recipient);
                     RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
+                    // The active recipient feeds dialogue_relation; drop the cached copy now.
+                    DialogueContextChangedEvent.Publish(pawn.thingIDNumber);
                 }
 
                 string formattedContext = FormatContext(type, context, recipient);
+                bool isMonologue = DialogueFlowPolicy.IsMonologue(type, recipient != null);
+                string? speakerName = recipient != null
+                    ? (recipient.Name?.ToStringShort ?? recipient.LabelShort)
+                    : (type == DialogueTriggerType.PlayerInput ? "Player" : null);
 
                 string npcId = $"NPC-{pawn.thingIDNumber}";
                 bool isCrisis = pawn.InMentalState || (pawn.needs?.mood != null && pawn.needs.mood.CurLevel < 0.20f);
@@ -258,26 +276,36 @@ namespace RimMind.Dialogue.Core
                         : $"[CRISIS BREAKDOWN: {mentalReason}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.";
                     gameState.AddSection("crisis_expression", crisisSection);
                 }
+                string autoTriggerInstruction = "RimMind.Dialogue.Prompt.AutoTrigger".CanTranslate()
+                    ? "RimMind.Dialogue.Prompt.AutoTrigger".Translate().ToString()
+                    : "Based on your current state and surroundings, respond naturally.";
+                string triggerPayload = string.IsNullOrWhiteSpace(formattedContext)
+                    ? autoTriggerInstruction
+                    : $"{formattedContext}\n{autoTriggerInstruction}";
                 gameState.AddSection(
                     type == DialogueTriggerType.PlayerInput ? "dialogue_input" : "dialogue_trigger",
                     type == DialogueTriggerType.PlayerInput
                         ? context
-                        : ("RimMind.Dialogue.Prompt.AutoTrigger".CanTranslate()
-                            ? "RimMind.Dialogue.Prompt.AutoTrigger".Translate().ToString()
-                            : "Based on your current state and surroundings, respond naturally."));
+                        : triggerPayload);
 
-                var envelope = LlmRequestEnvelopeBuilder
+                var envelopeBuilder = LlmRequestEnvelopeBuilder
                     .ForNpc(
                         npcId,
                         gameStateInfo: gameState)
                     .ForScenarioId(isCrisis ? ScenarioIds.CrisisDialogue : ScenarioIds.Dialogue)
                     .WithModId("RimMind.Dialogue")
+                    .WithHint("IsMonologue", isMonologue ? "true" : "false")
+                    .WithHint("TriggerContext", formattedContext)
                     .WithTools(DialogueToolDefinitions.AsList())
                     .WithToolDispatchMode(ToolCallDispatchMode.Manual)
                     .WithMaxTokens(800)
                     .WithTemperature(type == DialogueTriggerType.PlayerInput ? 0.85f : 0.8f)
-                    .WithCancellation(lifetime.Token)
-                    .Build();
+                    .WithCancellation(lifetime.Token);
+                if (!string.IsNullOrEmpty(speakerName))
+                {
+                    envelopeBuilder.WithHint("SpeakerName", speakerName);
+                }
+                var envelope = envelopeBuilder.Build();
 
                 RimMindAPI.Request.Send(envelope, result =>
                 {
@@ -308,6 +336,8 @@ namespace RimMind.Dialogue.Core
                             type, isReply);
                         if (!string.IsNullOrWhiteSpace(speech))
                         {
+                            // Reply applied thoughts/relation changes that feed dialogue context.
+                            DialogueContextChangedEvent.Publish(pawn.thingIDNumber);
                             Notify(onReply, speech!);
                         }
                         else
@@ -349,15 +379,25 @@ namespace RimMind.Dialogue.Core
             string formatted = type switch
             {
                 DialogueTriggerType.Chitchat =>
-                    "RimMind.Dialogue.Prompt.Context.Chitchat".Translate(context),
+                    "RimMind.Dialogue.Prompt.Context.Chitchat".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.Context.Chitchat".Translate(context).ToString()
+                        : $"[Chitchat: {context}]",
                 DialogueTriggerType.Hediff =>
-                    "RimMind.Dialogue.Prompt.Context.Hediff".Translate(context),
+                    "RimMind.Dialogue.Prompt.Context.Hediff".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.Context.Hediff".Translate(context).ToString()
+                        : $"[Health condition: {context}]",
                 DialogueTriggerType.LevelUp =>
-                    "RimMind.Dialogue.Prompt.Context.LevelUp".Translate(context),
+                    "RimMind.Dialogue.Prompt.Context.LevelUp".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.Context.LevelUp".Translate(context).ToString()
+                        : $"[Skill level up: {context}]",
                 DialogueTriggerType.Thought =>
-                    "RimMind.Dialogue.Prompt.Context.Thought".Translate(context),
+                    "RimMind.Dialogue.Prompt.Context.Thought".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.Context.Thought".Translate(context).ToString()
+                        : $"[Recent thought: {context}]",
                 DialogueTriggerType.Auto =>
-                    "RimMind.Dialogue.Prompt.Context.Auto".Translate(context),
+                    "RimMind.Dialogue.Prompt.Context.Auto".CanTranslate()
+                        ? "RimMind.Dialogue.Prompt.Context.Auto".Translate(context).ToString()
+                        : context,
                 _ => context
             };
 
@@ -366,11 +406,13 @@ namespace RimMind.Dialogue.Core
                 : GetRecipientRoleKey(recipient);
             if (recipient != null && roleKey != null)
             {
-                formatted += "\n"
-                    + "RimMind.Dialogue.Prompt.Context.Recipient"
-                        .Translate(recipient.Name.ToStringShort)
-                    + "\n"
-                    + roleKey.Translate();
+                string recipientLine = "RimMind.Dialogue.Prompt.Context.Recipient".CanTranslate()
+                    ? "RimMind.Dialogue.Prompt.Context.Recipient".Translate(recipient.Name.ToStringShort).ToString()
+                    : $"[Recipient: {recipient.Name.ToStringShort}]";
+                string roleLine = roleKey.CanTranslate()
+                    ? roleKey.Translate().ToString()
+                    : roleKey;
+                formatted += "\n" + recipientLine + "\n" + roleLine;
             }
 
             return formatted;
