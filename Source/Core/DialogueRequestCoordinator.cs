@@ -300,6 +300,7 @@ namespace RimMind.Dialogue.Core
                     .WithToolDispatchMode(ToolCallDispatchMode.Manual)
                     .WithMaxTokens(800)
                     .WithTemperature(type == DialogueTriggerType.PlayerInput ? 0.85f : 0.8f)
+                    .WithReasoningEffort(ReasoningEffort.None)
                     .WithCancellation(lifetime.Token);
                 if (!string.IsNullOrEmpty(speakerName))
                 {
