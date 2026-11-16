@@ -13,16 +13,17 @@ namespace RimMind.Dialogue.Comps
     {
         private int _lastTriggerTick = -99999;
 
-        private Pawn Pawn => (Pawn)parent;
+        private Pawn? PawnOrNull => parent as Pawn;
+        private Pawn? Pawn => parent as Pawn;
 
         public override void CompTick()
         {
             base.CompTick();
-            if (!Pawn.IsColonist) return;
+            if (parent is not Pawn pawn || !pawn.IsColonist) return;
             var settings = RimMindDialogueSettings.Get();
             if (!settings.enabled || !settings.autoDialogueEnabled) return;
-            // Sample natural encounters every 250 ticks (≈4 seconds)
-            if (!Pawn.IsHashIntervalTick(250)) return;
+            // Sample natural encounters every 250 ticks (~4 seconds)
+            if (!pawn.IsHashIntervalTick(250)) return;
             if (!RimMindAPI.IsConfigured()) return;
             if (!IsEligible()) return;
 
@@ -39,41 +40,41 @@ namespace RimMind.Dialogue.Comps
             if (nearbyCompanion != null)
             {
                 // Dining Encounter (Shared Meal)
-                if (Pawn.CurJob?.def == JobDefOf.Ingest && nearbyCompanion.CurJob?.def == JobDefOf.Ingest)
+                if (pawn.CurJob?.def == JobDefOf.Ingest && nearbyCompanion.CurJob?.def == JobDefOf.Ingest)
                 {
-                    float dynamicChance = CalculateDynamicSocialChance(settings.diningSocialChance, Pawn, nearbyCompanion, activityScale);
+                    float dynamicChance = CalculateDynamicSocialChance(settings.diningSocialChance, pawn, nearbyCompanion, activityScale);
                     if (settings.enableDiningSocial && Rand.Value < dynamicChance)
                     {
                         string contextMsg = "RimMind.Dialogue.Context.DiningEncounter".Translate(nearbyCompanion.LabelShort);
-                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
+                        TryDispatchTrigger(pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
 
                 // Recreation Encounter (Shared Play / Joy)
-                if (Pawn.CurJob?.def?.joyKind != null && nearbyCompanion.CurJob?.def?.joyKind != null)
+                if (pawn.CurJob?.def?.joyKind != null && nearbyCompanion.CurJob?.def?.joyKind != null)
                 {
-                    float dynamicChance = CalculateDynamicSocialChance(settings.recreationSocialChance, Pawn, nearbyCompanion, activityScale);
+                    float dynamicChance = CalculateDynamicSocialChance(settings.recreationSocialChance, pawn, nearbyCompanion, activityScale);
                     if (settings.enableRecreationSocial && Rand.Value < dynamicChance)
                     {
                         string contextMsg = "RimMind.Dialogue.Context.RecreationEncounter".Translate(nearbyCompanion.LabelShort);
-                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
+                        TryDispatchTrigger(pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
 
                 // Co-working Encounter (Working side-by-side)
-                if (Pawn.CurJob != null && nearbyCompanion.CurJob != null)
+                if (pawn.CurJob != null && nearbyCompanion.CurJob != null)
                 {
-                    if (!IsIdleOrResting(Pawn.CurJob.def) && !IsIdleOrResting(nearbyCompanion.CurJob.def)
-                        && Pawn.CurJob.def != JobDefOf.Ingest && nearbyCompanion.CurJob.def != JobDefOf.Ingest
-                        && Pawn.CurJob.def?.joyKind == null && nearbyCompanion.CurJob.def?.joyKind == null)
+                    if (!IsIdleOrResting(pawn.CurJob.def) && !IsIdleOrResting(nearbyCompanion.CurJob.def)
+                        && pawn.CurJob.def != JobDefOf.Ingest && nearbyCompanion.CurJob.def != JobDefOf.Ingest
+                        && pawn.CurJob.def?.joyKind == null && nearbyCompanion.CurJob.def?.joyKind == null)
                     {
-                        float dynamicChance = CalculateDynamicSocialChance(settings.coworkerSocialChance, Pawn, nearbyCompanion, activityScale);
+                        float dynamicChance = CalculateDynamicSocialChance(settings.coworkerSocialChance, pawn, nearbyCompanion, activityScale);
                         if (settings.enableCoworkerSocial && Rand.Value < dynamicChance)
                         {
                             string contextMsg = "RimMind.Dialogue.Context.CoworkerEncounter".Translate(nearbyCompanion.LabelShort);
-                            TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
+                            TryDispatchTrigger(pawn, contextMsg, DialogueTriggerType.Chitchat, nearbyCompanion, currentTick, ref _lastTriggerTick);
                             return;
                         }
                     }
@@ -81,27 +82,27 @@ namespace RimMind.Dialogue.Comps
             }
             else
             {
-                float mood = Pawn.needs?.mood?.CurLevel ?? 0.5f;
+                float mood = pawn.needs?.mood?.CurLevel ?? 0.5f;
                 float jitter = Rand.Range(0.85f, 1.15f);
 
                 // Solitary contemplation & recreation monologue
-                if (Pawn.CurJobDef?.defName == "Skygaze" || Pawn.CurJobDef?.defName == "Meditate")
+                if (pawn.CurJobDef?.defName == "Skygaze" || pawn.CurJobDef?.defName == "Meditate")
                 {
                     float monologueChance = 0.35f * (mood > 0.8f || mood < 0.3f ? 1.25f : 1.0f) * jitter * activityScale;
                     if (settings.autoDialogueEnabled && Rand.Value < monologueChance)
                     {
                         string contextMsg = "RimMind.Dialogue.Context.ContemplationMonologue".Translate();
-                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
+                        TryDispatchTrigger(pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
-                else if (Pawn.CurJob?.def?.joyKind != null)
+                else if (pawn.CurJob?.def?.joyKind != null)
                 {
                     float monologueChance = (settings.recreationSocialChance * 0.4f) * jitter * activityScale;
                     if (settings.autoDialogueEnabled && Rand.Value < monologueChance)
                     {
                         string contextMsg = "RimMind.Dialogue.Context.RecreationMonologue".Translate();
-                        TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
+                        TryDispatchTrigger(pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
                         return;
                     }
                 }
@@ -113,37 +114,26 @@ namespace RimMind.Dialogue.Comps
             if (settings.autoDialogueEnabled && (currentTick - _lastTriggerTick >= idleCooldown))
             {
                 string contextMsg = "RimMind.Dialogue.Context.IdleState".Translate();
-                TryDispatchTrigger(Pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
+                TryDispatchTrigger(pawn, contextMsg, DialogueTriggerType.Auto, null, currentTick, ref _lastTriggerTick);
             }
         }
 
-        /// <summary>
-        /// Dynamically adjusts base social encounter chance according to:
-        /// 1. Inter-pawn social opinion (-100 to +100).
-        /// 2. Romantic relationship status (lovers/spouses communicate significantly more often).
-        /// 3. Speaker's emotional state (cheerfulness vs deep depression).
-        /// 4. Organic ±15% natural daily jitter.
-        /// 5. Global ActivityFrequencyScale setting multiplier.
-        /// </summary>
         public static float CalculateDynamicSocialChance(float baseChance, Pawn speaker, Pawn listener, float activityScale = 1.0f)
         {
             float chance = baseChance * activityScale;
 
-            // 1. Social relations & opinion modifier (-100 to +100)
             if (speaker.relations != null && listener != null)
             {
                 int opinion = speaker.relations.OpinionOf(listener);
                 float opinionMod = 1.0f + (opinion / 200f);
                 chance *= Mathf.Clamp(opinionMod, 0.30f, 1.60f);
 
-                // Romantic partner boost (+40%)
                 if (LovePartnerRelationUtility.LovePartnerRelationExists(speaker, listener))
                 {
                     chance *= 1.4f;
                 }
             }
 
-            // 2. Speaker mood modifier (happy colonists are more communicative)
             if (speaker.needs?.mood != null)
             {
                 float mood = speaker.needs.mood.CurLevel;
@@ -151,7 +141,6 @@ namespace RimMind.Dialogue.Comps
                 else if (mood < 0.25f) chance *= 0.65f;
             }
 
-            // 3. Organic jitter (±15% natural variance)
             float jitter = Rand.Range(0.85f, 1.15f);
             chance *= jitter;
 
@@ -202,14 +191,15 @@ namespace RimMind.Dialogue.Comps
 
         private Pawn? FindNearbyCompanion()
         {
-            Map? map = Pawn.Map;
+            if (PawnOrNull is not Pawn pawn) return null;
+            Map? map = pawn.Map;
             var spawnedColonists = map?.mapPawns?.FreeColonistsSpawned;
             if (spawnedColonists == null) return null;
 
             for (int i = 0; i < spawnedColonists.Count; i++)
             {
                 Pawn other = spawnedColonists[i];
-                if (other != null && other != Pawn && RimMindPawnLookup.IsEligibleColonist(other) && RestUtility.Awake(other) && Pawn.Position.InHorDistOf(other.Position, 6.9f))
+                if (other != null && other != pawn && RimMindPawnLookup.IsEligibleColonist(other) && RestUtility.Awake(other) && pawn.Position.InHorDistOf(other.Position, 6.9f))
                 {
                     return other;
                 }
@@ -219,6 +209,7 @@ namespace RimMind.Dialogue.Comps
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
+            if (PawnOrNull is not Pawn pawn) yield break;
             if (!IsEligible()) yield break;
             if (!RimMindDialogueSettings.Get().enabled) yield break;
             if (!RimMindDialogueSettings.Get().playerDialogueEnabled) yield break;
@@ -229,7 +220,7 @@ namespace RimMind.Dialogue.Comps
                     ? "RimMind.Dialogue.UI.Gizmo.ChatWith".Translate(parent.LabelShort).ToString()
                     : $"Chat with {parent.LabelShort}",
                 icon = ContentFinder<Texture2D>.Get("UI/RimMindDialogue_Icon", reportFailure: false),
-                action = () => Find.WindowStack.Add(new Window_Dialogue((Pawn)parent))
+                action = () => Find.WindowStack.Add(new Window_Dialogue(pawn))
             };
         }
 
@@ -241,10 +232,11 @@ namespace RimMind.Dialogue.Comps
 
         private bool IsEligible()
         {
-            return RimMindPawnLookup.IsEligibleColonist(Pawn)
-                && RestUtility.Awake(Pawn)
-                && !(Pawn.drafter?.Drafted ?? false)
-                && Pawn.needs?.mood != null;
+            return PawnOrNull is Pawn pawn
+                && RimMindPawnLookup.IsEligibleColonist(pawn)
+                && RestUtility.Awake(pawn)
+                && !(pawn.drafter?.Drafted ?? false)
+                && pawn.needs?.mood != null;
         }
     }
 }
