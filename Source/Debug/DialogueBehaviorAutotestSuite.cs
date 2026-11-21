@@ -26,9 +26,10 @@ namespace RimMind.Dialogue.Debug
             Pawn? pawn = context.ActiveColonist;
 
             // 1. CompRimMindDialogue Attachment
-            if (context.CurrentMap?.mapPawns?.FreeColonists != null && context.CurrentMap.mapPawns.FreeColonists.Count > 0)
+            var colonists = RimMindPawnLookup.GetSpawnedColonistsSafe(context.CurrentMap);
+            if (colonists.Count > 0)
             {
-                bool anyAttached = context.CurrentMap.mapPawns.FreeColonists.Any(p => p.GetComp<CompRimMindDialogue>() != null);
+                bool anyAttached = colonists.Any(p => p.GetComp<CompRimMindDialogue>() != null);
                 context.Assert(anyAttached, "Free colonists on map have CompRimMindDialogue attached");
             }
             else if (pawn != null)

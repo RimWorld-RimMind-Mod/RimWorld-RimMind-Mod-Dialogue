@@ -4,6 +4,7 @@ using RimMind.Dialogue;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
+using RimMind.Presentation.Api;
 using RimWorld;
 using Verse;
 
@@ -81,12 +82,11 @@ namespace RimMind.Dialogue.Debug
 
         private static Pawn? FindAnotherColonist(Pawn exclude)
         {
-            var map = exclude.Map;
-            if (map == null) return null;
-
-            foreach (var p in map.mapPawns.FreeColonistsSpawned)
+            var colonists = RimMindPawnLookup.GetSpawnedColonistsSafe(exclude.Map);
+            for (int i = 0; i < colonists.Count; i++)
             {
-                if (p != exclude) return p;
+                var p = colonists[i];
+                if (p != null && p != exclude) return p;
             }
             return null;
         }

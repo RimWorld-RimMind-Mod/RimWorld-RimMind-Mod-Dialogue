@@ -1,9 +1,8 @@
 using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
-using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
+using RimMind.Presentation.Api;
 
 namespace RimMind.Dialogue.Core
 {
@@ -20,6 +19,11 @@ namespace RimMind.Dialogue.Core
         private const int MaxRelationDelta = 5;
         private const int MinRelationDelta = -5;
 
+        // Dialogue-specific malformed pseudo-call quirk: express_dialogue(speech)=(...)
+        private static readonly Regex MalformedParenAssignRegex = new Regex(
+            @"\b(?:express_dialogue|record_morning_thought|[a-z_][a-z0-9_]*)\s*\(\s*(?<key>speech|reply|dialogue|content|text|narration)\s*\)\s*[:=]\s*\((?<val>[\s\S]+)\)\s*$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         public static bool TryParse(string? toolCallsJson, bool isMonologue, out DialogueOutput output)
         {
             output = new DialogueOutput();
@@ -28,72 +32,50 @@ namespace RimMind.Dialogue.Core
 
             try
             {
-                string cleaned = toolCallsJson!.Trim();
-                if (cleaned.StartsWith("```"))
-                {
-                    int firstNewline = cleaned.IndexOf('\n');
-                    if (firstNewline >= 0)
-                        cleaned = cleaned.Substring(firstNewline + 1);
-                    if (cleaned.EndsWith("```"))
-                        cleaned = cleaned.Substring(0, cleaned.Length - 3);
-                    cleaned = cleaned.Trim();
-                }
+                string trimmed = toolCallsJson!.Trim();
+                // Avoid running outer code-fence regex across already-framed JSON objects/arrays,
+                // because tool arguments may legally contain escaped ```json ... ``` blocks inside string fields.
+                bool startsLikeJson = trimmed.StartsWith("[", StringComparison.Ordinal)
+                    || trimmed.StartsWith("{", StringComparison.Ordinal);
+                string cleaned = startsLikeJson
+                    ? trimmed
+                    : RimMindAPI.Json.StripThinkingAndCodeFences(trimmed);
+                if (string.IsNullOrWhiteSpace(cleaned))
+                    return false;
 
                 JObject? targetArgsObj = null;
 
-                if (!cleaned.StartsWith("{") && !cleaned.StartsWith("["))
+                if (startsLikeJson)
                 {
-                    int braceStart = cleaned.IndexOf('{');
-                    int braceEnd = cleaned.LastIndexOf('}');
-                    if (braceStart >= 0 && braceEnd > braceStart)
+                    if (cleaned.StartsWith("[", StringComparison.Ordinal))
                     {
-                        cleaned = cleaned.Substring(braceStart, braceEnd - braceStart + 1).Trim();
+                        targetArgsObj = ExtractArgumentsFromJsonArray(cleaned);
                     }
-                    else if (TryParsePseudoFunctionCall(cleaned, out var pseudoArgs))
+                    else if (RimMindAPI.Json.TryParseJObjectWithRepair(cleaned, out var directObj) && directObj != null)
                     {
-                        targetArgsObj = pseudoArgs;
-                    }
-                    else
-                    {
-                        return false;
+                        targetArgsObj = ExtractArguments(directObj);
                     }
                 }
 
                 if (targetArgsObj == null)
                 {
-                    JToken token = JToken.Parse(cleaned);
-
-                    if (token is JArray arr)
+                    string? payload = RimMindAPI.Json.ExtractJsonPayload(cleaned);
+                    if (!string.IsNullOrWhiteSpace(payload))
                     {
-                        foreach (var item in arr)
+                        if (payload!.StartsWith("[", StringComparison.Ordinal))
                         {
-                            if (item is JObject obj)
-                            {
-                                string? name = GetToolName(obj);
-                                if (string.Equals(name, DialogueToolDefinitions.ExpressDialogueToolName, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    targetArgsObj = ExtractArguments(obj);
-                                    if (targetArgsObj != null) break;
-                                }
-                            }
+                            targetArgsObj = ExtractArgumentsFromJsonArray(payload);
                         }
-
-                        if (targetArgsObj == null)
+                        else if (RimMindAPI.Json.TryParseJObjectWithRepair(payload, out var singleObj) && singleObj != null)
                         {
-                            foreach (var item in arr)
-                            {
-                                if (item is JObject obj)
-                                {
-                                    targetArgsObj = ExtractArguments(obj);
-                                    if (targetArgsObj != null) break;
-                                }
-                            }
+                            targetArgsObj = ExtractArguments(singleObj);
                         }
                     }
-                    else if (token is JObject singleObj)
-                    {
-                        targetArgsObj = ExtractArguments(singleObj);
-                    }
+                }
+
+                if (targetArgsObj == null && TryParsePseudoFunctionCall(cleaned, out var pseudoArgs))
+                {
+                    targetArgsObj = pseudoArgs;
                 }
 
                 if (targetArgsObj == null)
@@ -104,30 +86,28 @@ namespace RimMind.Dialogue.Core
                     return false;
 
                 output.Speech = speech!.Trim();
-                if (output.Speech.StartsWith("{") && output.Speech.EndsWith("}"))
+                if (output.Speech.StartsWith("{", StringComparison.Ordinal)
+                    && output.Speech.EndsWith("}", StringComparison.Ordinal)
+                    && RimMindAPI.Json.TryParseJObjectWithRepair(output.Speech, out var inner)
+                    && inner != null)
                 {
-                    try
+                    string? innerSpeech = GetString(inner, "speech", "reply", "dialogue", "content", "text", "narration");
+                    if (!string.IsNullOrWhiteSpace(innerSpeech))
                     {
-                        var inner = JObject.Parse(output.Speech);
-                        string? innerSpeech = GetString(inner, "speech", "reply", "dialogue", "content", "text", "narration");
-                        if (!string.IsNullOrWhiteSpace(innerSpeech))
+                        output.Speech = innerSpeech!.Trim();
+                        if (inner.TryGetValue("thought", StringComparison.OrdinalIgnoreCase, out var thoughtToken) && thoughtToken is JObject thoughtObj)
                         {
-                            output.Speech = innerSpeech!.Trim();
-                            if (inner.TryGetValue("thought", StringComparison.OrdinalIgnoreCase, out var thoughtToken) && thoughtToken is JObject thoughtObj)
-                            {
-                                output.ThoughtTag ??= GetString(thoughtObj, "tag", "thought_tag");
-                                output.ThoughtDesc ??= GetString(thoughtObj, "description", "desc", "thought_desc");
-                            }
-                            output.ThoughtTag ??= GetString(inner, "thought_tag", "tag", "thought");
-                            output.ThoughtDesc ??= GetString(inner, "thought_desc", "description", "desc");
-                            if (!isMonologue && output.RelationDelta == 0)
-                            {
-                                int d = GetInt(inner, "relation_delta", "delta", "relation");
-                                output.RelationDelta = Math.Clamp(d, MinRelationDelta, MaxRelationDelta);
-                            }
+                            output.ThoughtTag ??= GetString(thoughtObj, "tag", "thought_tag");
+                            output.ThoughtDesc ??= GetString(thoughtObj, "description", "desc", "thought_desc");
+                        }
+                        output.ThoughtTag ??= GetString(inner, "thought_tag", "tag", "thought");
+                        output.ThoughtDesc ??= GetString(inner, "thought_desc", "description", "desc");
+                        if (!isMonologue && output.RelationDelta == 0)
+                        {
+                            int d = GetInt(inner, "relation_delta", "delta", "relation");
+                            output.RelationDelta = Math.Clamp(d, MinRelationDelta, MaxRelationDelta);
                         }
                     }
-                    catch { }
                 }
 
                 output.ThoughtTag ??= GetString(targetArgsObj, "thought_tag", "tag", "thought");
@@ -165,6 +145,51 @@ namespace RimMind.Dialogue.Core
             }
         }
 
+        private static JObject? ExtractArgumentsFromJsonArray(string arrayJson)
+        {
+            JArray? arr = null;
+            try
+            {
+                arr = JToken.Parse(arrayJson) as JArray;
+            }
+            catch
+            {
+                string? repaired = RimMindAPI.Json.TryRepairJson(arrayJson);
+                if (!string.IsNullOrWhiteSpace(repaired))
+                {
+                    try { arr = JToken.Parse(repaired!) as JArray; }
+                    catch { arr = null; }
+                }
+            }
+
+            if (arr == null)
+                return null;
+
+            foreach (var item in arr)
+            {
+                if (item is JObject obj)
+                {
+                    string? name = GetToolName(obj);
+                    if (string.Equals(name, DialogueToolDefinitions.ExpressDialogueToolName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var args = ExtractArguments(obj);
+                        if (args != null) return args;
+                    }
+                }
+            }
+
+            foreach (var item in arr)
+            {
+                if (item is JObject obj)
+                {
+                    var args = ExtractArguments(obj);
+                    if (args != null) return args;
+                }
+            }
+
+            return null;
+        }
+
         private static string? GetToolName(JObject obj)
         {
             if (obj.TryGetValue("name", StringComparison.OrdinalIgnoreCase, out var nameToken) && nameToken.Type == JTokenType.String)
@@ -186,6 +211,10 @@ namespace RimMind.Dialogue.Core
             {
                 argsToken = directArgs;
             }
+            else if (obj.TryGetValue("parameters", StringComparison.OrdinalIgnoreCase, out var directParams))
+            {
+                argsToken = directParams;
+            }
             else if (obj.TryGetValue("function", StringComparison.OrdinalIgnoreCase, out var fnToken) && fnToken is JObject fnObj)
             {
                 if (fnObj.TryGetValue("arguments", StringComparison.OrdinalIgnoreCase, out var nestedArgs))
@@ -196,7 +225,7 @@ namespace RimMind.Dialogue.Core
 
             if (argsToken == null)
             {
-                if (obj.ContainsKey("speech") || obj.ContainsKey("reply") || obj.ContainsKey("narration"))
+                if (obj.ContainsKey("speech") || obj.ContainsKey("reply") || obj.ContainsKey("narration") || obj.ContainsKey("dialogue"))
                     return obj;
                 return null;
             }
@@ -208,18 +237,9 @@ namespace RimMind.Dialogue.Core
 
             if (argsToken.Type == JTokenType.String)
             {
-                string rawArgs = argsToken.Value<string>()?.Trim() ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(rawArgs)) return null;
-                if (rawArgs.StartsWith("```"))
-                {
-                    int firstNewline = rawArgs.IndexOf('\n');
-                    if (firstNewline >= 0)
-                        rawArgs = rawArgs.Substring(firstNewline + 1);
-                    if (rawArgs.EndsWith("```"))
-                        rawArgs = rawArgs.Substring(0, rawArgs.Length - 3);
-                    rawArgs = rawArgs.Trim();
-                }
-                return JObject.Parse(rawArgs);
+                string rawArgs = argsToken.Value<string>() ?? string.Empty;
+                if (RimMindAPI.Json.TryParseJObjectWithRepair(rawArgs, out var parsed) && parsed != null)
+                    return parsed;
             }
 
             return null;
@@ -270,45 +290,45 @@ namespace RimMind.Dialogue.Core
             argsObj = null;
             if (string.IsNullOrWhiteSpace(text)) return false;
 
-            var fnMatch = System.Text.RegularExpressions.Regex.Match(
-                text.Trim(),
-                @"\b(?:express_dialogue|record_morning_thought|[a-z_][a-z0-9_]*)\s*\((?<inner>[\s\S]+?)\)?\s*$",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (!fnMatch.Success) return false;
-
-            string inner = fnMatch.Groups["inner"].Value.Trim();
-            var keyMatches = System.Text.RegularExpressions.Regex.Matches(
-                inner,
-                @"(?:^|,\s*)(?<key>speech|reply|dialogue|content|text|narration|thought_tag|thought_desc|tag|desc|description|relation_delta|delta|relation|thought|motivation|mindset)\)?\s*[:=]\s*",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (keyMatches.Count == 0) return false;
-
-            var jObj = new JObject();
-            for (int i = 0; i < keyMatches.Count; i++)
+            // Primary path: delegate to Core's unified pseudo-function-call parser.
+            var calls = RimMindAPI.Json.ParsePseudoFunctionCalls(text);
+            if (calls != null && calls.Count > 0)
             {
-                string key = keyMatches[i].Groups["key"].Value;
-                int valStart = keyMatches[i].Index + keyMatches[i].Length;
-                int valEnd = (i + 1 < keyMatches.Count) ? keyMatches[i + 1].Index : inner.Length;
-                string rawVal = inner.Substring(valStart, valEnd - valStart).Trim();
-                if ((rawVal.StartsWith("\"") && rawVal.EndsWith("\"") && rawVal.Length >= 2) ||
-                    (rawVal.StartsWith("'") && rawVal.EndsWith("'") && rawVal.Length >= 2) ||
-                    (rawVal.StartsWith("“") && rawVal.EndsWith("”") && rawVal.Length >= 2) ||
-                    (rawVal.StartsWith("(") && rawVal.EndsWith(")") && rawVal.Length >= 2))
+                foreach (var call in calls)
                 {
-                    rawVal = rawVal.Substring(1, rawVal.Length - 2).Replace("\\\"", "\"").Trim();
+                    if (string.Equals(call.Name, DialogueToolDefinitions.ExpressDialogueToolName, StringComparison.OrdinalIgnoreCase)
+                        && RimMindAPI.Json.TryParseJObjectWithRepair(call.ArgumentsJson, out var expressObj)
+                        && expressObj != null)
+                    {
+                        argsObj = expressObj;
+                        return true;
+                    }
                 }
-                else if (rawVal.StartsWith("(") && keyMatches[i].Value.IndexOf(')') >= 0)
+
+                foreach (var call in calls)
                 {
-                    rawVal = rawVal.Substring(1).TrimEnd(')').Trim();
+                    if (RimMindAPI.Json.TryParseJObjectWithRepair(call.ArgumentsJson, out var parsed)
+                        && parsed != null
+                        && GetString(parsed, "speech", "reply", "dialogue", "content", "text", "narration") != null)
+                    {
+                        argsObj = parsed;
+                        return true;
+                    }
                 }
-                if (int.TryParse(rawVal, out int intVal))
-                    jObj[key] = intVal;
-                else
-                    jObj[key] = rawVal;
             }
 
-            argsObj = jObj;
-            return true;
+            // Narrow Dialogue-specific quirk fallback: express_dialogue(speech)=(...)
+            var malformed = MalformedParenAssignRegex.Match(text.Trim());
+            if (malformed.Success)
+            {
+                argsObj = new JObject
+                {
+                    [malformed.Groups["key"].Value] = malformed.Groups["val"].Value.Trim()
+                };
+                return true;
+            }
+
+            return false;
         }
     }
 }

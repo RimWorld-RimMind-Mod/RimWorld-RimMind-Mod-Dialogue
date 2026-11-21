@@ -1,7 +1,13 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
+using Newtonsoft.Json.Linq;
 using RimMind.Application.Common.Models.Memory;
+using RimMind.Application.Features.Context;
+using RimMind.Application.Features.Json;
 using RimMind.Application.Features.Llm;
+using RimMind.Application.Features.Prompt;
 using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using UnityEngine;
@@ -29,9 +35,41 @@ namespace RimMind.Presentation.Api
             => Perceptions.Add((pawnId, text));
         public static class Settings
         {
+            public static bool IsConfigured() => Configured;
             public static float ActivityFrequencyScale { get; set; } = 1.0f;
             public static int ScaleCooldown(int baseCooldownTicks, int minFloorTicks = 0)
                 => RimMind.Application.Common.Helpers.ActivityCooldownScaler.Scale(baseCooldownTicks, ActivityFrequencyScale, minFloorTicks);
+        }
+        public static class Ext
+        {
+            public static bool ShouldSkipDialogue(Pawn pawn, string type) => Skip;
+            public static bool ShouldSkipFloatMenu() => Skip;
+        }
+        public static class Text
+        {
+            public static string TrOr(string key, string fallback, params object[] args)
+                => RimMindText.TrOr(key, fallback, args);
+            public static string Tr(string key, params object[] args)
+                => RimMindText.Tr(key, args);
+            public static string WrapForMote(string? text, int maxCharsPerLine = MoteTextFormatter.DefaultMaxCharsPerLine)
+                => MoteTextFormatter.WrapForMote(text, maxCharsPerLine);
+        }
+        public static class Json
+        {
+            public static string StripThinkingAndCodeFences(string? raw)
+                => LlmPayloadParser.StripThinkingAndCodeFences(raw);
+            public static string? ExtractJsonPayload(string? raw)
+                => LlmPayloadParser.ExtractJsonPayload(raw);
+            public static bool TryParseJObjectWithRepair(string? raw, out JObject? obj)
+                => LlmPayloadParser.TryParseJObjectWithRepair(raw, out obj);
+            public static bool TryDeserializeWithRepair<T>(string? raw, out T? value) where T : class
+                => LlmPayloadParser.TryDeserializeWithRepair<T>(raw, out value);
+            public static IReadOnlyList<ParsedPseudoFunctionCall> ParsePseudoFunctionCalls(string? raw)
+                => LlmPayloadParser.ParsePseudoFunctionCalls(raw);
+            public static string? TryRepairJson(string input)
+                => JsonRepairer.TryRepair(input);
+            public static string? TryRepairTruncatedJson(string input)
+                => JsonRepairer.TryRepairTruncatedJson(input);
         }
         public static class Thoughts
         {
@@ -68,6 +106,8 @@ namespace RimMind.Presentation.Api
             public static void RegisterEventType<T>(string name) where T : RimMind.Domain.Events.AgentBusEvent
                 => RimMind.Application.Features.AgentBus.AgentBusImpl.RegisterKnownEventType(name, typeof(T));
             public static void PublishOnMainThread<T>(T evt) where T : RimMind.Domain.Events.AgentBusEvent { }
+            public static void PublishPerception(int pawnId, string type, string text, float salience = 0.5f)
+                => Perceptions.Add((pawnId, text));
         }
         public static class MainThreadSnapshot
         {
@@ -89,6 +129,8 @@ namespace RimMind.Presentation.Api
         {
             public static string ScenarioDialogue => RimMind.Application.Common.Models.Context.ScenarioIds.Dialogue;
             public static TestContextRegistry ContextKeys { get; } = new();
+            public static void RegisterScenario(ScenarioDescriptor descriptor)
+                => ScenarioRegistry.Register(descriptor);
         }
         public sealed class TestContextRegistry
         {
@@ -181,12 +223,15 @@ namespace Verse
     }
     public static class MoteMaker
     {
-        public static void ThrowText(Vector3 position, Map map, string text, Color color, float duration) { }
+        public static readonly List<(Vector3 Position, Map Map, string Text)> Thrown = new();
+        public static void ThrowText(Vector3 position, Map map, string text, Color color, float duration)
+            => Thrown.Add((position, map, text));
     }
     public class ModSettings
     {
+        public int WriteCount;
         public virtual void ExposeData() { }
-        public void Write() { }
+        public void Write() => WriteCount++;
     }
     public class ThingComp
     {
@@ -208,7 +253,7 @@ namespace Verse
     }
     public class Window
     {
-        public bool doCloseX, closeOnAccept, forcePause, closeOnClickedOutside,
+        public bool doCloseButton, doCloseX, closeOnAccept, forcePause, closeOnClickedOutside,
             absorbInputAroundWindow, draggable;
         public virtual Vector2 InitialSize => default;
         public virtual void PostClose() { }
@@ -283,7 +328,12 @@ namespace UnityEngine
         public Vector2(float x, float y) { this.x = x; this.y = y; }
         public static Vector2 zero => default;
     }
-    public struct Vector3 { }
+    public struct Vector3
+    {
+        public float x, y, z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
     public struct Rect
     {
         public float x, y, width, height;
@@ -301,7 +351,7 @@ namespace UnityEngine
     public class Texture2D { }
     public enum TextAnchor { MiddleCenter, UpperLeft }
     public enum EventType { KeyDown, Repaint }
-    public enum KeyCode { Return }
+    public enum KeyCode { Return, KeypadEnter }
     public class Event
     {
         public static Event current = new() { type = EventType.Repaint };
@@ -309,11 +359,115 @@ namespace UnityEngine
         public KeyCode keyCode;
         public void Use() { }
     }
-    public static class GUI { public static Color color; }
+    public static class GUI { public static Color color; public static bool enabled = true; public static bool changed; }
 }
 
 namespace RimMind.Presentation.UI
 {
+    public readonly struct ChatWindowMessage
+    {
+        public ChatWindowMessage(string role, string content, string? senderPrefix = null)
+        {
+            Role = role ?? string.Empty;
+            Content = content ?? string.Empty;
+            SenderPrefix = senderPrefix;
+        }
+        public string Role { get; }
+        public string Content { get; }
+        public string? SenderPrefix { get; }
+    }
+
+    public abstract class RimMindChatWindowBase : Window
+    {
+        private readonly List<ChatWindowMessage> _messages = new();
+        private readonly ConcurrentQueue<Action> _mainThreadUpdates = new();
+        private readonly CancellationTokenSource _lifetime = new();
+        private string _inputText = string.Empty;
+        private bool _isWaiting;
+        private bool _closed;
+
+        protected RimMindChatWindowBase()
+        {
+            doCloseButton = false;
+            doCloseX = true;
+            closeOnAccept = false;
+            forcePause = false;
+            closeOnClickedOutside = false;
+            absorbInputAroundWindow = false;
+            draggable = true;
+        }
+
+        public override Vector2 InitialSize => new Vector2(480f, 540f);
+        protected CancellationToken LifetimeToken => _lifetime.Token;
+        protected bool IsClosed => _closed;
+        protected bool IsWaiting => _isWaiting;
+        protected IReadOnlyList<ChatWindowMessage> Messages => _messages;
+
+        protected virtual Color HeaderColor => new Color(0.8f, 0.95f, 1f);
+        protected abstract string GetTitle();
+        protected abstract string GetWaitingText();
+        protected abstract string GetSendButtonLabel();
+        protected abstract string GetPrefixForRole(string role);
+        protected abstract void OnSubmitUserMessage(string trimmedInput);
+        protected virtual bool ValidateCanStayOpen() => true;
+        protected virtual void OnMessageAppended(ChatWindowMessage message) { }
+
+        protected void AppendMessage(string role, string content, string? senderPrefix = null, bool notifyHook = true)
+        {
+            if (string.IsNullOrEmpty(content)) return;
+            var msg = new ChatWindowMessage(role, content, senderPrefix);
+            _messages.Add(msg);
+            if (notifyHook) OnMessageAppended(msg);
+        }
+
+        protected void PostReply(string role, string content, bool clearWaiting = true, string? senderPrefix = null)
+        {
+            if (_closed) return;
+            _mainThreadUpdates.Enqueue(() =>
+            {
+                if (_closed) return;
+                if (clearWaiting) _isWaiting = false;
+                if (!string.IsNullOrEmpty(content)) AppendMessage(role, content, senderPrefix);
+            });
+        }
+
+        protected void SetWaiting(bool waiting) => _isWaiting = waiting;
+
+        public override void PostClose()
+        {
+            if (!_closed)
+            {
+                _closed = true;
+                _isWaiting = false;
+                try { _lifetime.Cancel(); } catch (ObjectDisposedException) { }
+                try { _lifetime.Dispose(); } catch (ObjectDisposedException) { }
+            }
+            base.PostClose();
+        }
+
+        public override void DoWindowContents(Rect inRect)
+        {
+            if (!ValidateCanStayOpen())
+            {
+                Close();
+                return;
+            }
+            while (_mainThreadUpdates.TryDequeue(out var update))
+                update?.Invoke();
+
+            Widgets.Label(inRect, GetTitle());
+            if (_isWaiting) Widgets.Label(inRect, GetWaitingText());
+            _inputText = Widgets.TextField(inRect, _inputText ?? string.Empty);
+            bool sendClicked = Widgets.ButtonText(inRect, GetSendButtonLabel());
+            if (sendClicked && !_isWaiting && !string.IsNullOrWhiteSpace(_inputText))
+            {
+                string trimmed = _inputText.Trim();
+                _inputText = string.Empty;
+                OnSubmitUserMessage(trimmed);
+            }
+        }
+    }
+
     public static class SettingsUIDrawer
     {
         public static Rect SplitContentArea(Rect rect) => rect;
@@ -321,5 +475,23 @@ namespace RimMind.Presentation.UI
         public static void DrawSectionHeader(Listing_Standard listing, string text) { }
         public static void DrawBottomBar(Rect rect, Action reset) { }
         public static void LabelWithTooltip(this Verse.Listing_Standard listing, string label, string? tooltip, UnityEngine.Color? textColor = null) { }
+        public static void DrawScrollableSettingsPage(
+            Rect inRect,
+            ref Vector2 scrollPos,
+            ref float measuredHeight,
+            Action<Listing_Standard> drawContent,
+            Action? onReset = null,
+            Action? onDirtySave = null)
+        {
+            bool prevChanged = GUI.changed;
+            GUI.changed = false;
+            var listing = new Listing_Standard();
+            listing.Begin(inRect);
+            drawContent(listing);
+            listing.End();
+            bool dirty = GUI.changed;
+            GUI.changed = prevChanged || dirty;
+            if (dirty) onDirtySave?.Invoke();
+        }
     }
 }

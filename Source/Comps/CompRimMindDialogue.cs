@@ -24,7 +24,7 @@ namespace RimMind.Dialogue.Comps
             if (!settings.enabled || !settings.autoDialogueEnabled) return;
             // Sample natural encounters every 250 ticks (~4 seconds)
             if (!pawn.IsHashIntervalTick(250)) return;
-            if (!RimMindAPI.IsConfigured()) return;
+            if (!RimMindAPI.Settings.IsConfigured()) return;
             if (!IsEligible()) return;
 
             int currentTick = Find.TickManager.TicksGame;
@@ -192,9 +192,7 @@ namespace RimMind.Dialogue.Comps
         private Pawn? FindNearbyCompanion()
         {
             if (PawnOrNull is not Pawn pawn) return null;
-            Map? map = pawn.Map;
-            var spawnedColonists = map?.mapPawns?.FreeColonistsSpawned;
-            if (spawnedColonists == null) return null;
+            var spawnedColonists = RimMindPawnLookup.GetSpawnedColonistsSafe(pawn.Map);
 
             for (int i = 0; i < spawnedColonists.Count; i++)
             {
@@ -216,9 +214,7 @@ namespace RimMind.Dialogue.Comps
 
             yield return new Command_Action
             {
-                defaultLabel = "RimMind.Dialogue.UI.Gizmo.ChatWith".CanTranslate()
-                    ? "RimMind.Dialogue.UI.Gizmo.ChatWith".Translate(parent.LabelShort).ToString()
-                    : $"Chat with {parent.LabelShort}",
+                defaultLabel = RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Gizmo.ChatWith", "Chat with {0}", parent.LabelShort),
                 icon = ContentFinder<Texture2D>.Get("UI/RimMindDialogue_Icon", reportFailure: false),
                 action = () => Find.WindowStack.Add(new Window_Dialogue(pawn))
             };

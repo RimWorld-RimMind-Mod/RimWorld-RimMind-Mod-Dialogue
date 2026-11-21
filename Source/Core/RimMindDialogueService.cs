@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using RimMind.Dialogue.Settings;
+using RimMind.Presentation.Api;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace RimMind.Dialogue.Core
@@ -119,6 +121,31 @@ namespace RimMind.Dialogue.Core
                 replier,
                 originalMessage);
 
+        internal const float OverheadMoteBaseZOffset = 1.35f;
+        internal const float OverheadMotePerExtraLineZOffset = 0.25f;
+        internal const float OverheadMoteMaxExtraZOffset = 0.75f;
+
+        /// <summary>
+        /// Computes the world-space spawn position for an overhead speech mote so multi-line
+        /// dialogue floats cleanly above the colonist's head and never collides with the pawn's
+        /// nameplate below <see cref="Thing.DrawPos"/>.
+        /// </summary>
+        internal static Vector3 ComputeOverheadMotePosition(Vector3 pawnDrawPos, string? moteText)
+        {
+            int extraLines = 0;
+            if (!string.IsNullOrEmpty(moteText))
+            {
+                for (int i = 0; i < moteText!.Length; i++)
+                {
+                    if (moteText[i] == '\n')
+                        extraLines++;
+                }
+            }
+
+            float extraZ = Math.Min(OverheadMoteMaxExtraZOffset, extraLines * OverheadMotePerExtraLineZOffset);
+            return new Vector3(pawnDrawPos.x, pawnDrawPos.y, pawnDrawPos.z + OverheadMoteBaseZOffset + extraZ);
+        }
+
         public static void DisplayInteraction(Pawn initiator, Pawn? recipient, string replyText)
         {
             if (initiator.Map == null) return;
@@ -126,8 +153,9 @@ namespace RimMind.Dialogue.Core
             string moteText = DialogueTextSanitizer.FormatOverheadMoteText(replyText);
             if (string.IsNullOrWhiteSpace(moteText)) return;
 
-            MoteMaker.ThrowText(initiator.DrawPos, initiator.Map, moteText,
-                new UnityEngine.Color(0.85f, 0.95f, 1f), 6f);
+            Vector3 spawnPos = ComputeOverheadMotePosition(initiator.DrawPos, moteText);
+            MoteMaker.ThrowText(spawnPos, initiator.Map, moteText,
+                new Color(0.85f, 0.95f, 1f), 6f);
         }
 
         public static void RegisterTriggerType(string typeId, string labelKey)
@@ -139,7 +167,7 @@ namespace RimMind.Dialogue.Core
         {
             string typeStr = type.ToString();
             if (RegisteredTriggerLabels.TryGetValue(typeStr, out var label))
-                return label.CanTranslate() ? (string)label.Translate() : label;
+                return RimMindAPI.Text.TrOr(label, label);
             return type switch
             {
                 DialogueTriggerType.Chitchat => "RimMind.Dialogue.Trigger.Chitchat".Translate(),

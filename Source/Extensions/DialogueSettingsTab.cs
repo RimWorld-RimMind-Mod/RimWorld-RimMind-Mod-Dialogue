@@ -1,7 +1,7 @@
-using UnityEngine;
-using Verse;
-using RimMind.Presentation.Settings;
 using RimMind.Dialogue.Settings;
+using RimMind.Presentation.Api;
+using RimMind.Presentation.Settings;
+using UnityEngine;
 
 namespace RimMind.Dialogue
 {
@@ -9,7 +9,7 @@ namespace RimMind.Dialogue
     {
         public string Id => "dialogue";
         public string OwnerModId => "RimMindDialogue";
-        public string Label => "RimMind.Dialogue.Settings.TabLabel".CanTranslate() ? "RimMind.Dialogue.Settings.TabLabel".Translate() : "Dialogue";
+        public string Label => RimMindAPI.Text.TrOr("RimMind.Dialogue.Settings.TabLabel", "Dialogue");
         public void Draw(Rect rect) => RimMindDialogueSettings.DrawSettingsContent(rect);
     }
 }

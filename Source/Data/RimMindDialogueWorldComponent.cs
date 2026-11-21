@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
+using RimMind.Presentation.Api;
 using RimWorld.Planet;
 using Verse;
 
@@ -8,14 +9,17 @@ namespace RimMind.Dialogue.Data
 {
     public class RimMindDialogueWorldComponent : WorldComponent
     {
+        private static readonly WorldScopedComponentCache<RimMindDialogueWorldComponent> _instanceCache =
+            new WorldScopedComponentCache<RimMindDialogueWorldComponent>();
+
         private List<DialogueLogEntry> _savedEntries = new List<DialogueLogEntry>();
 
-        private static RimMindDialogueWorldComponent? _instance;
-        public static RimMindDialogueWorldComponent? Instance => _instance;
+        public static RimMindDialogueWorldComponent? Instance => _instanceCache.Get();
+
+        internal static void ResetInstanceCache() => _instanceCache.Reset();
 
         public RimMindDialogueWorldComponent(World world) : base(world)
         {
-            _instance = this;
         }
 
         public override void ExposeData()

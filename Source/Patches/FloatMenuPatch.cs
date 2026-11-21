@@ -85,13 +85,13 @@ namespace RimMind.Dialogue.Patches
 
         private static void AddTalkOption(List<FloatMenuOption> result, Pawn initiator, Pawn target)
         {
-            if (RimMindAPI.ShouldSkipFloatMenu()) return;
+            if (RimMindAPI.Ext.ShouldSkipFloatMenu()) return;
 
             result.Add(new FloatMenuOption(
                 "RimMind.Dialogue.UI.FloatMenu.ChatWith".Translate(target.LabelShortCap),
                 delegate
                 {
-                    if (!RimMindAPI.IsConfigured())
+                    if (!RimMindAPI.Settings.IsConfigured())
                     {
                         Messages.Message("RimMind.Dialogue.UI.FloatMenu.APINotConfigured".Translate(),
                             MessageTypeDefOf.RejectInput, false);

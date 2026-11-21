@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimMind.Dialogue.Core;
+using RimMind.Presentation.Api;
 using UnityEngine;
 using Verse;
 
@@ -17,13 +18,13 @@ namespace RimMind.Dialogue.UI
         private const float Padding = 6f;
         private const float TabHeight = 28f;
 
-        private static readonly (DialogueCategory cat, string key)[] CategoryKeys = new[]
+        private static readonly (DialogueCategory cat, string key, string fallback)[] CategoryKeys = new[]
         {
-            (DialogueCategory.ColonistMonologue, "RimMind.Dialogue.UI.Log.ColonistMonologue"),
-            (DialogueCategory.ColonistDialogue, "RimMind.Dialogue.UI.Log.ColonistDialogue"),
-            (DialogueCategory.PlayerDialogue, "RimMind.Dialogue.UI.Log.PlayerDialogue"),
-            (DialogueCategory.NonColonistMonologue, "RimMind.Dialogue.UI.Log.NonColonistMonologue"),
-            (DialogueCategory.NonColonistDialogue, "RimMind.Dialogue.UI.Log.NonColonistDialogue"),
+            (DialogueCategory.ColonistMonologue, "RimMind.Dialogue.UI.Log.ColonistMonologue", "Colonist Monologue"),
+            (DialogueCategory.ColonistDialogue, "RimMind.Dialogue.UI.Log.ColonistDialogue", "Colonist Dialogue"),
+            (DialogueCategory.PlayerDialogue, "RimMind.Dialogue.UI.Log.PlayerDialogue", "Player Dialogue"),
+            (DialogueCategory.NonColonistMonologue, "RimMind.Dialogue.UI.Log.NonColonistMonologue", "Non-Colonist Monologue"),
+            (DialogueCategory.NonColonistDialogue, "RimMind.Dialogue.UI.Log.NonColonistDialogue", "Non-Colonist Dialogue"),
         };
 
         public override Vector2 InitialSize => new Vector2(720f, 560f);
@@ -64,9 +65,9 @@ namespace RimMind.Dialogue.UI
         private void DrawCategoryBar(Rect rect)
         {
             float x = rect.x;
-            foreach (var (cat, key) in CategoryKeys)
+            foreach (var (cat, key, fallback) in CategoryKeys)
             {
-                string label = key.Translate();
+                string label = RimMindAPI.Text.TrOr(key, fallback);
                 float width = Text.CalcSize(label).x + 20f;
                 var btnRect = new Rect(x, rect.y, width, rect.height);
 
@@ -353,7 +354,7 @@ namespace RimMind.Dialogue.UI
         private static string TranslateTrigger(string triggerKey)
         {
             if (RimMindDialogueService.RegisteredTriggerLabels.TryGetValue(triggerKey, out var labelKey))
-                return labelKey.CanTranslate() ? (string)labelKey.Translate() : labelKey;
+                return RimMindAPI.Text.TrOr(labelKey, labelKey);
 
             return triggerKey switch
             {

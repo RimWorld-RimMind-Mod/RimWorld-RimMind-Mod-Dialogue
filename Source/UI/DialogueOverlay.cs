@@ -4,6 +4,7 @@ using System.Linq;
 using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
+using RimMind.Presentation.Api;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -15,6 +16,7 @@ namespace RimMind.Dialogue.Overlay
         private bool _isDragging;
         private bool _isResizing;
         private bool _positionDirty;
+        private bool _wasHovered;
         private Vector2 _dragStartOffset;
         private Rect _windowRect;
         private bool _cacheDirty = true;
@@ -35,9 +37,11 @@ namespace RimMind.Dialogue.Overlay
         private const int LiveColonistCacheIntervalTicks = 60;
         private const float OptionsBarHeight = 24f;
         private const float ResizeHandleSize = 24f;
-        private const float TextPadding = 4f;
+        private const float TextPadding = 6f;
         private const float MinWidth = 300f;
         private const float MinHeight = 100f;
+        private const float MinAutoFitHeight = 34f;
+        private const float MinHoveredHeight = 76f;
         private const float AlertsMargin = 245f;
         private const float TopColonistBarMargin = 96f;
 
@@ -65,10 +69,55 @@ namespace RimMind.Dialogue.Overlay
 
             NormalizeWindowRect();
             EnsureCachedEntries(settings);
-            HandleInput();
+            EnsureLayoutMetrics(_windowRect.width - TextPadding * 2f);
+
+            float maxAllowedRenderH = Mathf.Min(
+                _windowRect.height,
+                Mathf.Max(MinAutoFitHeight, Verse.UI.screenHeight - _windowRect.y));
+            float idleHeight = DialogueOverlayLayout.ComputeRenderHeight(
+                _cachedLineHeights,
+                maxAllowedRenderH,
+                MinAutoFitHeight,
+                TextPadding * 2f,
+                forceExpandToMax: false);
+            float hoveredHeight = DialogueOverlayLayout.ComputeRenderHeight(
+                _cachedLineHeights,
+                Mathf.Max(maxAllowedRenderH, MinHoveredHeight),
+                MinHoveredHeight,
+                OptionsBarHeight + TextPadding * 2f,
+                forceExpandToMax: _isResizing);
+
+            float hoverTestHeight = _cachedEntries.Count == 0
+                ? MinHoveredHeight
+                : (_wasHovered ? hoveredHeight : idleHeight);
+            var hoverHitRect = new Rect(_windowRect.x, _windowRect.y, _windowRect.width, hoverTestHeight);
+            bool isMouseOver = Mouse.IsOver(hoverHitRect);
+            bool showChrome = isMouseOver || _isDragging || _isResizing;
+            _wasHovered = showChrome;
+
+            var renderRect = new Rect(
+                _windowRect.x,
+                _windowRect.y,
+                _windowRect.width,
+                showChrome ? hoveredHeight : idleHeight);
+
+            HandleInput(renderRect);
             NormalizeWindowRect();
 
-            bool isMouseOver = Mouse.IsOver(_windowRect);
+            if (_isDragging || _isResizing)
+            {
+                EnsureLayoutMetrics(_windowRect.width - TextPadding * 2f);
+                float updatedMaxH = Mathf.Min(
+                    _windowRect.height,
+                    Mathf.Max(MinHoveredHeight, Verse.UI.screenHeight - _windowRect.y));
+                float updatedHeight = DialogueOverlayLayout.ComputeRenderHeight(
+                    _cachedLineHeights,
+                    updatedMaxH,
+                    MinHoveredHeight,
+                    OptionsBarHeight + TextPadding * 2f,
+                    forceExpandToMax: _isResizing);
+                renderRect = new Rect(_windowRect.x, _windowRect.y, _windowRect.width, updatedHeight);
+            }
 
             if (!DialogueOverlayLayout.ShouldRender(_cachedEntries.Count, isMouseOver, _isDragging, _isResizing))
             {
@@ -83,23 +132,23 @@ namespace RimMind.Dialogue.Overlay
             Color previousColor = GUI.color;
             GameFont previousFont = Text.Font;
             TextAnchor previousAnchor = Text.Anchor;
-            GUI.BeginGroup(_windowRect);
+            GUI.BeginGroup(renderRect);
             try
             {
-                var inRect = new Rect(Vector2.zero, _windowRect.size);
+                var inRect = new Rect(Vector2.zero, renderRect.size);
 
                 Widgets.DrawBoxSolid(inRect, new Color(0.08f, 0.08f, 0.12f, settings.overlayOpacity));
 
-                DrawMessages(inRect);
+                DrawMessages(inRect, reserveTopChrome: showChrome);
 
-                if (isMouseOver || _isDragging || _isResizing)
+                if (showChrome)
                 {
                     DrawOptionsBar(inRect);
 
                     var resizeRect = new Rect(inRect.width - ResizeHandleSize, inRect.height - ResizeHandleSize,
                         ResizeHandleSize, ResizeHandleSize);
                     GUI.DrawTexture(resizeRect, TexUI.WinExpandWidget);
-                    TooltipHandler.TipRegion(resizeRect, "RimMind.Dialogue.UI.Overlay.DragResize".Translate());
+                    TooltipHandler.TipRegion(resizeRect, RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Overlay.DragResize", "Drag to resize"));
                 }
             }
             finally
@@ -178,17 +227,14 @@ namespace RimMind.Dialogue.Overlay
             _lastLiveColonistRefreshTick = nowTick;
             _liveColonistIds.Clear();
             int liveHash = 0;
-            var spawned = map?.mapPawns?.FreeColonistsSpawned;
-            if (spawned != null)
+            var spawned = RimMindPawnLookup.GetSpawnedColonistsSafe(map);
+            for (int i = 0; i < spawned.Count; i++)
             {
-                for (int i = 0; i < spawned.Count; i++)
+                var p = spawned[i];
+                if (p != null && RimMindPawnLookup.IsActiveSpawnedColonist(p))
                 {
-                    var p = spawned[i];
-                    if (p != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(p))
-                    {
-                        _liveColonistIds.Add(p.thingIDNumber);
-                        liveHash = unchecked(liveHash * 397 ^ p.thingIDNumber);
-                    }
+                    _liveColonistIds.Add(p.thingIDNumber);
+                    liveHash = unchecked(liveHash * 397 ^ p.thingIDNumber);
                 }
             }
 
@@ -199,29 +245,54 @@ namespace RimMind.Dialogue.Overlay
             }
         }
 
-        private void DrawMessages(Rect inRect)
+        private void EnsureLayoutMetrics(float contentWidth)
         {
-            if (_cachedEntries.Count == 0) return;
-
-            var contentRect = inRect.ContractedBy(TextPadding);
-            contentRect.yMin += OptionsBarHeight;
-
-            Text.Font = GameFont.Small;
-            Text.Anchor = TextAnchor.UpperLeft;
-
-            if (Mathf.Abs(_cachedLayoutWidth - contentRect.width) > 0.5f)
+            if (_cachedEntries.Count == 0)
             {
-                float maxLabelWidth = Mathf.Max(60f, contentRect.width * 0.4f);
+                _cachedLayoutWidth = contentWidth;
+                return;
+            }
+
+            float safeWidth = Mathf.Max(20f, contentWidth);
+            if (Mathf.Abs(_cachedLayoutWidth - safeWidth) <= 0.5f)
+                return;
+
+            GameFont prevFont = Text.Font;
+            Text.Font = GameFont.Small;
+            try
+            {
+                float maxLabelWidth = Mathf.Max(60f, safeWidth * 0.4f);
                 for (int i = 0; i < _cachedEntries.Count; i++)
                 {
                     _cachedLabelWidths[i] = Mathf.Min(maxLabelWidth, Text.CalcSize(_cachedLabels[i]).x);
-                    float replyWidth = Mathf.Max(1f, contentRect.width - _cachedLabelWidths[i] - TextPadding);
+                    float replyWidth = Mathf.Max(1f, safeWidth - _cachedLabelWidths[i] - TextPadding);
                     _cachedLineHeights[i] = Mathf.Max(
                         Text.CalcHeight(_cachedLabels[i], Mathf.Max(1f, _cachedLabelWidths[i])),
                         Text.CalcHeight(_cachedDisplayReplies[i], replyWidth)) + 2f;
                 }
-                _cachedLayoutWidth = contentRect.width;
+                _cachedLayoutWidth = safeWidth;
             }
+            finally
+            {
+                Text.Font = prevFont;
+            }
+        }
+
+        private void DrawMessages(Rect inRect, bool reserveTopChrome)
+        {
+            if (_cachedEntries.Count == 0) return;
+
+            var contentRect = inRect.ContractedBy(TextPadding);
+            if (reserveTopChrome)
+                contentRect.yMin += OptionsBarHeight;
+
+            if (contentRect.height <= 0f || contentRect.width <= 0f)
+                return;
+
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            EnsureLayoutMetrics(contentRect.width);
 
             int firstVisible = DialogueOverlayLayout.FindFirstVisibleIndex(_cachedLineHeights, contentRect.height);
             float y = contentRect.y;
@@ -310,20 +381,20 @@ namespace RimMind.Dialogue.Overlay
             }
         }
 
-        private void HandleInput()
+        private void HandleInput(Rect activeRect)
         {
             Event currentEvent = Event.current;
 
             if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0)
             {
                 var openBtnScreenRect = new Rect(
-                    _windowRect.xMax - 60f, _windowRect.y + 2f, 56f, OptionsBarHeight - 4f);
+                    activeRect.xMax - 60f, activeRect.y + 2f, 56f, OptionsBarHeight - 4f);
 
                 var closeBtnScreenRect = new Rect(
-                    _windowRect.xMax - 82f, _windowRect.y + 2f, 20f, OptionsBarHeight - 4f);
+                    activeRect.xMax - 82f, activeRect.y + 2f, 20f, OptionsBarHeight - 4f);
 
                 var resizeScreenRect = new Rect(
-                    _windowRect.xMax - ResizeHandleSize, _windowRect.yMax - ResizeHandleSize,
+                    activeRect.xMax - ResizeHandleSize, activeRect.yMax - ResizeHandleSize,
                     ResizeHandleSize, ResizeHandleSize);
 
                 if (resizeScreenRect.Contains(currentEvent.mousePosition))
@@ -334,7 +405,7 @@ namespace RimMind.Dialogue.Overlay
                 else if (!openBtnScreenRect.Contains(currentEvent.mousePosition)
                     && !closeBtnScreenRect.Contains(currentEvent.mousePosition))
                 {
-                    var dragRect = new Rect(_windowRect.x, _windowRect.y, _windowRect.width, OptionsBarHeight);
+                    var dragRect = new Rect(activeRect.x, activeRect.y, activeRect.width, OptionsBarHeight);
                     if (dragRect.Contains(currentEvent.mousePosition))
                     {
                         _isDragging = true;

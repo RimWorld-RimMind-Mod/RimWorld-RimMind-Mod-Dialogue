@@ -93,9 +93,7 @@ namespace RimMind.Dialogue.Patches
                 hediff.def.makesSickThought,
                 isLifeThreatening,
                 hediff.Part?.Label));
-            string context = "RimMind.Dialogue.Context.HediffOccurred".CanTranslate()
-                ? (string)"RimMind.Dialogue.Context.HediffOccurred".Translate(label)
-                : label;
+            string context = RimMindAPI.Text.TrOr("RimMind.Dialogue.Context.HediffOccurred", "{0}", label);
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Hediff, null);
         }
     }
