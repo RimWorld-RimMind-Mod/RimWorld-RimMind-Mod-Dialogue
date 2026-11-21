@@ -79,6 +79,35 @@ namespace RimMind.Dialogue.Core
         }
 
         /// <summary>
+        /// Computes the shrink-wrapped render height for the overlay based on active visible line heights,
+        /// clamped between <paramref name="minHeight"/> and <paramref name="maxHeight"/>.
+        /// </summary>
+        public static float ComputeRenderHeight(
+            IReadOnlyList<float> lineHeights,
+            float maxHeight,
+            float minHeight,
+            float chromeHeight,
+            bool forceExpandToMax = false)
+        {
+            float safeMin = Math.Max(0f, minHeight);
+            float safeMax = Math.Max(safeMin, maxHeight);
+            if (forceExpandToMax)
+                return safeMax;
+
+            if (lineHeights == null || lineHeights.Count == 0)
+                return safeMin;
+
+            float contentSum = 0f;
+            for (int i = 0; i < lineHeights.Count; i++)
+            {
+                contentSum += Math.Max(0f, lineHeights[i]);
+            }
+
+            float desired = contentSum + Math.Max(0f, chromeHeight);
+            return Clamp(desired, safeMin, safeMax);
+        }
+
+        /// <summary>
         /// Determines whether the dialogue overlay should be rendered on the HUD.
         /// When empty and not interacted with (hover/drag/resize), keeps the screen completely clean.
         /// </summary>

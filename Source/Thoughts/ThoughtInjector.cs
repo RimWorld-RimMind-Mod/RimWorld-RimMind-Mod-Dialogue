@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using RimMind.Domain.ValueObjects;
+using RimMind.Presentation.Api;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -80,11 +81,11 @@ namespace RimMind.Dialogue
             string upperTag = tag.ToUpperInvariant();
             if (LabelMap.TryGetValue(upperTag, out string? key) && !string.IsNullOrEmpty(key))
             {
-                return key.CanTranslate() ? key.Translate().ToString() : tag;
+                return RimMindAPI.Text.TrOr(key!, tag);
             }
             if (tag.StartsWith("RimMind.", StringComparison.OrdinalIgnoreCase))
             {
-                return tag.CanTranslate() ? tag.Translate().ToString() : tag;
+                return RimMindAPI.Text.TrOr(tag, tag);
             }
             return tag;
         }
@@ -113,12 +114,10 @@ namespace RimMind.Dialogue
             thought.otherPawn = recipient;
             thought.opinionOffset = delta;
 
-            const string posKey = "RimMind.Dialogue.Relation.Positive";
-            const string negKey = "RimMind.Dialogue.Relation.Negative";
             string pawnName = recipient.Name.ToStringShort;
             thought.aiLabel = delta > 0
-                ? (posKey.CanTranslate() ? posKey.Translate(pawnName).ToString() : $"pleasant conversation with {pawnName}")
-                : (negKey.CanTranslate() ? negKey.Translate(pawnName).ToString() : $"unpleasant conversation with {pawnName}");
+                ? RimMindAPI.Text.TrOr("RimMind.Dialogue.Relation.Positive", "pleasant conversation with {0}", pawnName)
+                : RimMindAPI.Text.TrOr("RimMind.Dialogue.Relation.Negative", "unpleasant conversation with {0}", pawnName);
 
             pawn.needs?.mood?.thoughts?.memories?.TryGainMemory(thought);
         }

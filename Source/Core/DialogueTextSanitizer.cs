@@ -1,6 +1,7 @@
 using System;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using RimMind.Presentation.Api;
 
 namespace RimMind.Dialogue.Core
 {
@@ -138,29 +139,12 @@ namespace RimMind.Dialogue.Core
             if (string.IsNullOrWhiteSpace(text))
                 return string.Empty;
 
-            string result = text.Trim();
+            // Delegate generic <think>/<thinking>/<reasoning> and markdown code fence stripping to Core.
+            string result = RimMindAPI.Json.StripThinkingAndCodeFences(text);
+            if (string.IsNullOrWhiteSpace(result))
+                return string.Empty;
 
-            // Strip trailing code blocks
-            while (result.EndsWith("```"))
-            {
-                result = result.Substring(0, result.Length - 3).TrimEnd();
-            }
-
-            // Strip leading code blocks
-            if (result.StartsWith("```"))
-            {
-                int firstNewline = result.IndexOf('\n');
-                if (firstNewline >= 0)
-                    result = result.Substring(firstNewline + 1).TrimStart();
-                else
-                    result = result.TrimStart('`').TrimStart();
-            }
-
-            // Strip <thinking>...</thinking> blocks and residual XML wrapper tags (<speech>, </speech>, <thought>, <dialogue>, <response>, <tool_call>)
-            if (result.IndexOf("<thinking>", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                result = Regex.Replace(result, @"<thinking>[\s\S]*?</thinking>", string.Empty, RegexOptions.IgnoreCase).Trim();
-            }
+            // Strip Dialogue-specific residual XML wrapper tags (<speech>, </speech>, <dialogue>, <tool_call>, etc.)
             if (result.IndexOf('<') >= 0 && result.IndexOf('>') >= 0)
             {
                 result = Regex.Replace(
@@ -171,56 +155,49 @@ namespace RimMind.Dialogue.Core
             }
 
             // Defensively extract inner speech if text contains or is wrapped in raw JSON object
-            if (result.Contains("{") && result.Contains("}"))
+            if (result.IndexOf('{') >= 0 && result.IndexOf('}') >= 0)
             {
-                try
+                string jsonCandidate = result;
+                while (jsonCandidate.StartsWith("{{", StringComparison.Ordinal) && jsonCandidate.EndsWith("}}", StringComparison.Ordinal))
                 {
-                    int start = result.IndexOf('{');
-                    int end = result.LastIndexOf('}');
-                    if (start >= 0 && end > start)
+                    jsonCandidate = jsonCandidate.Substring(1, jsonCandidate.Length - 2).Trim();
+                }
+
+                if (RimMindAPI.Json.TryParseJObjectWithRepair(jsonCandidate, out var obj) && obj != null)
+                {
+                    var paramsObj = obj["parameters"] as JObject ?? obj["arguments"] as JObject;
+                    string? innerSpeech = obj["speech"]?.ToString()
+                                       ?? obj["reply"]?.ToString()
+                                       ?? obj["dialogue"]?.ToString()
+                                       ?? obj["content"]?.ToString()
+                                       ?? obj["text"]?.ToString()
+                                       ?? paramsObj?["speech"]?.ToString()
+                                       ?? paramsObj?["reply"]?.ToString()
+                                       ?? paramsObj?["dialogue"]?.ToString()
+                                       ?? paramsObj?["content"]?.ToString()
+                                       ?? paramsObj?["text"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(innerSpeech))
                     {
-                        string jsonCandidate = result.Substring(start, end - start + 1);
-                        while (jsonCandidate.StartsWith("{{") && jsonCandidate.EndsWith("}}"))
-                        {
-                            jsonCandidate = jsonCandidate.Substring(1, jsonCandidate.Length - 2).Trim();
-                        }
-                        try
-                        {
-                            var obj = JObject.Parse(jsonCandidate);
-                            var paramsObj = obj["parameters"] as JObject ?? obj["arguments"] as JObject;
-                            string? innerSpeech = obj["speech"]?.ToString()
-                                               ?? obj["reply"]?.ToString()
-                                               ?? obj["dialogue"]?.ToString()
-                                               ?? obj["content"]?.ToString()
-                                               ?? obj["text"]?.ToString()
-                                               ?? paramsObj?["speech"]?.ToString()
-                                               ?? paramsObj?["reply"]?.ToString()
-                                               ?? paramsObj?["dialogue"]?.ToString()
-                                               ?? paramsObj?["content"]?.ToString()
-                                               ?? paramsObj?["text"]?.ToString();
-                            if (!string.IsNullOrWhiteSpace(innerSpeech))
-                            {
-                                result = innerSpeech!.Trim();
-                            }
-                        }
-                        catch
-                        {
-                            var m = Regex.Match(jsonCandidate, @"""(?:speech|reply|dialogue|content|text)""\s*:\s*""(?<val>(?:\\.|[^""\\])*)""");
-                            if (m.Success)
-                            {
-                                string unescaped = Regex.Unescape(m.Groups["val"].Value);
-                                if (!string.IsNullOrWhiteSpace(unescaped))
-                                {
-                                    result = unescaped.Trim();
-                                }
-                            }
-                        }
+                        result = innerSpeech!.Trim();
                     }
                 }
-                catch { }
+                else
+                {
+                    var m = Regex.Match(jsonCandidate, @"""(?:speech|reply|dialogue|content|text)""\s*:\s*""(?<val>(?:\\.|[^""\\])*)""");
+                    if (m.Success)
+                    {
+                        try
+                        {
+                            string unescaped = Regex.Unescape(m.Groups["val"].Value);
+                            if (!string.IsNullOrWhiteSpace(unescaped))
+                                result = unescaped.Trim();
+                        }
+                        catch { }
+                    }
+                }
             }
 
-            // Defensively extract inner speech if text is wrapped in pseudo-function-call syntax: express_dialogue(speech=..., thought_tag=..., ...)
+            // Defensively extract inner speech if text is wrapped in pseudo-function-call syntax: express_dialogue(speech=..., ...)
             if (DialogueToolParser.TryParsePseudoFunctionCall(result, out var pseudoObj) && pseudoObj != null)
             {
                 string? pseudoSpeech = pseudoObj["speech"]?.ToString()
@@ -268,8 +245,7 @@ namespace RimMind.Dialogue.Core
 
         /// <summary>
         /// Formats dialogue text for overhead map motes (<c>MoteMaker.ThrowText</c>) by stripping
-        /// formatting glitches, capping total length, and inserting a line break near the midpoint
-        /// so long lines never stretch horizontally across the entire screen.
+        /// formatting glitches, capping total length, and delegating CJK-aware line wrapping to Core.
         /// </summary>
         public static string FormatOverheadMoteText(string? text, int maxLineLength = 26, int maxTotalLength = 52)
         {
@@ -283,26 +259,7 @@ namespace RimMind.Dialogue.Core
                 cleaned = cleaned.Substring(0, maxTotalLength).TrimEnd('，', '。', ',', '.', '、', ' ') + "...";
             }
 
-            if (cleaned.Length <= maxLineLength)
-                return cleaned;
-
-            int splitPos = -1;
-            int searchStart = Math.Max(10, maxLineLength - 8);
-            int searchEnd = Math.Min(cleaned.Length - 4, maxLineLength + 6);
-            char[] breakChars = { '，', '。', '！', '？', '；', ',', '.', '!', '?', ';', ' ' };
-            for (int i = searchEnd; i >= searchStart; i--)
-            {
-                if (Array.IndexOf(breakChars, cleaned[i]) >= 0)
-                {
-                    splitPos = i + 1;
-                    break;
-                }
-            }
-
-            if (splitPos <= 0 || splitPos >= cleaned.Length)
-                splitPos = maxLineLength;
-
-            return cleaned.Substring(0, splitPos).TrimEnd() + "\n" + cleaned.Substring(splitPos).TrimStart();
+            return RimMindAPI.Text.WrapForMote(cleaned, maxLineLength);
         }
 
         /// <summary>

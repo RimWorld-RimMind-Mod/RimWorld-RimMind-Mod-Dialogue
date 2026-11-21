@@ -107,13 +107,13 @@ namespace RimMind.Dialogue.Core
                 return "Dialogue participant is unavailable.";
             if (recipient != null && (!RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(recipient) || recipient.Downed))
                 return "Dialogue recipient is unavailable.";
-            if (!RimMindAPI.IsConfigured())
+            if (!RimMindAPI.Settings.IsConfigured())
                 return "AI is not configured.";
             if (!_activityState.IsReady(settings, currentTick))
                 return "Dialogue startup delay is active.";
             if (_reservations.IsPawnPending(pawn.thingIDNumber))
                 return "A dialogue request is already pending for this pawn.";
-            if (RimMindAPI.ShouldSkipDialogue(pawn, ToTriggerKind(type)))
+            if (RimMindAPI.Ext.ShouldSkipDialogue(pawn, ToTriggerKind(type)))
                 return "AI dialogue condition is not met.";
 
             if (DialogueFlowPolicy.UsesMonologueCooldown(
@@ -268,17 +268,18 @@ namespace RimMind.Dialogue.Core
                 var gameState = new GameStateInfo();
                 if (isCrisis)
                 {
-                    string mentalReason = pawn.MentalStateDef?.label ?? ("RimMind.Dialogue.Prompt.SevereCrisis".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.SevereCrisis".Translate().ToString()
-                        : "Severe Crisis");
-                    string crisisSection = "RimMind.Dialogue.Prompt.CrisisBreakdown".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.CrisisBreakdown".Translate(mentalReason).ToString()
-                        : $"[CRISIS BREAKDOWN: {mentalReason}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.";
+                    string mentalReason = pawn.MentalStateDef?.label ?? RimMindAPI.Text.TrOr(
+                        "RimMind.Dialogue.Prompt.SevereCrisis",
+                        "Severe Crisis");
+                    string crisisSection = RimMindAPI.Text.TrOr(
+                        "RimMind.Dialogue.Prompt.CrisisBreakdown",
+                        "[CRISIS BREAKDOWN: {0}] Speaker is currently suffering a mental break or severe distress. Do NOT engage in calm polite small talk. Output an intense, raw, emotional monologue or confrontation reflecting extreme distress, agony, panic, or rage.",
+                        mentalReason);
                     gameState.AddSection("crisis_expression", crisisSection);
                 }
-                string autoTriggerInstruction = "RimMind.Dialogue.Prompt.AutoTrigger".CanTranslate()
-                    ? "RimMind.Dialogue.Prompt.AutoTrigger".Translate().ToString()
-                    : "Based on your current state and surroundings, respond naturally.";
+                string autoTriggerInstruction = RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.AutoTrigger",
+                    "Based on your current state and surroundings, respond naturally.");
                 string triggerPayload = string.IsNullOrWhiteSpace(formattedContext)
                     ? autoTriggerInstruction
                     : $"{formattedContext}\n{autoTriggerInstruction}";
@@ -379,26 +380,26 @@ namespace RimMind.Dialogue.Core
         {
             string formatted = type switch
             {
-                DialogueTriggerType.Chitchat =>
-                    "RimMind.Dialogue.Prompt.Context.Chitchat".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.Context.Chitchat".Translate(context).ToString()
-                        : $"[Chitchat: {context}]",
-                DialogueTriggerType.Hediff =>
-                    "RimMind.Dialogue.Prompt.Context.Hediff".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.Context.Hediff".Translate(context).ToString()
-                        : $"[Health condition: {context}]",
-                DialogueTriggerType.LevelUp =>
-                    "RimMind.Dialogue.Prompt.Context.LevelUp".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.Context.LevelUp".Translate(context).ToString()
-                        : $"[Skill level up: {context}]",
-                DialogueTriggerType.Thought =>
-                    "RimMind.Dialogue.Prompt.Context.Thought".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.Context.Thought".Translate(context).ToString()
-                        : $"[Recent thought: {context}]",
-                DialogueTriggerType.Auto =>
-                    "RimMind.Dialogue.Prompt.Context.Auto".CanTranslate()
-                        ? "RimMind.Dialogue.Prompt.Context.Auto".Translate(context).ToString()
-                        : context,
+                DialogueTriggerType.Chitchat => RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.Context.Chitchat",
+                    "[Chitchat: {0}]",
+                    context),
+                DialogueTriggerType.Hediff => RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.Context.Hediff",
+                    "[Health condition: {0}]",
+                    context),
+                DialogueTriggerType.LevelUp => RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.Context.LevelUp",
+                    "[Skill level up: {0}]",
+                    context),
+                DialogueTriggerType.Thought => RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.Context.Thought",
+                    "[Recent thought: {0}]",
+                    context),
+                DialogueTriggerType.Auto => RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.Context.Auto",
+                    "{0}",
+                    context),
                 _ => context
             };
 
@@ -407,12 +408,11 @@ namespace RimMind.Dialogue.Core
                 : GetRecipientRoleKey(recipient);
             if (recipient != null && roleKey != null)
             {
-                string recipientLine = "RimMind.Dialogue.Prompt.Context.Recipient".CanTranslate()
-                    ? "RimMind.Dialogue.Prompt.Context.Recipient".Translate(recipient.Name.ToStringShort).ToString()
-                    : $"[Recipient: {recipient.Name.ToStringShort}]";
-                string roleLine = roleKey.CanTranslate()
-                    ? roleKey.Translate().ToString()
-                    : roleKey;
+                string recipientLine = RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.Prompt.Context.Recipient",
+                    "[Recipient: {0}]",
+                    recipient.Name.ToStringShort);
+                string roleLine = RimMindAPI.Text.TrOr(roleKey, roleKey);
                 formatted += "\n" + recipientLine + "\n" + roleLine;
             }
 

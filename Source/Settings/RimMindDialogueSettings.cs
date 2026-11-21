@@ -104,167 +104,132 @@ namespace RimMind.Dialogue.Settings
         }
 
         private static Vector2 _settingsScrollPos = Vector2.zero;
+        private static float _measuredSettingsHeight = 640f;
 
         public static void DrawSettingsContent(UnityEngine.Rect inRect)
         {
             var s = Get();
 
-            Rect contentArea = SettingsUIDrawer.SplitContentArea(inRect);
-            Rect bottomBar = SettingsUIDrawer.SplitBottomBar(inRect);
+            SettingsUIDrawer.DrawScrollableSettingsPage(
+                inRect,
+                ref _settingsScrollPos,
+                ref _measuredSettingsHeight,
+                listing =>
+                {
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.Enable".Translate(), ref s.enabled,
+                        "RimMind.Dialogue.Settings.Enable.Desc".Translate());
 
-            float contentH = EstimateSettingsHeight();
-            Rect viewRect = new Rect(0f, 0f, contentArea.width - 16f, contentH);
-            Widgets.BeginScrollView(contentArea, ref _settingsScrollPos, viewRect);
+                    SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ChitchatIntercept".Translate(), ref s.chitchatEnabled,
+                        "RimMind.Dialogue.Settings.ChitchatIntercept.Desc".Translate());
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.HediffReaction".Translate(), ref s.hediffEnabled,
+                        "RimMind.Dialogue.Settings.HediffReaction.Desc".Translate());
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.LevelUpReaction".Translate(), ref s.levelUpEnabled,
+                        "RimMind.Dialogue.Settings.LevelUpReaction.Desc".Translate());
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ThoughtReaction".Translate(), ref s.thoughtEnabled,
+                        "RimMind.Dialogue.Settings.ThoughtReaction.Desc".Translate());
+                    if (s.thoughtEnabled)
+                    {
+                        listing.Label("  " + "RimMind.Dialogue.Settings.MoodThreshold".Translate($"{s.moodChangeThreshold:F0}"));
+                        s.moodChangeThreshold = listing.Slider(s.moodChangeThreshold, 1f, 5f);
+                    }
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.AutoMonologue".Translate(), ref s.autoDialogueEnabled,
+                        "RimMind.Dialogue.Settings.AutoMonologue.Desc".Translate());
+                    if (s.autoDialogueEnabled)
+                    {
+                        listing.LabelWithTooltip(
+                            "  " + "RimMind.Dialogue.Settings.AutoInterval".Translate(s.autoDialogueCooldownHours),
+                            "RimMind.Dialogue.Settings.AutoMonologueDesc".Translate());
+                        s.autoDialogueCooldownHours = (int)listing.Slider(s.autoDialogueCooldownHours, 1f, 24f);
+                    }
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.PlayerDialogueGizmo".Translate(), ref s.playerDialogueEnabled,
+                        "RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc".Translate());
 
-            var listing = new Listing_Standard();
-            listing.Begin(viewRect);
+                    SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
+                    listing.LabelWithTooltip(
+                        "RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"),
+                        "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
+                    s.monologueCooldownTicks = (int)listing.Slider(s.monologueCooldownTicks, 3600f, 72000f);
+                    s.monologueCooldownTicks = (s.monologueCooldownTicks / 600) * 600;
 
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.Enable".Translate(), ref s.enabled,
-                "RimMind.Dialogue.Settings.Enable.Desc".Translate());
+                    listing.LabelWithTooltip(
+                        "RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxDailyDialogueRounds),
+                        "RimMind.Dialogue.Settings.MaxDailyDialogues.Desc".Translate());
+                    s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
 
-            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.ChitchatIntercept".Translate(), ref s.chitchatEnabled,
-                "RimMind.Dialogue.Settings.ChitchatIntercept.Desc".Translate());
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.HediffReaction".Translate(), ref s.hediffEnabled,
-                "RimMind.Dialogue.Settings.HediffReaction.Desc".Translate());
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.LevelUpReaction".Translate(), ref s.levelUpEnabled,
-                "RimMind.Dialogue.Settings.LevelUpReaction.Desc".Translate());
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.ThoughtReaction".Translate(), ref s.thoughtEnabled,
-                "RimMind.Dialogue.Settings.ThoughtReaction.Desc".Translate());
-            if (s.thoughtEnabled)
-            {
-                listing.Label("  " + "RimMind.Dialogue.Settings.MoodThreshold".Translate($"{s.moodChangeThreshold:F0}"));
-                s.moodChangeThreshold = listing.Slider(s.moodChangeThreshold, 1f, 5f);
-            }
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.AutoMonologue".Translate(), ref s.autoDialogueEnabled,
-                "RimMind.Dialogue.Settings.AutoMonologue.Desc".Translate());
-            if (s.autoDialogueEnabled)
-            {
-                listing.LabelWithTooltip(
-                    "  " + "RimMind.Dialogue.Settings.AutoInterval".Translate(s.autoDialogueCooldownHours),
-                    "RimMind.Dialogue.Settings.AutoMonologueDesc".Translate());
-                s.autoDialogueCooldownHours = (int)listing.Slider(s.autoDialogueCooldownHours, 1f, 24f);
-            }
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.PlayerDialogueGizmo".Translate(), ref s.playerDialogueEnabled,
-                "RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc".Translate());
+                    listing.LabelWithTooltip(
+                        "RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency),
+                        "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
+                    s.globalConcurrency = (int)listing.Slider(s.globalConcurrency, 1f, 10f);
 
-            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
-            listing.LabelWithTooltip(
-                "RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"),
-                "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
-            s.monologueCooldownTicks = (int)listing.Slider(s.monologueCooldownTicks, 3600f, 72000f);
-            s.monologueCooldownTicks = (s.monologueCooldownTicks / 600) * 600;
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
+                        "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
+                    if (s.enableDialogueReply)
+                    {
+                        listing.LabelWithTooltip(
+                            "RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds),
+                            "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
+                        s.maxDailyReplyRounds = (int)listing.Slider(s.maxDailyReplyRounds, 1f, 50f);
+                    }
 
-            listing.LabelWithTooltip(
-                "RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxDailyDialogueRounds),
-                "RimMind.Dialogue.Settings.MaxDailyDialogues.Desc".Translate());
-            s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled,
+                        "RimMind.Dialogue.Settings.StartDelay.Desc".Translate());
+                    if (s.startDelayEnabled)
+                    {
+                        listing.Label("  " + "RimMind.Dialogue.Settings.StartDelayValue".Translate(s.startDelaySeconds));
+                        s.startDelaySeconds = (int)listing.Slider(s.startDelaySeconds, 1f, 60f);
+                    }
 
-            listing.LabelWithTooltip(
-                "RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency),
-                "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
-            s.globalConcurrency = (int)listing.Slider(s.globalConcurrency, 1f, 10f);
-
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
-                "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
-            if (s.enableDialogueReply)
-            {
-                listing.LabelWithTooltip(
-                    "RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds),
-                    "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
-                s.maxDailyReplyRounds = (int)listing.Slider(s.maxDailyReplyRounds, 1f, 50f);
-            }
-
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled,
-                "RimMind.Dialogue.Settings.StartDelay.Desc".Translate());
-            if (s.startDelayEnabled)
-            {
-                listing.Label("  " + "RimMind.Dialogue.Settings.StartDelayValue".Translate(s.startDelaySeconds));
-                s.startDelaySeconds = (int)listing.Slider(s.startDelaySeconds, 1f, 60f);
-            }
-
-            SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowNotification".Translate(), ref s.showThoughtNotification,
-                "RimMind.Dialogue.Settings.ShowNotification.Desc".Translate());
-            listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
-                "RimMind.Dialogue.Settings.ShowOverlay.Desc".Translate());
-            listing.LabelWithTooltip(
-                "RimMind.Dialogue.Settings.OverlayOpacity".Translate($"{s.overlayOpacity:P0}"),
-                "RimMind.Dialogue.Settings.OverlayOpacity.Desc".Translate());
-            s.overlayOpacity = listing.Slider(s.overlayOpacity, 0.1f, 1f);
-            listing.LabelWithTooltip(
-                "RimMind.Dialogue.Settings.OverlayMaxMessages".Translate(s.overlayMaxMessages),
-                "RimMind.Dialogue.Settings.OverlayMaxMessages.Desc".Translate());
-            s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
-
-            listing.End();
-            Widgets.EndScrollView();
-
-            SettingsUIDrawer.DrawBottomBar(bottomBar, () =>
-            {
-                s.enabled = true;
-                s.chitchatEnabled = true;
-                s.hediffEnabled = true;
-                s.levelUpEnabled = true;
-                s.thoughtEnabled = true;
-                s.autoDialogueEnabled = true;
-                s.playerDialogueEnabled = true;
-                s.moodChangeThreshold = 3f;
-                s.autoDialogueCooldownHours = 12;
-                s.maxDailyDialogueRounds = 6;
-                s.globalConcurrency = 3;
-                s.showThoughtNotification = false;
-                s.enableDialogueReply = true;
-                s.maxDailyReplyRounds = 12;
-                s.monologueCooldownTicks = 36000;
-                s.enableRecreationSocial = true;
-                s.recreationSocialChance = 0.35f;
-                s.enableDiningSocial = true;
-                s.diningSocialChance = 0.30f;
-                s.enableCoworkerSocial = true;
-                s.coworkerSocialChance = 0.25f;
-                s.startDelayEnabled = true;
-                s.startDelaySeconds = 10;
-                s.overlayEnabled = true;
-                s.overlayOpacity = 0.75f;
-                s.overlayMaxMessages = 8;
-                s.overlayX = 20f;
-                s.overlayY = 320f;
-                s.overlayW = 420f;
-                s.overlayH = 220f;
-            });
-
-            Get().Write();
+                    SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowNotification".Translate(), ref s.showThoughtNotification,
+                        "RimMind.Dialogue.Settings.ShowNotification.Desc".Translate());
+                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
+                        "RimMind.Dialogue.Settings.ShowOverlay.Desc".Translate());
+                    listing.LabelWithTooltip(
+                        "RimMind.Dialogue.Settings.OverlayOpacity".Translate($"{s.overlayOpacity:P0}"),
+                        "RimMind.Dialogue.Settings.OverlayOpacity.Desc".Translate());
+                    s.overlayOpacity = listing.Slider(s.overlayOpacity, 0.1f, 1f);
+                    listing.LabelWithTooltip(
+                        "RimMind.Dialogue.Settings.OverlayMaxMessages".Translate(s.overlayMaxMessages),
+                        "RimMind.Dialogue.Settings.OverlayMaxMessages.Desc".Translate());
+                    s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
+                },
+                onReset: () => ResetToDefaults(s),
+                onDirtySave: () => s.Write());
         }
 
-        private static float EstimateSettingsHeight()
+        private static void ResetToDefaults(RimMindDialogueSettings s)
         {
-            var s = Get();
-            float h = 30f;
-            h += 24f; // Enable
-            h += 38f + 24f * 4; // Trigger sources header + 4 checkboxes
-            if (s.thoughtEnabled)
-                h += 24f + 32f;
-            h += 24f; // AutoMonologue
-            if (s.autoDialogueEnabled)
-                h += 24f + 32f;
-            h += 24f; // PlayerDialogueGizmo
-            h += 38f; // Behavior header
-            h += 24f + 32f; // MonologueCooldown
-            h += 24f + 32f; // MaxDailyDialogues
-            h += 24f + 32f; // GlobalConcurrency
-            h += 24f; // EnableDialogueReply
-            if (s.enableDialogueReply)
-                h += 24f + 32f;
-            h += 24f; // StartDelay
-            if (s.startDelayEnabled)
-                h += 24f + 32f;
-            h += 38f; // Display header
-            h += 24f; // ShowNotification
-            h += 24f; // ShowOverlay
-            h += 24f + 32f; // OverlayOpacity
-            h += 24f + 32f; // OverlayMaxMessages
-            return h + 40f;
+            s.enabled = true;
+            s.chitchatEnabled = true;
+            s.hediffEnabled = true;
+            s.levelUpEnabled = true;
+            s.thoughtEnabled = true;
+            s.autoDialogueEnabled = true;
+            s.playerDialogueEnabled = true;
+            s.moodChangeThreshold = 3f;
+            s.autoDialogueCooldownHours = 12;
+            s.maxDailyDialogueRounds = 6;
+            s.globalConcurrency = 3;
+            s.showThoughtNotification = false;
+            s.enableDialogueReply = true;
+            s.maxDailyReplyRounds = 12;
+            s.monologueCooldownTicks = 36000;
+            s.enableRecreationSocial = true;
+            s.recreationSocialChance = 0.35f;
+            s.enableDiningSocial = true;
+            s.diningSocialChance = 0.30f;
+            s.enableCoworkerSocial = true;
+            s.coworkerSocialChance = 0.25f;
+            s.startDelayEnabled = true;
+            s.startDelaySeconds = 10;
+            s.overlayEnabled = true;
+            s.overlayOpacity = 0.75f;
+            s.overlayMaxMessages = 8;
+            s.overlayX = 20f;
+            s.overlayY = 320f;
+            s.overlayW = 420f;
+            s.overlayH = 220f;
         }
     }
 }

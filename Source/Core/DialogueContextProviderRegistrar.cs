@@ -86,7 +86,7 @@ namespace RimMind.Dialogue.Core
 
         private static void RegisterScenarios()
         {
-            ScenarioRegistry.Register(new ScenarioDescriptor
+            RimMindAPI.Context.RegisterScenario(new ScenarioDescriptor
             {
                 Id = ScenarioIds.Dialogue,
                 DefaultBaseRounds = 10,
@@ -124,7 +124,7 @@ namespace RimMind.Dialogue.Core
                 }
             });
 
-            ScenarioRegistry.Register(new ScenarioDescriptor
+            RimMindAPI.Context.RegisterScenario(new ScenarioDescriptor
             {
                 Id = ScenarioIds.CrisisDialogue,
                 DefaultBaseRounds = 8,
@@ -178,7 +178,7 @@ namespace RimMind.Dialogue.Core
                 var t = memories[i];
                 if (t?.def == null || t.def.defName != "RimMindDialogue_Thought") continue;
 
-                string desc = (t as Thought_RimMindDialogue)?.aiDescription ?? t.def.label;
+                string desc = (t as Thought_RimMindDialogue)?.aiDescription ?? t.def.label ?? t.def.defName;
                 float hours = (float)t.DurationTicks / RimMindTime.TicksPerHour;
                 sb.AppendLine(Tr("RimMind.Dialogue.Context.ThoughtRemaining", desc, $"{hours:F1}"));
                 any = true;
@@ -217,7 +217,7 @@ namespace RimMind.Dialogue.Core
 
             var directRel = pawn.relations?.DirectRelations?.FirstOrDefault(r => r != null && r.otherPawn == recipient);
             if (directRel?.def != null)
-                sb.AppendLine(Tr("RimMind.Dialogue.Context.DirectRelation", directRel.def.label));
+                sb.AppendLine(Tr("RimMind.Dialogue.Context.DirectRelation", directRel.def.label ?? directRel.def.defName));
 
             return sb.ToString().TrimEnd();
         }

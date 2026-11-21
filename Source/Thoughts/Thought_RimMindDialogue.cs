@@ -16,9 +16,9 @@ namespace RimMind.Dialogue
             {
                 if (aiLabel.NullOrEmpty()) return base.LabelCap;
                 string text;
-                if (ThoughtInjector.TryGetLabelKey(aiLabel, out string? mappedKey) && !string.IsNullOrEmpty(mappedKey) && mappedKey.CanTranslate())
+                if (ThoughtInjector.TryGetLabelKey(aiLabel, out string? mappedKey) && !string.IsNullOrEmpty(mappedKey))
                 {
-                    text = mappedKey.Translate().ToString();
+                    text = RimMindAPI.Text.TrOr(mappedKey!, RimMindAPI.Thoughts.FormatCleanLabel(aiLabel));
                 }
                 else
                 {

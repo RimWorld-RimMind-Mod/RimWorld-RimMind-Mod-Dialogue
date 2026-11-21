@@ -213,6 +213,7 @@ namespace RimMind.Dialogue.Tests.Contracts
             string? description = "old description";
             int relationDelta = 4;
 
+#pragma warning disable CS0618
             ResponseJsonParser.TryParseResponseJson(
                 raw,
                 false,
@@ -220,6 +221,7 @@ namespace RimMind.Dialogue.Tests.Contracts
                 ref tag,
                 ref description,
                 ref relationDelta);
+#pragma warning restore CS0618
 
             Assert.Equal("before", reply);
             Assert.Equal("OLD", tag);

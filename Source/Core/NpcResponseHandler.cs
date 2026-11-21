@@ -71,7 +71,7 @@ namespace RimMind.Dialogue.Core
             try
             {
                 string summary = replyText.Length > 80 ? replyText.Substring(0, 80) + "..." : replyText;
-                RimMind.Presentation.Api.RimMindAPI.PublishPerception(pawn.thingIDNumber, "dialogue_completed", summary, 0.4f);
+                RimMindAPI.Bus.PublishPerception(pawn.thingIDNumber, "dialogue_completed", summary, 0.4f);
             }
             catch (Exception ex) { RimMindErrors.Warn($"[RimMind] PublishPerception dialogue_completed failed: {ex.Message}"); }
 
