@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
+using RimMind.Application.Common.Models.Debug;
 using RimMind.Dialogue.Core;
+using UnityEngine;
+using Verse;
 using Xunit;
 
 namespace RimMind.Dialogue.Tests.Contracts
@@ -49,120 +52,115 @@ namespace RimMind.Dialogue.Tests.Contracts
         }
 
         [Fact]
-        public void StructuredRepliesPreserveSemantics()
+        public void DialogueTriggerRegistry_ProvidesConsistentMetadataAndCustomLabels()
         {
-            string reply = "raw";
-            string? tag = "NONE";
-            string? description = null;
-            int relationDelta = 0;
+            foreach (DialogueTriggerType trigger in Enum.GetValues(typeof(DialogueTriggerType)))
+            {
+                Assert.False(string.IsNullOrWhiteSpace(DialogueTriggerRegistry.GetTriggerKind(trigger)));
+                Assert.False(string.IsNullOrWhiteSpace(DialogueTriggerRegistry.GetLabel(trigger)));
+                Assert.NotEqual(Color.white, DialogueTriggerRegistry.GetLogColor(trigger.ToString()));
+            }
 
-            #pragma warning disable CS0618
-            ResponseJsonParser.TryParseResponseJson(
-                "{\"reply\":\"Hello\",\"thought\":{\"tag\":\"VALUED\",\"description\":\"Seen\"},\"relation_delta\":2}",
-                false,
-                ref reply,
-                ref tag,
-                ref description,
-                ref relationDelta);
-            #pragma warning restore CS0618
+            Assert.Equal(Color.white, DialogueTriggerRegistry.GetLogColor("UnknownTriggerType"));
 
-            Assert.Equal("Hello", reply);
-            Assert.Equal("VALUED", tag);
-            Assert.Equal("Seen", description);
-            Assert.Equal(2, relationDelta);
+            Extensions.UntranslatableKeys.Add("RimMind.Dialogue.Prompt.Context.Hediff");
+            try
+            {
+                Assert.Equal(
+                    "[Health condition: frostbite]",
+                    DialogueTriggerRegistry.FormatContext(DialogueTriggerType.Hediff, "frostbite"));
+                Assert.Equal(
+                    "raw input",
+                    DialogueTriggerRegistry.FormatContext(DialogueTriggerType.PlayerInput, "raw input"));
+            }
+            finally
+            {
+                Extensions.UntranslatableKeys.Remove("RimMind.Dialogue.Prompt.Context.Hediff");
+            }
+
+            string customId = "CustomTrigger_" + Guid.NewGuid().ToString("N");
+            DialogueTriggerRegistry.RegisterLabel(customId, "Custom Label");
+            Assert.Equal("Custom Label", DialogueTriggerRegistry.GetLabel(customId));
+            DialogueTriggerRegistry.CustomLabels.TryRemove(customId, out _);
         }
 
         [Fact]
-        public void MonologuesIgnoreRelationChanges()
+        public void DialogueRequestTraceSummarizer_SuppressesExpressDialogueAndSummarizesTraces()
         {
-            string reply = "raw";
-            string? tag = null;
-            string? description = null;
-            int relationDelta = 9;
+            var summarizer = new DialogueRequestTraceSummarizer();
+            Assert.True(summarizer.ShouldSuppressToolCall("express_dialogue"));
+            Assert.True(summarizer.ShouldSuppressToolCall("EXPRESS_DIALOGUE"));
+            Assert.False(summarizer.ShouldSuppressToolCall("take_job"));
 
-            #pragma warning disable CS0618
-            ResponseJsonParser.TryParseResponseJson(
-                "{\"reply\":\"Thinking\",\"relation_delta\":-5}",
-                true,
-                ref reply,
-                ref tag,
-                ref description,
-                ref relationDelta);
-            #pragma warning restore CS0618
+            var entryWithTool = new AIRequestTraceEntry { ModId = "RimMind.Dialogue" };
+            entryWithTool.ToolCalls.Add(new AIRequestToolCallTrace(
+                "call-1",
+                "express_dialogue",
+                Succeeded: true,
+                Error: null,
+                ArgumentsJson: "{\"speech\":\"Watch the stove!\",\"thought_tag\":\"STRESSED\",\"thought_desc\":\"Smoke everywhere\"}"));
 
-            Assert.Equal("Thinking", reply);
-            Assert.Equal(9, relationDelta);
+            Assert.True(summarizer.TrySummarizeResponse(entryWithTool, out var toolSummary));
+            Assert.NotNull(toolSummary);
+            Assert.Equal("\"Watch the stove!\" (Smoke everywhere)", toolSummary!.ContentSummary);
+            Assert.Contains("express_dialogue", toolSummary.SuppressToolNames!);
+
+            var entryFromResponse = new AIRequestTraceEntry
+            {
+                ModId = "RimMind.Dialogue",
+                Response = "{\"speech\":\"Nice work today.\",\"thought_tag\":\"ENCOURAGED\"}"
+            };
+            Assert.True(summarizer.TrySummarizeResponse(entryFromResponse, out var responseSummary));
+            Assert.NotNull(responseSummary);
+            Assert.StartsWith("\"Nice work today.\"", responseSummary!.ContentSummary, StringComparison.Ordinal);
+
+            var unrelatedEntry = new AIRequestTraceEntry
+            {
+                ModId = "RimMind.Advisor",
+                Response = "{\"speech\":\"Ignored because not dialogue\"}"
+            };
+            Assert.False(summarizer.TrySummarizeResponse(unrelatedEntry, out _));
+
+            Assert.True(summarizer.TrySummarizePrompt(
+                "[L3] <dialogue_trigger>[Chitchat: sharing a meal]\nBased on your current state and surroundings, respond naturally.</dialogue_trigger>",
+                out var promptSummary));
+            Assert.Equal("[Chitchat: sharing a meal]", promptSummary);
+
+            Extensions.UntranslatableKeys.Add("RimMind.UI.AgentsPage.Trace.DailyReaction");
+            try
+            {
+                Assert.True(summarizer.TrySummarizePrompt(
+                    "<dialogue_trigger>Based on your current state and surroundings, respond naturally.</dialogue_trigger>",
+                    out var fallbackSummary));
+                Assert.Equal("Daily reaction", fallbackSummary);
+            }
+            finally
+            {
+                Extensions.UntranslatableKeys.Remove("RimMind.UI.AgentsPage.Trace.DailyReaction");
+            }
+
+            Assert.False(summarizer.TrySummarizePrompt("Unrelated advisor decision prompt", out _));
         }
 
         [Fact]
-        public void InvalidRepliesPreservePriorValues()
+        public void DialogueTextSanitizer_ClassifyThoughtTag_OnlyProducesRegisteredThoughtTags()
         {
-            AssertPreserved("plain text");
-            AssertPreserved("{invalid");
-            AssertPreserved(string.Empty);
-            AssertPreserved(null);
+            string[] samples =
+            {
+                "Feeling terribly hurt and grieving today",
+                "Overwhelmed by stress and exhaustion",
+                "Furious and irritated at that insult",
+                "Grateful and happily connected with everyone",
+                "Just an ordinary neutral observation"
+            };
 
-            string reply = "before";
-            string? tag = "OLD";
-            string? description = "old description";
-            int relationDelta = 4;
-
-            #pragma warning disable CS0618
-            ResponseJsonParser.TryParseResponseJson(
-                "{\"thought\":{\"tag\":\"CONNECTED\"}}",
-                false,
-                ref reply,
-                ref tag,
-                ref description,
-                ref relationDelta);
-            #pragma warning restore CS0618
-
-            Assert.Equal("before", reply);
-            Assert.Equal("CONNECTED", tag);
-            Assert.Null(description);
-            Assert.Equal(4, relationDelta);
-        }
-
-        [Fact]
-        public void NarrationAndMarkdownCodeBlockRepliesAreParsed()
-        {
-            // Case 1: narration field instead of reply
-            string reply = "raw";
-            string? tag = null;
-            string? description = null;
-            int relationDelta = 0;
-
-            #pragma warning disable CS0618
-            ResponseJsonParser.TryParseResponseJson(
-                "{\"narration\":\"你感到全身旧伤\",\"thought\":{\"tag\":\"STRESSED\",\"description\":\"疲惫\"}}",
-                true,
-                ref reply,
-                ref tag,
-                ref description,
-                ref relationDelta);
-
-            Assert.Equal("你感到全身旧伤", reply);
-            Assert.Equal("STRESSED", tag);
-            Assert.Equal("疲惫", description);
-
-            // Case 2: Markdown code block wrapped JSON
-            reply = "raw2";
-            tag = null;
-            description = null;
-            relationDelta = 0;
-
-            ResponseJsonParser.TryParseResponseJson(
-                "```json\n{\"dialogue\":\"Hello friend!\",\"thought\":{\"tag\":\"CONNECTED\",\"description\":\"Joy\"}}\n```",
-                false,
-                ref reply,
-                ref tag,
-                ref description,
-                ref relationDelta);
-            #pragma warning restore CS0618
-
-            Assert.Equal("Hello friend!", reply);
-            Assert.Equal("CONNECTED", tag);
-            Assert.Equal("Joy", description);
+            foreach (string sample in samples)
+            {
+                string tag = DialogueTextSanitizer.ClassifyThoughtTag(sample);
+                Assert.True(
+                    tag == "NONE" || ThoughtInjector.MapTagToMoodOffset(tag) != 0,
+                    $"ClassifyThoughtTag returned unregistered tag '{tag}' for '{sample}'.");
+            }
         }
 
         [Fact]
@@ -204,29 +202,6 @@ namespace RimMind.Dialogue.Tests.Contracts
             state.Reset(60000);
             Assert.Equal(0, state.RecentTriggerCount);
             Assert.Equal(0, state.GetDailyDialogueCount(60000, 1, 2));
-        }
-
-        private static void AssertPreserved(string? raw)
-        {
-            string reply = "before";
-            string? tag = "OLD";
-            string? description = "old description";
-            int relationDelta = 4;
-
-#pragma warning disable CS0618
-            ResponseJsonParser.TryParseResponseJson(
-                raw,
-                false,
-                ref reply,
-                ref tag,
-                ref description,
-                ref relationDelta);
-#pragma warning restore CS0618
-
-            Assert.Equal("before", reply);
-            Assert.Equal("OLD", tag);
-            Assert.Equal("old description", description);
-            Assert.Equal(4, relationDelta);
         }
 
         [Fact]

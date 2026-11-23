@@ -5,14 +5,17 @@ Application are project references, including the real request-envelope builder.
 
 ## Active contract manifest
 
-| Contract | Behavior | Discovered cases |
-|---|---|---:|
-| `Contracts/DialoguePipelineContracts.cs` | classification, pair keys, parser, bounded log snapshots, activity cooldown/quota, overlay geometry | 8 |
-| `Contracts/DialogueThoughtInjectionContracts.cs` | thought tags, reply rate limit, quota policy, Thought save fields | 5 |
-| `Contracts/DialogueGateErrorContracts.cs` | atomic Pawn/pair/capacity reservations, lifecycle fencing and ownership cleanup | 7 |
-| `Contracts/DialogueRequestLifecycleContracts.cs` | real player/automatic entries, shared admission and envelopes, response effects, cancellation, failure and window/Gizmo lifecycle | 31 |
+| Contract | Behavior |
+|---|---|
+| `Contracts/DialoguePipelineContracts.cs` | classification, pair keys, trigger metadata registry, request trace summarizer, thought-tag sanitization, bounded log snapshots, activity cooldown/quota, overlay geometry |
+| `Contracts/DialogueToolParserContracts.cs` | `express_dialogue` tool call arguments, OpenAI nested calls, pseudo-calls, and monologue clamping |
+| `Contracts/DialogueThoughtInjectionContracts.cs` | thought tags, reply rate limit, quota policy, Thought save fields |
+| `Contracts/DialogueGateErrorContracts.cs` | atomic Pawn/pair/capacity reservations, lifecycle fencing and ownership cleanup |
+| `Contracts/DialogueRequestLifecycleContracts.cs` | real player/automatic entries, shared admission, coalescing/TTL, CrisisDialogue task provider, response effects, cancellation, failure and window/Gizmo lifecycle |
+| `Contracts/DialogueVisualAndCoreAdoptionContracts.cs` | overlay shrink-wrap height, overhead speech mote positioning/CJK wrapping, dirty-only settings persistence |
+| `DialogueCadenceEvaluatorTests.cs` & `DialogueAntiHallucinationAndMirroringTests.cs` | cadence grace/ramp/staggering, prompt constraints, and stage-direction anti-mirroring |
 
-Current discovery count: **51 cases**, including every Theory row (module budget:
+Count actual discovered cases with the root test-budget script (module budget:
 strictly below 1000). Unrelated scenarios are independently discovered, not hidden
 inside a budget-reducing umbrella Fact.
 

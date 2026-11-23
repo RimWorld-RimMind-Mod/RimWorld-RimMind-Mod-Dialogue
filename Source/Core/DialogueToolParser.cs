@@ -21,7 +21,7 @@ namespace RimMind.Dialogue.Core
 
         // Dialogue-specific malformed pseudo-call quirk: express_dialogue(speech)=(...)
         private static readonly Regex MalformedParenAssignRegex = new Regex(
-            @"\b(?:express_dialogue|record_morning_thought|[a-z_][a-z0-9_]*)\s*\(\s*(?<key>speech|reply|dialogue|content|text|narration)\s*\)\s*[:=]\s*\((?<val>[\s\S]+)\)\s*$",
+            @"\b[a-z_][a-z0-9_]*\s*\(\s*(?<key>speech|reply|dialogue|content|text|narration)\s*\)\s*[:=]\s*\((?<val>[\s\S]+)\)\s*$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public static bool TryParse(string? toolCallsJson, bool isMonologue, out DialogueOutput output)

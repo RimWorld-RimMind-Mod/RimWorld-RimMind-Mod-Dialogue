@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using RimMind.Domain.ValueObjects;
 using RimMind.Presentation.Api;
 using RimWorld;
@@ -114,7 +113,7 @@ namespace RimMind.Dialogue
             thought.otherPawn = recipient;
             thought.opinionOffset = delta;
 
-            string pawnName = recipient.Name.ToStringShort;
+            string pawnName = recipient.Name?.ToStringShort ?? recipient.LabelShort;
             thought.aiLabel = delta > 0
                 ? RimMindAPI.Text.TrOr("RimMind.Dialogue.Relation.Positive", "pleasant conversation with {0}", pawnName)
                 : RimMindAPI.Text.TrOr("RimMind.Dialogue.Relation.Negative", "unpleasant conversation with {0}", pawnName);

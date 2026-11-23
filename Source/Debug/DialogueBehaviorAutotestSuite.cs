@@ -49,7 +49,6 @@ namespace RimMind.Dialogue.Debug
                 var thoughtDef = DefDatabase<ThoughtDef>.GetNamedSilentFail("RimMindDialogue_Thought");
                 if (thoughtDef != null)
                 {
-                    int memBefore = pawn.needs.mood.thoughts.memories.Memories.Count;
                     ThoughtInjector.Inject(pawn, null, "ENCOURAGED", "Autotest test description");
 
                     var memAfter = pawn.needs.mood.thoughts.memories.Memories;
@@ -70,7 +69,7 @@ namespace RimMind.Dialogue.Debug
             // 4. Rate Limiting and Activity State Cooldowns
             try
             {
-                var cleared = RimMindDialogueService.ClearAllCooldowns();
+                _ = RimMindDialogueService.ClearAllCooldowns();
                 context.Assert(RimMindDialogueService.RecentTriggerCount == 0, "RecentTriggerCount is 0 after clearing dialogue cooldowns");
             }
             catch (Exception ex)

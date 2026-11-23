@@ -22,7 +22,8 @@ namespace RimMind.Dialogue.Patches
         [HarmonyPostfix]
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory newThought)
         {
-            if (!RimMindDialogueSettings.Get().thoughtEnabled) return;
+            var settings = RimMindDialogueSettings.Get();
+            if (!settings.enabled || !settings.thoughtEnabled) return;
 
             if (newThought?.def == null) return;
 
@@ -31,10 +32,11 @@ namespace RimMind.Dialogue.Patches
             if (curStage != null)
                 moodEffect = curStage.baseMoodEffect;
 
-            if (Mathf.Abs(moodEffect) < RimMindDialogueSettings.Get().moodChangeThreshold) return;
+            if (Mathf.Abs(moodEffect) < settings.moodChangeThreshold) return;
 
             Pawn pawn = __instance.pawn;
             if (!RimMindPawnLookup.IsEligibleColonist(pawn) || pawn.Downed) return;
+            if (!RimMindDialogueService.IsReady) return;
 
             if (newThought.def.defName.StartsWith("RimMindDialogue_")) return;
 
@@ -50,7 +52,11 @@ namespace RimMind.Dialogue.Patches
                 rawLabel.Replace("{ROLE_label}", "role").Replace("{0}", ""),
                 @"\{[A-Za-z0-9_]+\}",
                 "").Trim();
-            string context = "RimMind.Dialogue.Context.MoodChanged".Translate(cleanLabel, $"{moodEffect:+0;-0}");
+            string context = RimMindAPI.Text.TrOr(
+                "RimMind.Dialogue.Context.MoodChanged",
+                "Mood changed: {0} ({1} mood)",
+                cleanLabel,
+                $"{moodEffect:+0;-0}");
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Thought, null);
         }
     }

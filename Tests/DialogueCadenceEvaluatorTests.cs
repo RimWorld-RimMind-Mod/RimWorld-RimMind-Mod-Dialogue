@@ -151,6 +151,12 @@ namespace RimMind.Dialogue.Tests
             evaluator.CalculateProbability(pairB, currentTick, DefaultCadenceDays, opinion: 0f);
             int initialTickB = evaluator.GetLastDialogueTick(pairB);
             Assert.NotEqual(initialTickA, initialTickB);
+
+            // Extreme/negative pair IDs never overflow and stay bounded in [0, 0.75 * targetTicks)
+            var extremePair = (int.MinValue, 0);
+            evaluator.CalculateProbability(extremePair, currentTick, DefaultCadenceDays, opinion: 0f);
+            int extremeInitial = evaluator.GetLastDialogueTick(extremePair);
+            Assert.InRange(currentTick - extremeInitial, 0, (int)(DefaultTargetTicks * 0.75f) - 1);
         }
 
         [Fact]

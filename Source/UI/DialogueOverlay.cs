@@ -5,7 +5,6 @@ using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
 using RimMind.Presentation.Api;
-using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -33,8 +32,10 @@ namespace RimMind.Dialogue.Overlay
         private readonly HashSet<int> _liveColonistIds = new HashSet<int>();
         private int _lastLiveColonistRefreshTick = -99999;
         private int _cachedLiveColonistsHash;
+        private int _nextEntryExpiryTick = -1;
 
         private const int LiveColonistCacheIntervalTicks = 60;
+        private const int MaxEntryAgeTicks = 60000; // 1 in-game day
         private const float OptionsBarHeight = 24f;
         private const float ResizeHandleSize = 24f;
         private const float TextPadding = 6f;
@@ -48,11 +49,6 @@ namespace RimMind.Dialogue.Overlay
         public DialogueOverlay(Map map) : base(map)
         {
             LoadPositionFromSettings();
-        }
-
-        public override void MapRemoved()
-        {
-            base.MapRemoved();
         }
 
         public override void MapComponentOnGUI()
@@ -179,6 +175,11 @@ namespace RimMind.Dialogue.Overlay
                 RefreshLiveColonistCache(nowTick);
             }
 
+            if (_nextEntryExpiryTick > 0 && nowTick > _nextEntryExpiryTick)
+            {
+                _cacheDirty = true;
+            }
+
             if (_cacheDirty || _cachedLogRevision != currentLogRevision || _cachedMaxMessages != maxMessages)
             {
                 bool IsPawnActiveOnCurrentMap(int pawnId, bool isColonist)
@@ -186,11 +187,9 @@ namespace RimMind.Dialogue.Overlay
                     if (isColonist)
                         return _liveColonistIds.Contains(pawnId);
 
-                    var p = RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(pawnId);
+                    var p = RimMindPawnLookup.FindPawnByNumber(pawnId);
                     return p != null && !p.Dead && !p.Destroyed && p.Spawned && p.Map == map;
                 }
-
-                const int MaxEntryAgeTicks = 60000; // 1 in-game day
 
                 _cachedEntries = RimMindDialogueService.LogEntries
                     .Where(entry =>
@@ -205,9 +204,16 @@ namespace RimMind.Dialogue.Overlay
                 _cachedDisplayReplies = count == 0 ? Array.Empty<string>() : new string[count];
                 _cachedLabelWidths = count == 0 ? Array.Empty<float>() : new float[count];
                 _cachedLineHeights = count == 0 ? Array.Empty<float>() : new float[count];
+                int nextExpiry = -1;
                 for (int i = 0; i < count; i++)
                 {
                     DialogueLogEntry entry = _cachedEntries[i];
+                    if (entry.tick > 0)
+                    {
+                        int expiry = entry.tick + MaxEntryAgeTicks;
+                        if (nextExpiry < 0 || expiry < nextExpiry)
+                            nextExpiry = expiry;
+                    }
                     string name = entry.initiatorName ?? string.Empty;
                     _cachedLabels[i] = entry.IsMonologue
                         ? $"[{name}]"
@@ -215,6 +221,7 @@ namespace RimMind.Dialogue.Overlay
                     _cachedDisplayReplies[i] = FormatCompactOverlayText(entry.reply);
                 }
 
+                _nextEntryExpiryTick = nextExpiry;
                 _cachedLayoutWidth = -1f;
                 _cachedLogRevision = currentLogRevision;
                 _cachedMaxMessages = maxMessages;
@@ -360,11 +367,11 @@ namespace RimMind.Dialogue.Overlay
             var barRect = new Rect(inRect.x, inRect.y, inRect.width, OptionsBarHeight);
             Widgets.DrawBoxSolid(barRect, new Color(0.05f, 0.05f, 0.08f, 0.8f));
 
-            var titleRect = new Rect(barRect.x + 4f, barRect.y, 100f, barRect.height);
+            var titleRect = new Rect(barRect.x + 4f, barRect.y, Mathf.Max(100f, barRect.width - 92f), barRect.height);
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleLeft;
             GUI.color = new Color(0.7f, 0.8f, 1f);
-            Widgets.Label(titleRect, "RimMind.Dialogue.UI.Overlay.Title".Translate());
+            Widgets.Label(titleRect, RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Overlay.Title", "RimMind Dialogue"));
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
@@ -375,7 +382,7 @@ namespace RimMind.Dialogue.Overlay
             {
                 _temporarilyClosed = true;
             }
-            if (Widgets.ButtonText(openBtnRect, "RimMind.Dialogue.UI.Overlay.Details".Translate()))
+            if (Widgets.ButtonText(openBtnRect, RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Overlay.Details", "Details")))
             {
                 Find.WindowStack.Add(new Window_DialogueLog());
             }
@@ -473,6 +480,7 @@ namespace RimMind.Dialogue.Overlay
             s.overlayY = _windowRect.y;
             s.overlayW = _windowRect.width;
             s.overlayH = _windowRect.height;
+            s.Write();
         }
     }
 }

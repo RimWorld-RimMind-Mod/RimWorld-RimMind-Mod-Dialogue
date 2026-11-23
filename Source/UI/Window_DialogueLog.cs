@@ -50,7 +50,7 @@ namespace RimMind.Dialogue.UI
             contentY += categoryBarHeight + Padding;
             contentHeight -= categoryBarHeight + Padding;
 
-            Widgets.Label(headerRect, "RimMind.Dialogue.UI.Log.Title".Translate());
+            Widgets.Label(headerRect, RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Log.Title", "Dialogue Log"));
 
             DrawCategoryBar(categoryBarRect);
 
@@ -64,24 +64,40 @@ namespace RimMind.Dialogue.UI
 
         private void DrawCategoryBar(Rect rect)
         {
-            float x = rect.x;
-            foreach (var (cat, key, fallback) in CategoryKeys)
+            const float gap = 4f;
+            int count = CategoryKeys.Length;
+            float totalGap = gap * Math.Max(0, count - 1);
+            float available = Math.Max(1f, rect.width - totalGap);
+
+            float[] desired = new float[count];
+            string[] labels = new string[count];
+            float desiredSum = 0f;
+            for (int i = 0; i < count; i++)
             {
-                string label = RimMindAPI.Text.TrOr(key, fallback);
-                float width = Text.CalcSize(label).x + 20f;
+                labels[i] = RimMindAPI.Text.TrOr(CategoryKeys[i].key, CategoryKeys[i].fallback);
+                desired[i] = Text.CalcSize(labels[i]).x + 16f;
+                desiredSum += desired[i];
+            }
+
+            float scale = desiredSum > available ? available / desiredSum : 1f;
+            float x = rect.x;
+            for (int i = 0; i < count; i++)
+            {
+                var cat = CategoryKeys[i].cat;
+                float width = Math.Max(40f, desired[i] * scale);
                 var btnRect = new Rect(x, rect.y, width, rect.height);
 
                 bool selected = _selectedCategory == cat;
                 if (selected)
                     Widgets.DrawBoxSolid(btnRect, new Color(0.3f, 0.4f, 0.6f, 0.5f));
 
-                if (Widgets.ButtonText(btnRect, label))
+                if (Widgets.ButtonText(btnRect, labels[i]))
                 {
                     _selectedCategory = cat;
                     _selectedTab = null;
                 }
 
-                x += width + 4f;
+                x += width + gap;
             }
         }
 
@@ -96,7 +112,7 @@ namespace RimMind.Dialogue.UI
             {
                 Text.Anchor = TextAnchor.MiddleCenter;
                 GUI.color = Color.grey;
-                Widgets.Label(rect, "RimMind.Dialogue.UI.Log.NoRecords".Translate());
+                Widgets.Label(rect, RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Log.NoRecords", "No records"));
                 GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
                 return;
@@ -134,7 +150,7 @@ namespace RimMind.Dialogue.UI
             {
                 Text.Anchor = TextAnchor.MiddleCenter;
                 GUI.color = Color.grey;
-                Widgets.Label(rect, "RimMind.Dialogue.UI.Log.SelectTab".Translate());
+                Widgets.Label(rect, RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Log.SelectTab", "Select a tab to view dialogue"));
                 GUI.color = Color.white;
                 Text.Anchor = TextAnchor.UpperLeft;
                 return;
@@ -218,9 +234,11 @@ namespace RimMind.Dialogue.UI
 
             float contentHeight = 0f;
             float[] heights = new float[entries.Count];
+            string[] lines = new string[entries.Count];
             for (int i = 0; i < entries.Count; i++)
             {
-                heights[i] = Text.CalcHeight(entries[i].reply, halfWidth - Padding * 2) + Padding * 2;
+                lines[i] = $"[{entries[i].TimeStr}] {entries[i].reply}";
+                heights[i] = Text.CalcHeight(lines[i], halfWidth - Padding * 2) + Padding * 2;
                 contentHeight += heights[i];
             }
 
@@ -234,7 +252,6 @@ namespace RimMind.Dialogue.UI
                 // 用 ID 判定左右列，避免重名导致列归属错误
                 bool isLeft = entry.initiatorId == leftId;
 
-                string timeStr = entry.TimeStr;
                 float entryHeight = heights[i];
 
                 Color bgColor = i % 2 == 0
@@ -246,14 +263,14 @@ namespace RimMind.Dialogue.UI
                 {
                     var leftRect = new Rect(viewRect.x + Padding, y + Padding, halfWidth - Padding * 2, entryHeight - Padding * 2);
                     GUI.color = new Color(0.7f, 0.85f, 1f);
-                    Widgets.Label(leftRect, $"[{timeStr}] {entry.reply}");
+                    Widgets.Label(leftRect, lines[i]);
                     GUI.color = Color.white;
                 }
                 else
                 {
                     var rightRect = new Rect(viewRect.x + halfWidth + Padding, y + Padding, halfWidth - Padding * 2, entryHeight - Padding * 2);
                     GUI.color = new Color(1f, 0.95f, 0.8f);
-                    Widgets.Label(rightRect, $"[{timeStr}] {entry.reply}");
+                    Widgets.Label(rightRect, lines[i]);
                     GUI.color = Color.white;
                 }
 
@@ -352,34 +369,9 @@ namespace RimMind.Dialogue.UI
         }
 
         private static string TranslateTrigger(string triggerKey)
-        {
-            if (RimMindDialogueService.RegisteredTriggerLabels.TryGetValue(triggerKey, out var labelKey))
-                return RimMindAPI.Text.TrOr(labelKey, labelKey);
-
-            return triggerKey switch
-            {
-                "Chitchat" => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
-                "Hediff" => "RimMind.Dialogue.Trigger.Hediff".Translate(),
-                "LevelUp" => "RimMind.Dialogue.Trigger.LevelUp".Translate(),
-                "Thought" => "RimMind.Dialogue.Trigger.Thought".Translate(),
-                "Auto" => "RimMind.Dialogue.Trigger.Auto".Translate(),
-                "PlayerInput" => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
-                _ => triggerKey,
-            };
-        }
+            => DialogueTriggerRegistry.GetLabel(triggerKey);
 
         private static Color GetTriggerColor(string trigger)
-        {
-            return trigger switch
-            {
-                "Chitchat" => new Color(0.7f, 0.85f, 1f),
-                "Hediff" => new Color(1f, 0.6f, 0.6f),
-                "LevelUp" => new Color(0.6f, 1f, 0.6f),
-                "Thought" => new Color(1f, 0.95f, 0.6f),
-                "Auto" => new Color(0.8f, 0.8f, 0.8f),
-                "PlayerInput" => new Color(0.85f, 0.7f, 1f),
-                _ => Color.white,
-            };
-        }
+            => DialogueTriggerRegistry.GetLogColor(trigger);
     }
 }

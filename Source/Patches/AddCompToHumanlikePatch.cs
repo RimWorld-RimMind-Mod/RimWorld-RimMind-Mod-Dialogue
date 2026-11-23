@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using RimMind.Dialogue.Comps;
-using RimWorld;
 using Verse;
 
 namespace RimMind.Dialogue.Patches

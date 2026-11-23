@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using RimMind.Application.Common.Constants;
 using RimMind.Application.Common.Models.Context;
 using RimMind.Application.Features.Llm;
 using RimMind.Dialogue.Settings;
@@ -145,16 +144,10 @@ namespace RimMind.Dialogue.Core
             return null;
         }
 
-        private static string ToTriggerKind(DialogueTriggerType type) => type switch
-        {
-            DialogueTriggerType.Chitchat => DialogueTriggerKinds.Chitchat,
-            DialogueTriggerType.Auto => DialogueTriggerKinds.Auto,
-            DialogueTriggerType.PlayerInput => DialogueTriggerKinds.PlayerInput,
-            DialogueTriggerType.Hediff => DialogueTriggerKinds.Hediff,
-            DialogueTriggerType.LevelUp => DialogueTriggerKinds.LevelUp,
-            DialogueTriggerType.Thought => DialogueTriggerKinds.Thought,
-            _ => type.ToString()
-        };
+        private const int AutoDialogueMaxQueueWaitTicks = 5000;
+
+        private static string ToTriggerKind(DialogueTriggerType type)
+            => DialogueTriggerRegistry.GetTriggerKind(type);
 
         public void TryTriggerReply(
             Pawn originalSender,
@@ -173,8 +166,12 @@ namespace RimMind.Dialogue.Core
                 return;
             }
 
-            string replyContext = "RimMind.Dialogue.Context.ReplyTrigger"
-                .Translate(originalSender.Name.ToStringShort, originalMessage);
+            string senderName = originalSender.Name?.ToStringShort ?? originalSender.LabelShort;
+            string replyContext = RimMindAPI.Text.TrOr(
+                "RimMind.Dialogue.Context.ReplyTrigger",
+                "{0} said to you: {1}",
+                senderName,
+                originalMessage);
             HandleTrigger(
                 replier,
                 replyContext,
@@ -197,16 +194,18 @@ namespace RimMind.Dialogue.Core
             CancellationToken cancellationToken)
         {
             long reservationId = reservation.Id;
-            bool completed = false;
+            int completed = 0;
             CancellationTokenSource? lifetime = null;
             CancellationTokenRegistration cancellation = default;
 
-            bool TryFinish()
+            bool TryFinish(bool fromCancellationCallback = false)
             {
-                if (completed) return false;
-                completed = true;
-                cancellation.Dispose();
-                lifetime?.Dispose();
+                if (Interlocked.Exchange(ref completed, 1) != 0) return false;
+                if (!fromCancellationCallback)
+                {
+                    try { cancellation.Dispose(); } catch (ObjectDisposedException) { }
+                }
+                try { lifetime?.Dispose(); } catch (ObjectDisposedException) { }
                 reservation.Dispose();
                 ClearRequestRecipient(pawn.thingIDNumber, reservationId);
                 return true;
@@ -223,8 +222,12 @@ namespace RimMind.Dialogue.Core
                 RimMindErrors.Warn($"[RimMind-Dialogue] Request failed: {error}");
                 if (type == DialogueTriggerType.PlayerInput)
                 {
+                    string pawnName = pawn.Name?.ToStringShort ?? pawn.LabelShort;
                     Messages.Message(
-                        "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(pawn.Name.ToStringShort),
+                        RimMindAPI.Text.TrOr(
+                            "RimMind.Dialogue.UI.FloatMenu.RequestFailed",
+                            "Dialogue request for {0} failed",
+                            pawnName),
                         MessageTypeDefOf.RejectInput, false);
                 }
             }
@@ -235,16 +238,17 @@ namespace RimMind.Dialogue.Core
                     _gameLifetime.Token, cancellationToken);
                 cancellation = lifetime.Token.Register(() =>
                 {
-                    if (TryFinish()) ReportFailure("Dialogue request cancelled.", false);
+                    if (TryFinish(fromCancellationCallback: true))
+                        ReportFailure("Dialogue request cancelled.", false);
                 });
-                if (completed) return;
+                if (Volatile.Read(ref completed) != 0) return;
 
                 if (type != DialogueTriggerType.PlayerInput)
                 {
                     _activityState.RecordTrigger(currentTick, pawn.thingIDNumber,
                         type, settings.monologueCooldownTicks);
                 }
-                RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(pawn);
+                RimMindPawnLookup.CachePawn(pawn);
                 if (recipient != null)
                 {
                     _activityState.SetRequestRecipient(
@@ -252,12 +256,12 @@ namespace RimMind.Dialogue.Core
                         recipient.thingIDNumber,
                         reservationId,
                         recipient);
-                    RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
+                    RimMindPawnLookup.CachePawn(recipient);
                     // The active recipient feeds dialogue_relation; drop the cached copy now.
                     DialogueContextChangedEvent.Publish(pawn.thingIDNumber);
                 }
 
-                string formattedContext = FormatContext(type, context, recipient);
+                string formattedContext = FormatContext(type, context);
                 bool isMonologue = DialogueFlowPolicy.IsMonologue(type, recipient != null);
                 string? speakerName = recipient != null
                     ? (recipient.Name?.ToStringShort ?? recipient.LabelShort)
@@ -302,7 +306,15 @@ namespace RimMind.Dialogue.Core
                     .WithMaxTokens(800)
                     .WithTemperature(type == DialogueTriggerType.PlayerInput ? 0.85f : 0.8f)
                     .WithReasoningEffort(ReasoningEffort.None)
+                    .WithRequireAliveColonist(true)
                     .WithCancellation(lifetime.Token);
+                if (type != DialogueTriggerType.PlayerInput)
+                {
+                    string coalesceKey = BuildCoalesceKey(pawn, recipient, type);
+                    envelopeBuilder
+                        .WithCoalesceKey(coalesceKey)
+                        .WithMaxQueueWaitTicks(AutoDialogueMaxQueueWaitTicks);
+                }
                 if (!string.IsNullOrEmpty(speakerName))
                 {
                     envelopeBuilder.WithHint("SpeakerName", speakerName);
@@ -321,8 +333,8 @@ namespace RimMind.Dialogue.Core
                             if (result.Error.Code != RimMindErrorCode.Cancelled) ReportFailure(result.Error.ToString());
                             return;
                         }
-                        if (pawn.Dead || pawn.Destroyed || pawn.Downed
-                            || (recipient != null && (recipient.Dead || recipient.Destroyed || recipient.Downed)))
+                        if (!RimMindPawnLookup.IsActiveSpawnedColonist(pawn) || pawn.Downed
+                            || (recipient != null && (!RimMindPawnLookup.IsActiveSpawnedColonist(recipient) || recipient.Downed)))
                         {
                             ReportFailure("Dialogue participant is unavailable.");
                             return;
@@ -359,6 +371,16 @@ namespace RimMind.Dialogue.Core
             }
         }
 
+        private static string BuildCoalesceKey(Pawn pawn, Pawn? recipient, DialogueTriggerType type)
+        {
+            if (recipient != null)
+            {
+                var pairKey = DialogueClassifier.MakePairKey(pawn.thingIDNumber, recipient.thingIDNumber);
+                return $"dialogue:{pairKey.Item1}:{pairKey.Item2}:{type}";
+            }
+            return $"dialogue:{pawn.thingIDNumber}:{type}";
+        }
+
         private static void Notify(Action<string>? callback, string value)
         {
             try { callback?.Invoke(value); }
@@ -373,63 +395,7 @@ namespace RimMind.Dialogue.Core
                 pawnId,
                 reservationId);
 
-        private static string FormatContext(
-            DialogueTriggerType type,
-            string context,
-            Pawn? recipient)
-        {
-            string formatted = type switch
-            {
-                DialogueTriggerType.Chitchat => RimMindAPI.Text.TrOr(
-                    "RimMind.Dialogue.Prompt.Context.Chitchat",
-                    "[Chitchat: {0}]",
-                    context),
-                DialogueTriggerType.Hediff => RimMindAPI.Text.TrOr(
-                    "RimMind.Dialogue.Prompt.Context.Hediff",
-                    "[Health condition: {0}]",
-                    context),
-                DialogueTriggerType.LevelUp => RimMindAPI.Text.TrOr(
-                    "RimMind.Dialogue.Prompt.Context.LevelUp",
-                    "[Skill level up: {0}]",
-                    context),
-                DialogueTriggerType.Thought => RimMindAPI.Text.TrOr(
-                    "RimMind.Dialogue.Prompt.Context.Thought",
-                    "[Recent thought: {0}]",
-                    context),
-                DialogueTriggerType.Auto => RimMindAPI.Text.TrOr(
-                    "RimMind.Dialogue.Prompt.Context.Auto",
-                    "{0}",
-                    context),
-                _ => context
-            };
-
-            string? roleKey = recipient == null
-                ? null
-                : GetRecipientRoleKey(recipient);
-            if (recipient != null && roleKey != null)
-            {
-                string recipientLine = RimMindAPI.Text.TrOr(
-                    "RimMind.Dialogue.Prompt.Context.Recipient",
-                    "[Recipient: {0}]",
-                    recipient.Name.ToStringShort);
-                string roleLine = RimMindAPI.Text.TrOr(roleKey, roleKey);
-                formatted += "\n" + recipientLine + "\n" + roleLine;
-            }
-
-            return formatted;
-        }
-
-        private static string? GetRecipientRoleKey(Pawn recipient)
-        {
-            if (recipient.IsPrisoner)
-                return "RimMind.Dialogue.Prompt.Role.Prisoner";
-            if (recipient.IsSlave)
-                return "RimMind.Dialogue.Prompt.Role.Slave";
-            if (recipient.Faction?.HostileTo(Faction.OfPlayer) == true)
-                return "RimMind.Dialogue.Prompt.Role.Enemy";
-            if (!recipient.IsColonist)
-                return "RimMind.Dialogue.Prompt.Role.Visitor";
-            return null;
-        }
+        private static string FormatContext(DialogueTriggerType type, string context)
+            => DialogueTriggerRegistry.FormatContext(type, context);
     }
 }

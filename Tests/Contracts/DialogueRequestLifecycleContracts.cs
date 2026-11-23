@@ -93,7 +93,11 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Same(_recipient, RimMindDialogueService.GetActiveRecipient(_pawn));
             RimMindDialogueService.HandleTrigger(_pawn, "same pawn", DialogueTriggerType.Thought, null);
             RimMindDialogueService.HandleTrigger(_recipient, "reversed pair", DialogueTriggerType.Chitchat, _pawn);
-            RimMindDialogueService.HandleTrigger(new Pawn { thingIDNumber = 3 }, "capacity", DialogueTriggerType.Auto, null);
+            RimMindDialogueService.HandleTrigger(
+                new Pawn { thingIDNumber = 3, IsColonist = true, Faction = Faction.OfPlayer, Map = _pawn.Map, Spawned = true },
+                "capacity",
+                DialogueTriggerType.Auto,
+                null);
             Assert.Single(RimMindAPI.Sent);
             Complete(0, "reply");
             Assert.Equal(0, RimMindDialogueService.ActiveRequestCount);
@@ -117,7 +121,8 @@ namespace RimMind.Dialogue.Tests.Contracts
                 RimMindDialogueService.HandleTrigger(_pawn, "first", DialogueTriggerType.Chitchat, _recipient);
 
             Pawn nextPawn = conflict == "pawn" ? _pawn
-                : conflict == "pair" ? _recipient : new Pawn { thingIDNumber = 3 };
+                : conflict == "pair" ? _recipient
+                : new Pawn { thingIDNumber = 3, IsColonist = true, Faction = Faction.OfPlayer, Map = _pawn.Map, Spawned = true };
             Pawn? nextRecipient = conflict == "pair" ? _pawn : null;
             int errors = 0;
             if (playerFirst)
@@ -164,6 +169,17 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.Equal(player ? 0.85f : 0.8f, envelope.Temperature);
             Assert.Contains(player ? "<dialogue_input>" : "<dialogue_trigger>", envelope.GameStateInfo!.ToString());
             Assert.Contains(player ? "player input" : "RimMind.Dialogue.Prompt.AutoTrigger", envelope.GameStateInfo.ToString());
+            Assert.True(envelope.RequireAliveColonist);
+            if (player)
+            {
+                Assert.Null(envelope.CoalesceKey);
+                Assert.Null(envelope.MaxQueueWaitTicks);
+            }
+            else
+            {
+                Assert.Equal("dialogue:1:Auto", envelope.CoalesceKey);
+                Assert.Equal(5000, envelope.MaxQueueWaitTicks);
+            }
             Assert.True(envelope.Ct.CanBeCanceled);
         }
 
@@ -506,6 +522,30 @@ namespace RimMind.Dialogue.Tests.Contracts
             Assert.NotNull(speakerTask);
             Assert.Contains("GoalDialogue", speakerTask!, StringComparison.Ordinal);
             Assert.Contains("RelationDelta", speakerTask, StringComparison.Ordinal);
+
+            var crisisCtx = new RimMind.Application.Common.Interfaces.Context.ProviderContext(RimMindAPI.Context.ScenarioCrisisDialogue, "t3")
+            {
+                PawnId = 1,
+                NpcId = "NPC-1",
+                Hints = new System.Collections.Generic.Dictionary<string, object?> { ["IsMonologue"] = "true" }
+            };
+            string? crisisTask = await taskDef.Provider(crisisCtx, CancellationToken.None);
+            Assert.NotNull(crisisTask);
+            Assert.Contains("GoalMonologue", crisisTask!, StringComparison.Ordinal);
+            Assert.DoesNotContain("OutputMonologue", crisisTask, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void Window_closes_when_initiator_becomes_unavailable()
+        {
+            var window = new Window_Dialogue(_pawn, _recipient);
+            Assert.Same(_recipient, RimMindDialogueService.GetActiveRecipient(_pawn));
+
+            _recipient.Downed = true;
+            SendFromWindow(window, "should close instead of sending");
+
+            Assert.Empty(RimMindAPI.Sent);
+            Assert.Null(RimMindDialogueService.GetActiveRecipient(_pawn));
         }
 
         private static void Complete(int index, string content)

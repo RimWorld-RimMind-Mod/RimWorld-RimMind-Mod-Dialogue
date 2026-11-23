@@ -57,7 +57,9 @@ namespace RimMind.Dialogue.Core
                 (ctx, ct) =>
                 {
                     if (ctx.PawnId <= 0) return Task.FromResult<string?>(null);
-                    if (ctx.Scenario != RimMindAPI.Context.ScenarioDialogue) return Task.FromResult<string?>(null);
+                    if (ctx.Scenario != RimMindAPI.Context.ScenarioDialogue
+                        && ctx.Scenario != RimMindAPI.Context.ScenarioCrisisDialogue)
+                        return Task.FromResult<string?>(null);
                     string? speakerName = ctx.Hints?.TryGetValue("SpeakerName", out var sn) == true ? sn?.ToString() : null;
                     bool isMonologue = string.IsNullOrEmpty(speakerName)
                         && ctx.Hints?.TryGetValue("IsMonologue", out var im) == true
@@ -65,7 +67,6 @@ namespace RimMind.Dialogue.Core
                     var subKeys = new List<string> { "Role", "Process", "Constraint", "Fallback", "ThoughtRules" };
                     subKeys.Add(isMonologue ? "GoalMonologue" : "GoalDialogue");
                     subKeys.Add(isMonologue ? "ExampleMonologue" : "ExampleDialogue");
-                    subKeys.Add(isMonologue ? "OutputMonologue" : "OutputDialogue");
                     if (!isMonologue) subKeys.Add("RelationDelta");
                     subKeys.Add(isMonologue ? "ToolCallMonologue" : "ToolCallDialogue");
                     string[] keys = subKeys.ToArray();
@@ -167,7 +168,8 @@ namespace RimMind.Dialogue.Core
         private static string? BuildStateContext(int pawnId)
         {
             var pawn = RimMindPawnLookup.FindPawnByNumber(pawnId);
-            var memories = pawn?.needs?.mood?.thoughts?.memories?.Memories;
+            if (!RimMindPawnLookup.IsActiveSpawnedColonist(pawn)) return null;
+            var memories = pawn!.needs?.mood?.thoughts?.memories?.Memories;
             if (memories == null || memories.Count == 0) return null;
 
             var sb = new StringBuilder();
@@ -190,14 +192,14 @@ namespace RimMind.Dialogue.Core
         private static string? BuildRelationContext(int pawnId)
         {
             var pawn = RimMindPawnLookup.FindPawnByNumber(pawnId);
-            if (pawn == null) return null;
-            var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
+            if (!RimMindPawnLookup.IsActiveSpawnedColonist(pawn)) return null;
+            var recipient = RimMindDialogueService.GetActiveRecipient(pawn!);
             if (recipient == null) return null;
 
             var sb = new StringBuilder();
             sb.AppendLine(Tr("RimMind.Dialogue.Context.RelationHeader", recipient.Name?.ToStringShort ?? recipient.LabelShort));
 
-            float opinion = pawn.relations?.OpinionOf(recipient) ?? 0f;
+            float opinion = pawn!.relations?.OpinionOf(recipient) ?? 0f;
             string opinionLabel = opinion >= 20 ? Tr("RimMind.Dialogue.Context.Opinion.Friend")
                                 : opinion <= -20 ? Tr("RimMind.Dialogue.Context.Opinion.Enemy")
                                 : Tr("RimMind.Dialogue.Context.Opinion.Acquaintance");
@@ -210,10 +212,24 @@ namespace RimMind.Dialogue.Core
             sb.AppendLine(Tr("RimMind.Dialogue.Context.CompatLabel", $"{compat:F2}", compatLabel));
 
             float romance = pawn.relations?.SecondaryRomanceChanceFactor(recipient) ?? 0f;
-            string romanceLabel = romance >= 0.5f ? Tr("RimMind.Dialogue.Context.Romance.High")
-                                : romance >= 0.15f ? Tr("RimMind.Dialogue.Context.Romance.Medium")
-                                : Tr("RimMind.Dialogue.Context.Romance.Low");
-            sb.AppendLine(Tr("RimMind.Dialogue.Context.RomanceLabel", $"{romance:F2}", romanceLabel, Tr("RimMind.Dialogue.Context.Romance.Unlikely")));
+            string romanceLabel;
+            string romanceHint;
+            if (romance >= 0.5f)
+            {
+                romanceLabel = Tr("RimMind.Dialogue.Context.Romance.High");
+                romanceHint = RimMindText.TrOr("RimMind.Dialogue.Context.Romance.Likely", "strong romantic potential");
+            }
+            else if (romance >= 0.15f)
+            {
+                romanceLabel = Tr("RimMind.Dialogue.Context.Romance.Medium");
+                romanceHint = RimMindText.TrOr("RimMind.Dialogue.Context.Romance.Possible", "possible romantic interest");
+            }
+            else
+            {
+                romanceLabel = Tr("RimMind.Dialogue.Context.Romance.Low");
+                romanceHint = RimMindText.TrOr("RimMind.Dialogue.Context.Romance.Unlikely", "unlikely to develop romance");
+            }
+            sb.AppendLine(Tr("RimMind.Dialogue.Context.RomanceLabel", $"{romance:F2}", romanceLabel, romanceHint));
 
             var directRel = pawn.relations?.DirectRelations?.FirstOrDefault(r => r != null && r.otherPawn == recipient);
             if (directRel?.def != null)
@@ -226,12 +242,12 @@ namespace RimMind.Dialogue.Core
         private static string? BuildHistoryContext(int pawnId)
         {
             var pawn = RimMindPawnLookup.FindPawnByNumber(pawnId);
-            if (pawn == null) return null;
+            if (!RimMindPawnLookup.IsActiveSpawnedColonist(pawn)) return null;
 
-            var recipient = RimMindDialogueService.GetActiveRecipient(pawn);
+            var recipient = RimMindDialogueService.GetActiveRecipient(pawn!);
             int? recipientId = recipient?.thingIDNumber;
 
-            var history = RimMindDialogueService.GetDialogueHistory(pawn.thingIDNumber, 10);
+            var history = RimMindDialogueService.GetDialogueHistory(pawn!.thingIDNumber, 10);
             if (history == null || history.Count == 0) return null;
 
             List<DialogueLogEntry> relevant;
@@ -259,7 +275,7 @@ namespace RimMind.Dialogue.Core
             var sb = new StringBuilder();
             sb.AppendLine(RimMindText.TrOr(
                 "RimMind.Dialogue.Context.HistoryHeader",
-                "【Recent Dialogue History】(Strictly forbidden to mechanically repeat the same complaint or phrase. Expand on new work details or mutual care):"));
+                "[Recent Dialogue History] (Strictly forbidden to mechanically repeat the same complaint or phrase. Expand on new work details or mutual care):"));
 
             foreach (var entry in relevant)
             {
