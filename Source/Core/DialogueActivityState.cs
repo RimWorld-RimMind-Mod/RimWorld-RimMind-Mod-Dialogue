@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
-using System.Collections.Generic;
+using RimMind.Application.Common.Helpers;
 using RimMind.Dialogue.Settings;
+using RimMind.Presentation.Api;
 using Verse;
 
 namespace RimMind.Dialogue.Core
@@ -11,16 +12,13 @@ namespace RimMind.Dialogue.Core
             new DialoguePairRateLimiter();
         private readonly DialogueActiveRecipientRegistry _activeRecipients =
             new DialogueActiveRecipientRegistry();
-        private readonly List<(int tick, int pawnId, DialogueTriggerType type)> _recentTriggers =
-            new List<(int, int, DialogueTriggerType)>();
-        private readonly ConcurrentDictionary<(int, int), List<int>> _dailyDialogueCounts =
-            new ConcurrentDictionary<(int, int), List<int>>();
-        private readonly ConcurrentDictionary<int, Pawn> _pawnCache =
-            new ConcurrentDictionary<int, Pawn>();
+        private readonly KeyedCooldownGate<(int PawnId, DialogueTriggerType Type)> _recentTriggers =
+            new KeyedCooldownGate<(int PawnId, DialogueTriggerType Type)>(256);
+        private readonly ConcurrentDictionary<(int, int), int> _dailyDialogueCounts =
+            new ConcurrentDictionary<(int, int), int>();
 
         private int _gameStartTick = -1;
         private int _lastCountDay = -1;
-        private int _pawnCacheTick = -1;
 
         public int RecentTriggerCount => _recentTriggers.Count;
 
@@ -45,8 +43,6 @@ namespace RimMind.Dialogue.Core
             _recentTriggers.Clear();
             _dailyDialogueCounts.Clear();
             _lastCountDay = -1;
-            _pawnCache.Clear();
-            _pawnCacheTick = -1;
         }
 
         public void RecordTrigger(
@@ -55,8 +51,7 @@ namespace RimMind.Dialogue.Core
             DialogueTriggerType type,
             int cooldownTicks)
         {
-            CleanExpiredTriggers(currentTick, cooldownTicks);
-            _recentTriggers.Add((currentTick, pawnId, type));
+            _recentTriggers.Record((pawnId, type), currentTick);
         }
 
         public bool IsMonologueOnCooldown(
@@ -64,19 +59,7 @@ namespace RimMind.Dialogue.Core
             int pawnId,
             DialogueTriggerType type,
             int cooldownTicks)
-        {
-            foreach (var entry in _recentTriggers)
-            {
-                if (entry.pawnId == pawnId
-                    && entry.type == type
-                    && currentTick - entry.tick < cooldownTicks)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+            => _recentTriggers.IsOnCooldown((pawnId, type), currentTick, cooldownTicks);
 
         public bool TryConsumeReply(
             (int, int) pairKey,
@@ -98,10 +81,7 @@ namespace RimMind.Dialogue.Core
         {
             CleanExpiredDailyCounts(currentTick);
             var key = DialogueClassifier.MakePairKey(idA, idB);
-            List<int> ticks = _dailyDialogueCounts.GetOrAdd(
-                key,
-                _ => new List<int>());
-            ticks.Add(currentTick);
+            _dailyDialogueCounts.AddOrUpdate(key, 1, (_, count) => count + 1);
         }
 
         public int GetDailyDialogueCount(
@@ -111,8 +91,8 @@ namespace RimMind.Dialogue.Core
         {
             CleanExpiredDailyCounts(currentTick);
             var key = DialogueClassifier.MakePairKey(idA, idB);
-            return _dailyDialogueCounts.TryGetValue(key, out var ticks)
-                ? ticks.Count
+            return _dailyDialogueCounts.TryGetValue(key, out int count)
+                ? count
                 : 0;
         }
 
@@ -125,8 +105,7 @@ namespace RimMind.Dialogue.Core
             _activeRecipients.SetRequest(pawnId, recipientId, reservationId);
             if (recipient != null)
             {
-                _pawnCache[recipientId] = recipient;
-                RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
+                RimMindPawnLookup.CachePawn(recipient);
             }
         }
 
@@ -142,12 +121,13 @@ namespace RimMind.Dialogue.Core
                 _activeRecipients.SetManual(pawnId, recipientId.Value);
                 if (recipient != null)
                 {
-                    _pawnCache[recipientId.Value] = recipient;
-                    RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(recipient);
+                    RimMindPawnLookup.CachePawn(recipient);
                 }
             }
             else
+            {
                 _activeRecipients.ClearManual(pawnId);
+            }
         }
 
         public Pawn? GetActiveRecipient(Pawn pawn, int currentTick)
@@ -159,33 +139,17 @@ namespace RimMind.Dialogue.Core
                 return null;
             }
 
-            if (_pawnCache.TryGetValue(recipientId, out var cached) && cached != null && !cached.DestroyedOrNull())
-            {
-                if (RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(cached))
-                    return cached;
-
-                _pawnCache.TryRemove(recipientId, out _);
-            }
-
             var lookupPawn = FindPawnByNumber(recipientId);
-            if (lookupPawn != null && !lookupPawn.DestroyedOrNull() && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(lookupPawn))
+            if (lookupPawn != null && !lookupPawn.DestroyedOrNull() && RimMindPawnLookup.IsActiveSpawnedColonist(lookupPawn))
             {
-                _pawnCache[recipientId] = lookupPawn;
                 return lookupPawn;
-            }
-
-            if (UnityData.IsInMainThread && (_pawnCacheTick < 0 || currentTick - _pawnCacheTick >= 600))
-            {
-                RebuildPawnCache(currentTick);
-                if (_pawnCache.TryGetValue(recipientId, out var fresh) && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(fresh))
-                    return fresh;
             }
 
             return null;
         }
 
         public static Pawn? FindPawnByNumber(int pawnNumber)
-            => RimMind.Presentation.Api.RimMindPawnLookup.FindPawnByNumber(pawnNumber);
+            => RimMindPawnLookup.FindPawnByNumber(pawnNumber);
 
         public (int RecentTriggers, int DailyPairs) ClearCooldowns()
         {
@@ -198,34 +162,6 @@ namespace RimMind.Dialogue.Core
             return (recentTriggers, dailyPairs);
         }
 
-        private void RebuildPawnCache(int currentTick)
-        {
-            if (!UnityData.IsInMainThread)
-                return;
-
-            _pawnCache.Clear();
-            if (Find.Maps != null)
-            {
-                foreach (Map map in Find.Maps)
-                {
-                    var spawned = RimMind.Presentation.Api.RimMindPawnLookup.GetSpawnedColonistsSafe(map);
-                    if (spawned == null)
-                        continue;
-
-                    foreach (Pawn candidate in spawned)
-                    {
-                        if (candidate != null && RimMind.Presentation.Api.RimMindPawnLookup.IsActiveSpawnedColonist(candidate))
-                        {
-                            _pawnCache[candidate.thingIDNumber] = candidate;
-                            RimMind.Presentation.Api.RimMindPawnLookup.CachePawn(candidate);
-                        }
-                    }
-                }
-            }
-
-            _pawnCacheTick = currentTick;
-        }
-
         private void CleanExpiredDailyCounts(int currentTick)
         {
             int today = CurrentGameDay(currentTick);
@@ -235,12 +171,6 @@ namespace RimMind.Dialogue.Core
             _dailyDialogueCounts.Clear();
             _lastCountDay = today;
         }
-
-        private void CleanExpiredTriggers(
-            int currentTick,
-            int cooldownTicks)
-            => _recentTriggers.RemoveAll(
-                entry => currentTick - entry.tick >= cooldownTicks);
 
         private static int CurrentGameDay(int currentTick)
             => (int)(currentTick / 2500f / 24f);

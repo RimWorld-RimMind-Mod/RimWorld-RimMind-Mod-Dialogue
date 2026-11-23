@@ -1,13 +1,10 @@
 using System;
-using Newtonsoft.Json;
-using RimMind.Application.Common.Interfaces.Npc;
 using RimMind.Application.Common.Models.Memory;
 using RimMind.Domain.Llm;
 using RimMind.Domain.ValueObjects;
 using RimMind.Dialogue.Settings;
 using RimMind.Presentation.Api;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace RimMind.Dialogue.Core
@@ -75,18 +72,20 @@ namespace RimMind.Dialogue.Core
             }
             catch (Exception ex) { RimMindErrors.Warn($"[RimMind] PublishPerception dialogue_completed failed: {ex.Message}"); }
 
-            // 记忆记录
-            if (!isMonologue && recipient != null && Verse.ModsConfig.IsActive("mcocdaa.RimMindMemory"))
+            // 记忆记录（Core RimMindAPI.Memory 通过 MemoryBridgeRegistry 自动降级为空实现，无需硬编码检测子模组）
+            if (!isMonologue && recipient != null)
             {
                 try
                 {
                     string memContent = replyText.Length > 60 ? replyText.Substring(0, 60) + "..." : replyText;
+                    string pawnName = pawn.Name?.ToStringShort ?? pawn.LabelShort;
+                    string recipientName = recipient.Name?.ToStringShort ?? recipient.LabelShort;
                     RimMindAPI.Memory.AddPawnMemory(
-                        "RimMind.Dialogue.Memory.WithRecipient".Translate(recipient!.Name.ToStringShort, memContent),
+                        RimMindAPI.Text.TrOr("RimMind.Dialogue.Memory.WithRecipient", "Conversation with {0}: {1}", recipientName, memContent),
                         MemoryKind.Event, Find.TickManager.TicksGame, 0.5f, pawn.ThingID);
                     RimMindAPI.Memory.AddPawnMemory(
-                        "RimMind.Dialogue.Memory.WithPawn".Translate(pawn.Name.ToStringShort, memContent),
-                        MemoryKind.Event, Find.TickManager.TicksGame, 0.5f, recipient!.ThingID);
+                        RimMindAPI.Text.TrOr("RimMind.Dialogue.Memory.WithPawn", "Conversation with {0}: {1}", pawnName, memContent),
+                        MemoryKind.Event, Find.TickManager.TicksGame, 0.5f, recipient.ThingID);
                 }
                 catch (Exception ex)
                 {
@@ -105,8 +104,9 @@ namespace RimMind.Dialogue.Core
             if (RimMindDialogueSettings.Get().showThoughtNotification && thoughtTag != "NONE" && !thoughtTag.NullOrEmpty())
             {
                 string notifText = replyText.Length > 60 ? replyText.Substring(0, 60) + "..." : replyText;
+                string pawnName = pawn.Name?.ToStringShort ?? pawn.LabelShort;
                 Messages.Message(
-                    $"[RimMind] {pawn.Name.ToStringShort}: {notifText}",
+                    $"[RimMind] {pawnName}: {notifText}",
                     pawn, MessageTypeDefOf.SilentInput, historical: false);
             }
 

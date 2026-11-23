@@ -14,7 +14,7 @@ Contextual social dialogue, native spoken ToolCalls, and overhead speech bubble 
 [b]v2.0 Clean Architecture &amp; RimWorld 1.6 / 1.7 Dual-Version Support:[/b]
 [list]
 [*][b]RimWorld 1.6 &amp; 1.7 (Waylith / .NET 10) Ready[/b]: Native multi-target compilation supporting both RimWorld 1.6 (.NET Framework 4.8) and RimWorld 1.7 (.NET 10 / Harmony 2.x &amp; 3.x).
-[*][b]v2.0 Native [code]express_dialogue[/code] ToolCall Pipeline[/b]: Transmits spoken lines ([code]reply[/code]), inner psychological subtext ([code]thought[/code]), and relationship delta ([code]relation_delta[/code]) as structured tool calls. Note: v1.x saves are not compatible with v2.0.
+[*][b]v2.0 Native [code]express_dialogue[/code] ToolCall Pipeline[/b]: Transmits spoken lines ([code]speech[/code]), inner psychological subtext ([code]thought_tag[/code] / [code]thought_desc[/code]), and relationship delta ([code]relation_delta[/code]) as structured tool calls. Note: v1.x saves are not compatible with v2.0.
 [*][b]Multi-Stage Anti-Pollution Sanitizer[/b]: [code]DialogueTextSanitizer[/code] strips [code]think[/code] reasoning blocks, code fences, and raw JSON fragments so overhead speech bubbles remain 100% clean and immersive.
 [/list]
 
@@ -29,7 +29,7 @@ RimMind is an enterprise-grade, AI-powered RimWorld mod suite. Integrated with L
 [tr][td]RimMind-Advisor[/td][td]Colonist self-reflective advice cards, 5-domain autonomy &amp; player approval[/td][td]Core, Actions[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Advisor]Link[/url][/td][/tr]
 [tr][td][b]RimMind-Dialogue[/b][/td][td]Contextual spoken dialogue via express_dialogue ToolCall &amp; speech bubbles[/td][td]Core[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Dialogue]Link[/url][/td][/tr]
 [tr][td]RimMind-Memory[/td][td]3-Tier cognitive memory hierarchy, work aggregation &amp; temporal decay[/td][td]Core[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Memory]Link[/url][/td][/tr]
-[tr][td]RimMind-Personality[/td][td]Big-Five psychological profiles, dawn monologues &amp; dynamic mood thoughts[/td][td]Core[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Personality]Link[/url][/td][/tr]
+[tr][td]RimMind-Personality[/td][td]LLM psychological profiles, state-transition reflections &amp; dynamic mood thoughts[/td][td]Core[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Personality]Link[/url][/td][/tr]
 [tr][td]RimMind-Storyteller[/td][td]AI Story Director, dramatic tension curve, chained arcs &amp; Storyteller Altar[/td][td]Core, Memory[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Storyteller]Link[/url][/td][/tr]
 [tr][td]RimMind-Extension-ModelService[/td][td]Multi-provider routing, Anthropic KV cache, local gateways &amp; load balancing[/td][td]Core[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Extension-ModelService]Link[/url][/td][/tr]
 [tr][td]RimMind-Bridge-RimChat[/td][td]RimChat compatibility bridge: dialogue/action mutual exclusion &amp; context sync[/td][td]Core, RimChat[/td][td][url=https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Bridge-RimChat]Link[/url][/td][/tr]
@@ -47,7 +47,7 @@ RimMind is an enterprise-grade, AI-powered RimWorld mod suite. Integrated with L
 [list]
 [*][b]Event-Responsive &amp; Proximity Banter[/b] - Replaces vanilla Chitchat and DeepTalk with context-aware AI conversations when awake colonists are within 6.9 tiles during dining, crafting, or relaxation, plus monologues on injuries, skill milestones, and mood swings.
 [*][b]Player-Initiated Multi-Turn Chat[/b] - Start direct conversations via pawn Gizmo buttons or right-click menus with persistent session memory.
-[*][b]Dynamic Relationship &amp; Thought Injection[/b] - Conversations apply real-time social opinion modifiers (-5 to +5) and inject emotional Thoughts ([i]ENCOURAGED, VALUED, CONNECTED, HURT, STRESSED, IRRITATED[/i]) that affect colonist mood and notify [code]RimMind-Advisor[/code].
+[*][b]Dynamic Relationship &amp; Thought Injection[/b] - Conversations apply real-time social opinion modifiers (-5 to +5) and inject emotional Thoughts ([i]ENCOURAGED, VALUED, CONNECTED, INSPIRED, HURT, STRESSED, IRRITATED[/i]) that affect colonist mood and notify [code]RimMind-Advisor[/code].
 [*][b]Strict Liveness &amp; Consciousness Gating[/b] - Guarded by [code]RimMindPawnLookup[/code] so sleeping, downed, dead, imprisoned, or off-map pawns never emit ghost dialogues.
 [*][b]Draggable Floating Chat HUD &amp; History Log[/b] - Real-time corner dialogue overlay with adjustable opacity, plus a categorized dual-panel conversation log window.
 [/list]
@@ -65,7 +65,7 @@ RimMind is an enterprise-grade, AI-powered RimWorld mod suite. Integrated with L
 [h2]Thought Tags &amp; Mood Impacts[/h2]
 [table]
 [tr][th]Tag[/th][th]Mood Offset[/th][th]Description[/th][/tr]
-[tr][td]VALUED / CONNECTED[/td][td]+2[/td][td]Feeling appreciated and emotionally close to companions[/td][/tr]
+[tr][td]VALUED / CONNECTED / INSPIRED[/td][td]+2[/td][td]Feeling appreciated, emotionally close, or deeply inspired[/td][/tr]
 [tr][td]ENCOURAGED[/td][td]+1[/td][td]Reassured by supportive words[/td][/tr]
 [tr][td]HURT / IRRITATED[/td][td]-1[/td][td]Stung or annoyed by friction in conversation[/td][/tr]
 [tr][td]STRESSED[/td][td]-2[/td][td]Weighed down by tense exchanges[/td][/tr]

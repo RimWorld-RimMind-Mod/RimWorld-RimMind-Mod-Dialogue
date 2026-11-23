@@ -5,7 +5,6 @@ using RimMind.Dialogue.Core;
 using RimMind.Dialogue.Settings;
 using RimMind.Dialogue.UI;
 using RimMind.Presentation.Api;
-using RimWorld;
 using Verse;
 
 namespace RimMind.Dialogue.Debug
@@ -21,7 +20,7 @@ namespace RimMind.Dialogue.Debug
             var target = FindAnotherColonist(pawn);
             if (target == null) { Log.Message("[RimMind-Dialogue] No other colonist found for target."); return; }
 
-            string context = "RimMind.Dialogue.Debug.ChitchatContext".Translate(target.LabelShort);
+            string context = RimMindAPI.Text.TrOr("RimMind.Dialogue.Debug.ChitchatContext", "[Chitchat] Talking with {0}", target.LabelShort);
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Chitchat, target);
         }
 
@@ -31,7 +30,7 @@ namespace RimMind.Dialogue.Debug
             var pawn = Find.Selector.SingleSelectedThing as Pawn;
             if (pawn == null) { Log.Message("[RimMind-Dialogue] No pawn selected."); return; }
 
-            string context = "RimMind.Dialogue.Debug.HediffContext".Translate();
+            string context = RimMindAPI.Text.TrOr("RimMind.Dialogue.Debug.HediffContext", "Just took damage");
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.Hediff, null);
         }
 
@@ -44,7 +43,8 @@ namespace RimMind.Dialogue.Debug
             var memories = pawn.needs?.mood?.thoughts?.memories?.Memories;
             if (memories == null) { Log.Message("[RimMind-Dialogue] No memories found."); return; }
 
-            var sb = new StringBuilder($"[RimMind-Dialogue] Active RimMindDialogue thoughts for {pawn.Name.ToStringShort}:\n");
+            string pawnName = pawn.Name?.ToStringShort ?? pawn.LabelShort;
+            var sb = new StringBuilder($"[RimMind-Dialogue] Active RimMindDialogue thoughts for {pawnName}:\n");
             bool any = false;
             foreach (var t in memories)
             {

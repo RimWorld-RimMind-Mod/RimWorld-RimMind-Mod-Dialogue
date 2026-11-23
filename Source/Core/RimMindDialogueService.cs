@@ -27,7 +27,7 @@ namespace RimMind.Dialogue.Core
 
         public static DialogueCadenceEvaluator CadenceEvaluator => _cadenceEvaluator;
 
-        internal static readonly ConcurrentDictionary<string, string> RegisteredTriggerLabels = new ConcurrentDictionary<string, string>();
+        internal static ConcurrentDictionary<string, string> RegisteredTriggerLabels => DialogueTriggerRegistry.CustomLabels;
 
         public static event Action? OnLogUpdated
         {
@@ -159,26 +159,10 @@ namespace RimMind.Dialogue.Core
         }
 
         public static void RegisterTriggerType(string typeId, string labelKey)
-        {
-            RegisteredTriggerLabels[typeId] = labelKey;
-        }
+            => DialogueTriggerRegistry.RegisterLabel(typeId, labelKey);
 
         public static string GetTriggerLabel(DialogueTriggerType type)
-        {
-            string typeStr = type.ToString();
-            if (RegisteredTriggerLabels.TryGetValue(typeStr, out var label))
-                return RimMindAPI.Text.TrOr(label, label);
-            return type switch
-            {
-                DialogueTriggerType.Chitchat => "RimMind.Dialogue.Trigger.Chitchat".Translate(),
-                DialogueTriggerType.Hediff => "RimMind.Dialogue.Trigger.Hediff".Translate(),
-                DialogueTriggerType.LevelUp => "RimMind.Dialogue.Trigger.LevelUp".Translate(),
-                DialogueTriggerType.Thought => "RimMind.Dialogue.Trigger.Thought".Translate(),
-                DialogueTriggerType.Auto => "RimMind.Dialogue.Trigger.Auto".Translate(),
-                DialogueTriggerType.PlayerInput => "RimMind.Dialogue.Trigger.PlayerInput".Translate(),
-                _ => typeStr
-            };
-        }
+            => DialogueTriggerRegistry.GetLabel(type);
 
         public static void AddLogEntry(Pawn pawn, Pawn? recipient, DialogueTriggerType triggerType,
             string context, string reply, string? thoughtTag, string? thoughtDesc)
@@ -186,10 +170,10 @@ namespace RimMind.Dialogue.Core
             var entry = new DialogueLogEntry
             {
                 tick = Find.TickManager.TicksGame,
-                initiatorName = pawn.Name.ToStringShort,
+                initiatorName = pawn.Name?.ToStringShort ?? pawn.LabelShort,
                 initiatorId = pawn.thingIDNumber,
                 initiatorIsColonist = pawn.IsColonist,
-                recipientName = recipient?.Name.ToStringShort,
+                recipientName = recipient == null ? null : (recipient.Name?.ToStringShort ?? recipient.LabelShort),
                 recipientId = recipient?.thingIDNumber ?? -1,
                 recipientIsColonist = recipient?.IsColonist ?? false,
                 category = DialogueClassifier.Classify(pawn.IsColonist, recipient?.IsColonist, triggerType),
@@ -222,7 +206,8 @@ namespace RimMind.Dialogue.Core
         public static void SetActiveRecipient(Pawn pawn, Pawn? recipient)
             => _activityState.SetManualRecipient(
                 pawn.thingIDNumber,
-                recipient?.thingIDNumber);
+                recipient?.thingIDNumber,
+                recipient);
 
         // ── 查询方法 ──
 

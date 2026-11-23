@@ -1,4 +1,3 @@
-using RimMind.Dialogue.Comps;
 using Verse;
 
 namespace RimMind.Dialogue.Comps

@@ -1,4 +1,3 @@
-using HarmonyLib;
 using RimMind.Application.Common.Interfaces.Extension;
 using RimMind.Presentation;
 using RimMind.Presentation.Api;
@@ -30,6 +29,7 @@ namespace RimMind.Dialogue
             RimMindAPI.Extensions<IToggleBehavior>().Register(new DialogueOverlayToggleBehavior());
             RimMindAPI.Extensions<IDialogueTrigger>().Register(new DialogueTriggerAdapter());
             RimMindAPI.Extensions<ISkipCheck>().Register(new DialogueSkipCheck());
+            RimMindAPI.Diagnostics.RegisterTraceSummarizer(new DialogueRequestTraceSummarizer());
 
             Log.Message("[RimMind-Dialogue] Initialized.");
         }

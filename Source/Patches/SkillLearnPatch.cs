@@ -21,7 +21,8 @@ namespace RimMind.Dialogue.Patches
         public static void Postfix(SkillRecord __instance, float xp, int __state)
         {
             if (__state < 0 || __instance.Level <= __state) return;
-            if (!RimMindDialogueSettings.Get().levelUpEnabled) return;
+            var settings = RimMindDialogueSettings.Get();
+            if (!settings.enabled || !settings.levelUpEnabled) return;
 
             Pawn pawn = __instance.Pawn;
             if (!RimMindPawnLookup.IsEligibleColonist(pawn) || pawn.Downed) return;
@@ -31,7 +32,12 @@ namespace RimMind.Dialogue.Patches
                 __instance.def?.defName ?? string.Empty,
                 __state,
                 __instance.Level));
-            string context = "RimMind.Dialogue.Context.SkillLevelUp".Translate(__instance.def!.label, __instance.Level);
+            string skillLabel = __instance.def?.label ?? __instance.def?.defName ?? string.Empty;
+            string context = RimMindAPI.Text.TrOr(
+                "RimMind.Dialogue.Context.SkillLevelUp",
+                "{0} skill reached level {1}",
+                skillLabel,
+                __instance.Level);
             RimMindDialogueService.HandleTrigger(pawn, context, DialogueTriggerType.LevelUp, null);
         }
     }

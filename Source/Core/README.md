@@ -20,9 +20,11 @@ when changing `dialogue_state`, `dialogue_relation`, or `dialogue_task` context.
 
 ## Responsibilities
 
-- `DialogueRequestCoordinator.cs`: shared admission, reservations, request construction,
-  cancellation and terminal cleanup. There is one Core request-send site.
-- `DialogueActivityState.cs`: readiness, cooldowns, quotas, recipients, Pawn lookup.
+- `DialogueRequestCoordinator.cs`: shared admission, reservations, request construction
+  (coalescing/TTL/liveness on automatic triggers), cancellation and terminal cleanup. There is one Core request-send site.
+- `DialogueTriggerRegistry.cs`: single source of truth for `DialogueTriggerType` metadata
+  (trigger kind, localized label, prompt format key, log display color) and custom trigger labels.
+- `DialogueActivityState.cs`: readiness, cooldowns (`KeyedCooldownGate`), quotas, recipients, Pawn lookup.
 - `DialogueLogStore.cs`: bounded log storage and snapshots.
 - `NpcResponseHandler.cs`: game-side effects after a successful response, including
   optional memory writes through the Core public `RimMindAPI.Memory` API.

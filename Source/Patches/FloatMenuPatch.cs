@@ -10,22 +10,11 @@ using Verse;
 
 namespace RimMind.Dialogue.Patches
 {
-#if V1_5
-    [HarmonyPatch(typeof(FloatMenuMakerMap), nameof(FloatMenuMakerMap.ChoicesAtFor))]
-#else
     [HarmonyPatch(typeof(FloatMenuMakerMap), nameof(FloatMenuMakerMap.GetOptions))]
-#endif
     public static class FloatMenuPatch
     {
         private const int ClickRadiusCells = 1;
 
-#if V1_5
-        [HarmonyPostfix]
-        public static void Postfix(Vector3 clickPos, Pawn pawn, ref List<FloatMenuOption> __result)
-        {
-            TryAddTalkOption(__result, pawn, clickPos);
-        }
-#else
         [HarmonyPostfix]
         public static void Postfix(
             List<Pawn> selectedPawns,
@@ -34,11 +23,10 @@ namespace RimMind.Dialogue.Patches
             ref List<FloatMenuOption> __result)
         {
             Pawn? pawn = (selectedPawns is { Count: 1 }) ? selectedPawns[0] : null;
-            TryAddTalkOption(__result, pawn!, clickPos);
+            TryAddTalkOption(__result, pawn, clickPos);
         }
-#endif
 
-        private static void TryAddTalkOption(List<FloatMenuOption> result, Pawn selectedPawn, Vector3 clickPos)
+        private static void TryAddTalkOption(List<FloatMenuOption> result, Pawn? selectedPawn, Vector3 clickPos)
         {
             if (result == null) return;
             if (!RimMindDialogueSettings.Get().enabled) return;
@@ -87,37 +75,47 @@ namespace RimMind.Dialogue.Patches
         {
             if (RimMindAPI.Ext.ShouldSkipFloatMenu()) return;
 
+            string initiatorName = initiator.Name?.ToStringShort ?? initiator.LabelShort;
+            string targetName = target.Name?.ToStringShort ?? target.LabelShort;
+
             result.Add(new FloatMenuOption(
-                "RimMind.Dialogue.UI.FloatMenu.ChatWith".Translate(target.LabelShortCap),
+                RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.FloatMenu.ChatWith", "Chat with {0}", target.LabelShortCap),
                 delegate
                 {
                     if (!RimMindAPI.Settings.IsConfigured())
                     {
-                        Messages.Message("RimMind.Dialogue.UI.FloatMenu.APINotConfigured".Translate(),
+                        Messages.Message(
+                            RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.FloatMenu.APINotConfigured", "API not configured, cannot dialogue"),
                             MessageTypeDefOf.RejectInput, false);
                         return;
                     }
                     if (!RimMindDialogueService.IsReady)
                     {
-                        Messages.Message("RimMind.Dialogue.UI.FloatMenu.NotReady".Translate(),
+                        Messages.Message(
+                            RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.FloatMenu.NotReady", "Dialogue system not ready, please try again later"),
                             MessageTypeDefOf.RejectInput, false);
                         return;
                     }
                     if (RimMindDialogueService.IsDialoguePending(initiator.thingIDNumber, target.thingIDNumber))
                     {
-                        Messages.Message("RimMind.Dialogue.UI.FloatMenu.Pending".Translate(),
+                        Messages.Message(
+                            RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.FloatMenu.Pending", "Dialogue request in progress, please wait"),
                             MessageTypeDefOf.RejectInput, false);
                         return;
                     }
                     int count = RimMindDialogueService.GetDailyDialogueCount(initiator.thingIDNumber, target.thingIDNumber);
                     if (count >= RimMindDialogueSettings.Get().maxDailyDialogueRounds)
                     {
-                        Messages.Message("RimMind.Dialogue.UI.FloatMenu.DailyLimitReached".Translate(),
+                        Messages.Message(
+                            RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.FloatMenu.DailyLimitReached", "Daily dialogue limit reached"),
                             MessageTypeDefOf.RejectInput, false);
                         return;
                     }
-                    string context = "RimMind.Dialogue.Context.PlayerInitiate".Translate(
-                        initiator.Name.ToStringShort, target.Name.ToStringShort);
+                    string context = RimMindAPI.Text.TrOr(
+                        "RimMind.Dialogue.Context.PlayerInitiate",
+                        "{0} initiates conversation with {1}",
+                        initiatorName,
+                        targetName);
                     RimMindDialogueService.HandleTrigger(
                         initiator,
                         context,
@@ -127,7 +125,10 @@ namespace RimMind.Dialogue.Patches
                         {
                             RimMindErrors.Warn($"[RimMind-Dialogue] FloatMenu dialogue error: {error}");
                             Messages.Message(
-                                "RimMind.Dialogue.UI.FloatMenu.RequestFailed".Translate(initiator.Name.ToStringShort),
+                                RimMindAPI.Text.TrOr(
+                                    "RimMind.Dialogue.UI.FloatMenu.RequestFailed",
+                                    "Dialogue request for {0} failed",
+                                    initiatorName),
                                 MessageTypeDefOf.RejectInput,
                                 false);
                         });

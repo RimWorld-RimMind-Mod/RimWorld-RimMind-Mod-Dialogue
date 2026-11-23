@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using RimMind.Application.Common.Helpers;
 using UnityEngine;
 
 namespace RimMind.Dialogue.Core
@@ -51,7 +52,8 @@ namespace RimMind.Dialogue.Core
             float targetTicks = targetCadenceDays * 60000f;
             if (!_lastPairDialogueTicks.TryGetValue(pairKey, out int lastTick) || lastTick < 0)
             {
-                int staggerOffset = Math.Abs((pairKey.Item1 * 397) ^ pairKey.Item2) % (int)(targetTicks * 0.75f);
+                int staggerWindow = Math.Max(1, (int)(targetTicks * 0.75f));
+                int staggerOffset = TickStagger.PhaseOffset((pairKey.Item1 * 397) ^ pairKey.Item2, staggerWindow);
                 lastTick = Math.Max(0, currentTick - staggerOffset);
                 _lastPairDialogueTicks.TryAdd(pairKey, lastTick);
             }

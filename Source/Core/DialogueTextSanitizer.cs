@@ -269,7 +269,7 @@ namespace RimMind.Dialogue.Core
         public static string ClassifyThoughtTag(string? rawTag)
         {
             if (string.IsNullOrWhiteSpace(rawTag))
-                return "FRIENDLY";
+                return "NONE";
 
             string tag = rawTag!.Trim().Trim('"', '\'', '`', '[', ']');
             if (tag.Length <= 15 && !tag.Contains("\uFF0C") && !tag.Contains("\u3002") && !tag.Contains(",") && !tag.Contains(".") && !tag.Contains(" ") && !tag.Contains("\u4E00\u8FB9") && !tag.Contains("\u5FC3\u91CC"))
@@ -279,17 +279,16 @@ namespace RimMind.Dialogue.Core
 
             string lower = tag.ToLowerInvariant();
             if (lower.Contains("grief") || lower.Contains("\u60B2") || lower.Contains("\u4F24") || lower.Contains("\u6B7B") || lower.Contains("mourn"))
-                return "GRIEF";
-            if (lower.Contains("anxi") || lower.Contains("\u614C") || lower.Contains("\u6025") || lower.Contains("\u7D27") || lower.Contains("\u6101"))
-                return "ANXIOUS";
+                return "HURT";
+            if (lower.Contains("anxi") || lower.Contains("\u614C") || lower.Contains("\u6025") || lower.Contains("\u7D27") || lower.Contains("\u6101")
+                || lower.Contains("weary") || lower.Contains("\u7D2F") || lower.Contains("\u4E4F") || lower.Contains("exhaust"))
+                return "STRESSED";
             if (lower.Contains("tense") || lower.Contains("\u6012") || lower.Contains("\u706B") || lower.Contains("\u6C14") || lower.Contains("conflict"))
-                return "TENSE";
-            if (lower.Contains("weary") || lower.Contains("\u7D2F") || lower.Contains("\u4E4F") || lower.Contains("exhaust"))
-                return "EXHAUSTED";
+                return "IRRITATED";
             if (lower.Contains("concer") || lower.Contains("\u5173") || lower.Contains("\u5FE7") || lower.Contains("\u8003\u8651"))
-                return "CONCERNED";
+                return "CONNECTED";
 
-            return "REFLECTIVE";
+            return "NONE";
         }
     }
 }

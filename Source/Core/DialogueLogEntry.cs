@@ -1,3 +1,4 @@
+using RimMind.Presentation.Api;
 using Verse;
 
 namespace RimMind.Dialogue.Core
@@ -42,7 +43,7 @@ namespace RimMind.Dialogue.Core
                 float hours = tick / 2500f;
                 int days = (int)(hours / 24f);
                 float remHours = hours % 24f;
-                return "RimMind.Dialogue.UI.TimeFormat".Translate((days + 1).ToString(), $"{remHours:F1}");
+                return RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.TimeFormat", "Day {0} {1}h", (days + 1).ToString(), $"{remHours:F1}");
             }
         }
 

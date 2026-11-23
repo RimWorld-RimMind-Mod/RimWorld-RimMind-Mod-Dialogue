@@ -8,7 +8,7 @@
 <p>
   <a href="https://rimworldgame.com/"><img src="https://img.shields.io/badge/RimWorld-1.6%20%7C%201.7-brightgreen.svg" alt="RimWorld 1.6 | 1.7"></a>
   <a href="https://github.com/RimWorld-RimMind-Mod/RimWorld-RimMind-Mod-Core"><img src="https://img.shields.io/badge/Dependency-RimMind--Core-blue.svg" alt="Dependency: RimMind-Core"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Unit%20Tests-67%2B%20Passing-success.svg" alt="Unit Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Unit%20Tests-Passing-success.svg" alt="Unit Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
@@ -23,7 +23,7 @@
 **RimMind-Dialogue** brings RimWorld colonists to life through organic, natural spoken interactions. Powered by the native `express_dialogue` function call architecture, colonists talk to each other while eating in dining halls, laboring at craft benches, or resting by campfires.
 
 ### Core Capabilities
-- **Native `express_dialogue` ToolCall (`DialogueToolDefinitions` & `DialogueToolParser`)**: Transmits spoken dialogue (`reply`), internal psychological subtext (`thought`), and relationship delta modifiers (`relation_delta: [-5, 5]`) as structured function parameters via `DialogueToolDefinitions.ExpressDialogue`, parsed deterministically by `DialogueToolParser` with dual-mode tool call and fallback support.
+- **Native `express_dialogue` ToolCall (`DialogueToolDefinitions` & `DialogueToolParser`)**: Transmits spoken dialogue (`speech`), internal psychological subtext (`thought_tag` / `thought_desc`), and relationship delta modifiers (`relation_delta: [-5, 5]`) as structured function parameters via `DialogueToolDefinitions.ExpressDialogueTool`, parsed deterministically by `DialogueToolParser.TryParse` with dual-mode tool call and fallback support.
 - **Dialogue Bubble Anti-Pollution & Sanitization Pipeline (`DialogueTextSanitizer`)**: Multi-stage sanitization strips `<think>` reasoning blocks, markdown code fences, raw JSON/XML fragments, and prompt metadata before any bubble or dialogue window renders, strictly blocking unparsed LLM artifacts from appearing over colonists' heads.
 - **Contextual Spoken Triggers & Liveness Gating**: Conversational opportunities trigger organically based on physical proximity (radius 6.9 tiles), shared activities, and mutual social opinions, strictly guarded by `RimMindPawnLookup` liveness and consciousness checks so downed, sleeping, or off-map pawns never speak.
 - **Dynamic Relationship Evolution**: Conversations dynamically impact mutual pawn opinions, fostering deep romances, bitter rivalries, or lasting camaraderie.
@@ -66,7 +66,7 @@ flowchart TD
 
 ## 🧪 Developer Guide & Testing
 
-Run unit tests covering `express_dialogue` tool call parsing, `DialogueTextSanitizer` anti-pollution filtering, and opinion delta boundaries (113 test cases):
+Run unit tests covering `express_dialogue` tool call parsing, `DialogueTextSanitizer` anti-pollution filtering, trigger/trace registries, and request lifecycle contracts:
 
 ```powershell
 dotnet test RimMind-Dialogue/Tests/RimMindDialogue.Tests.csproj -c Release

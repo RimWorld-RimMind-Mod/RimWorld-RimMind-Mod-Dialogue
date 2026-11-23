@@ -30,18 +30,23 @@ namespace RimMind.Dialogue.UI
         }
 
         protected override bool ValidateCanStayOpen()
-            => RimMindPawnLookup.IsEligibleColonist(_pawn) && !_pawn.Downed;
+            => RimMindPawnLookup.IsEligibleColonist(_pawn) && !_pawn.Downed
+               && (_initiator == null || (RimMindPawnLookup.IsEligibleColonist(_initiator) && !_initiator.Downed));
 
-        protected override string GetTitle() => _initiator != null
-            ? RimMindAPI.Text.TrOr(
-                "RimMind.Dialogue.UI.ChatTitleWithInitiator",
-                "{0} & {1}",
-                _initiator.Name.ToStringShort,
-                _pawn.Name.ToStringShort)
-            : RimMindAPI.Text.TrOr(
-                "RimMind.Dialogue.UI.ChatTitle",
-                "Chat with {0}",
-                _pawn.Name.ToStringShort);
+        protected override string GetTitle()
+        {
+            string pawnName = _pawn.Name?.ToStringShort ?? _pawn.LabelShort;
+            return _initiator != null
+                ? RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.UI.ChatTitleWithInitiator",
+                    "{0} & {1}",
+                    _initiator.Name?.ToStringShort ?? _initiator.LabelShort,
+                    pawnName)
+                : RimMindAPI.Text.TrOr(
+                    "RimMind.Dialogue.UI.ChatTitle",
+                    "Chat with {0}",
+                    pawnName);
+        }
 
         protected override string GetWaitingText()
             => RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Thinking", "Thinking...");
@@ -54,10 +59,10 @@ namespace RimMind.Dialogue.UI
             if (role == "user")
             {
                 return _initiator != null
-                    ? RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.PawnPrefix", "{0}: ", _initiator.Name.ToStringShort)
+                    ? RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.PawnPrefix", "{0}: ", _initiator.Name?.ToStringShort ?? _initiator.LabelShort)
                     : RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.PlayerPrefix", "You: ");
             }
-            return RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.PawnPrefix", "{0}: ", _pawn.Name.ToStringShort);
+            return RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.PawnPrefix", "{0}: ", _pawn.Name?.ToStringShort ?? _pawn.LabelShort);
         }
 
         protected override void OnSubmitUserMessage(string trimmedInput)
@@ -81,7 +86,7 @@ namespace RimMind.Dialogue.UI
                         RimMindAPI.Text.TrOr(
                             "RimMind.Dialogue.UI.FloatMenu.RequestFailed",
                             "Dialogue request failed for {0}",
-                            _pawn.Name.ToStringShort),
+                            _pawn.Name?.ToStringShort ?? _pawn.LabelShort),
                         MessageTypeDefOf.RejectInput, false);
                 },
                 cancellationToken: LifetimeToken);

@@ -128,6 +128,7 @@ namespace RimMind.Presentation.Api
         public static class Context
         {
             public static string ScenarioDialogue => RimMind.Application.Common.Models.Context.ScenarioIds.Dialogue;
+            public static string ScenarioCrisisDialogue => RimMind.Application.Common.Models.Context.ScenarioIds.CrisisDialogue;
             public static TestContextRegistry ContextKeys { get; } = new();
             public static void RegisterScenario(ScenarioDescriptor descriptor)
                 => ScenarioRegistry.Register(descriptor);
@@ -344,9 +345,16 @@ namespace UnityEngine
     }
     public struct Color
     {
-        public Color(float r, float g, float b, float a = 1) { }
-        public static Color white => default;
-        public static Color gray => default;
+        public float r, g, b, a;
+        public Color(float r, float g, float b, float a = 1f)
+        {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+        public static Color white => new Color(1f, 1f, 1f, 1f);
+        public static Color gray => new Color(0.5f, 0.5f, 0.5f, 1f);
     }
     public class Texture2D { }
     public enum TextAnchor { MiddleCenter, UpperLeft }

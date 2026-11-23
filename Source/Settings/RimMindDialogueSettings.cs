@@ -1,5 +1,6 @@
 using UnityEngine;
 using Verse;
+using RimMind.Presentation.Api;
 using RimMind.Presentation.UI;
 
 namespace RimMind.Dialogue.Settings
@@ -106,6 +107,9 @@ namespace RimMind.Dialogue.Settings
         private static Vector2 _settingsScrollPos = Vector2.zero;
         private static float _measuredSettingsHeight = 640f;
 
+        private static string Tr(string key, string fallback, params object[] args)
+            => RimMindAPI.Text.TrOr(key, fallback, args);
+
         public static void DrawSettingsContent(UnityEngine.Rect inRect)
         {
             var s = Get();
@@ -116,82 +120,104 @@ namespace RimMind.Dialogue.Settings
                 ref _measuredSettingsHeight,
                 listing =>
                 {
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.Enable".Translate(), ref s.enabled,
-                        "RimMind.Dialogue.Settings.Enable.Desc".Translate());
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.Enable", "Enable AI Dialogue System"),
+                        ref s.enabled,
+                        Tr("RimMind.Dialogue.Settings.Enable.Desc", "When enabled, colonists will generate dialogues and monologues based on game events and their state."));
 
-                    SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.TriggerSources".Translate());
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ChitchatIntercept".Translate(), ref s.chitchatEnabled,
-                        "RimMind.Dialogue.Settings.ChitchatIntercept.Desc".Translate());
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.HediffReaction".Translate(), ref s.hediffEnabled,
-                        "RimMind.Dialogue.Settings.HediffReaction.Desc".Translate());
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.LevelUpReaction".Translate(), ref s.levelUpEnabled,
-                        "RimMind.Dialogue.Settings.LevelUpReaction.Desc".Translate());
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ThoughtReaction".Translate(), ref s.thoughtEnabled,
-                        "RimMind.Dialogue.Settings.ThoughtReaction.Desc".Translate());
+                    SettingsUIDrawer.DrawSectionHeader(listing, Tr("RimMind.Dialogue.Settings.TriggerSources", "Trigger Sources"));
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.ChitchatIntercept", "Intercept Chitchat"),
+                        ref s.chitchatEnabled,
+                        Tr("RimMind.Dialogue.Settings.ChitchatIntercept.Desc", "Replace vanilla Chitchat/DeepTalk interactions with AI-generated dialogue."));
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.HediffReaction", "Health Change Reaction"),
+                        ref s.hediffEnabled,
+                        Tr("RimMind.Dialogue.Settings.HediffReaction.Desc", "When a colonist is injured or falls ill, AI generates a dialogue reaction."));
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.LevelUpReaction", "Skill Level Up Reaction"),
+                        ref s.levelUpEnabled,
+                        Tr("RimMind.Dialogue.Settings.LevelUpReaction.Desc", "When a colonist levels up a skill, AI generates a dialogue reaction."));
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.ThoughtReaction", "Mood Change Reaction"),
+                        ref s.thoughtEnabled,
+                        Tr("RimMind.Dialogue.Settings.ThoughtReaction.Desc", "When a colonist's mood changes significantly, AI generates a dialogue reaction."));
                     if (s.thoughtEnabled)
                     {
-                        listing.Label("  " + "RimMind.Dialogue.Settings.MoodThreshold".Translate($"{s.moodChangeThreshold:F0}"));
+                        listing.Label("  " + Tr("RimMind.Dialogue.Settings.MoodThreshold", "Mood change threshold: {0}", $"{s.moodChangeThreshold:F0}"));
                         s.moodChangeThreshold = listing.Slider(s.moodChangeThreshold, 1f, 5f);
                     }
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.AutoMonologue".Translate(), ref s.autoDialogueEnabled,
-                        "RimMind.Dialogue.Settings.AutoMonologue.Desc".Translate());
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.AutoMonologue", "Auto Monologue on Idle"),
+                        ref s.autoDialogueEnabled,
+                        Tr("RimMind.Dialogue.Settings.AutoMonologue.Desc", "When a colonist is idle, automatically trigger an inner monologue."));
                     if (s.autoDialogueEnabled)
                     {
                         listing.LabelWithTooltip(
-                            "  " + "RimMind.Dialogue.Settings.AutoInterval".Translate(s.autoDialogueCooldownHours),
-                            "RimMind.Dialogue.Settings.AutoMonologueDesc".Translate());
+                            "  " + Tr("RimMind.Dialogue.Settings.AutoInterval", "Auto monologue interval: {0} game hours", s.autoDialogueCooldownHours),
+                            Tr("RimMind.Dialogue.Settings.AutoMonologueDesc", "Minimum game hours between auto-monologues when a colonist is idle."));
                         s.autoDialogueCooldownHours = (int)listing.Slider(s.autoDialogueCooldownHours, 1f, 24f);
                     }
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.PlayerDialogueGizmo".Translate(), ref s.playerDialogueEnabled,
-                        "RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc".Translate());
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.PlayerDialogueGizmo", "Player Initiated Dialogue"),
+                        ref s.playerDialogueEnabled,
+                        Tr("RimMind.Dialogue.Settings.PlayerDialogueGizmo.Desc", "Show a chat button on colonists and a right-click dialogue option."));
 
-                    SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Behavior".Translate());
+                    SettingsUIDrawer.DrawSectionHeader(listing, Tr("RimMind.Dialogue.Settings.Section.Behavior", "Behavior Settings"));
                     listing.LabelWithTooltip(
-                        "RimMind.Dialogue.Settings.MonologueCooldown".Translate($"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"),
-                        "RimMind.Dialogue.Settings.MonologueCooldown.Desc".Translate());
+                        Tr("RimMind.Dialogue.Settings.MonologueCooldown", "Monologue Cooldown: {0} game hours ({1} ticks)", $"{s.monologueCooldownTicks / 2500f:F1}", $"{s.monologueCooldownTicks}"),
+                        Tr("RimMind.Dialogue.Settings.MonologueCooldown.Desc", "Minimum interval between same-type monologues for the same colonist."));
                     s.monologueCooldownTicks = (int)listing.Slider(s.monologueCooldownTicks, 3600f, 72000f);
                     s.monologueCooldownTicks = (s.monologueCooldownTicks / 600) * 600;
 
                     listing.LabelWithTooltip(
-                        "RimMind.Dialogue.Settings.MaxDailyDialogues".Translate(s.maxDailyDialogueRounds),
-                        "RimMind.Dialogue.Settings.MaxDailyDialogues.Desc".Translate());
+                        Tr("RimMind.Dialogue.Settings.MaxDailyDialogues", "Max daily dialogue rounds per pair: {0}", s.maxDailyDialogueRounds),
+                        Tr("RimMind.Dialogue.Settings.MaxDailyDialogues.Desc", "Maximum dialogue rounds per colonist pair per day."));
                     s.maxDailyDialogueRounds = (int)listing.Slider(s.maxDailyDialogueRounds, 1f, 20f);
 
                     listing.LabelWithTooltip(
-                        "RimMind.Dialogue.Settings.GlobalConcurrency".Translate(s.globalConcurrency),
-                        "RimMind.Dialogue.Settings.GlobalConcurrency.Desc".Translate());
+                        Tr("RimMind.Dialogue.Settings.GlobalConcurrency", "Global dialogue concurrency limit: {0}", s.globalConcurrency),
+                        Tr("RimMind.Dialogue.Settings.GlobalConcurrency.Desc", "Maximum number of simultaneous AI dialogue requests."));
                     s.globalConcurrency = (int)listing.Slider(s.globalConcurrency, 1f, 10f);
 
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.EnableDialogueReply".Translate(), ref s.enableDialogueReply,
-                        "RimMind.Dialogue.Settings.EnableDialogueReply.Desc".Translate());
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.EnableDialogueReply", "Enable Dialogue Reply"),
+                        ref s.enableDialogueReply,
+                        Tr("RimMind.Dialogue.Settings.EnableDialogueReply.Desc", "Automatically generate a reply when receiving dialogue."));
                     if (s.enableDialogueReply)
                     {
                         listing.LabelWithTooltip(
-                            "RimMind.Dialogue.Settings.MaxDailyReplies".Translate(s.maxDailyReplyRounds),
-                            "RimMind.Dialogue.Settings.MaxDailyReplies.Desc".Translate());
+                            Tr("RimMind.Dialogue.Settings.MaxDailyReplies", "Maximum automatic replies per pair each day: {0}", s.maxDailyReplyRounds),
+                            Tr("RimMind.Dialogue.Settings.MaxDailyReplies.Desc", "Rate-limits continuous two-way conversations."));
                         s.maxDailyReplyRounds = (int)listing.Slider(s.maxDailyReplyRounds, 1f, 50f);
                     }
 
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.StartDelay".Translate(), ref s.startDelayEnabled,
-                        "RimMind.Dialogue.Settings.StartDelay.Desc".Translate());
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.StartDelay", "Game start delay"),
+                        ref s.startDelayEnabled,
+                        Tr("RimMind.Dialogue.Settings.StartDelay.Desc", "No dialogue is triggered for a period after loading a save or starting a new game."));
                     if (s.startDelayEnabled)
                     {
-                        listing.Label("  " + "RimMind.Dialogue.Settings.StartDelayValue".Translate(s.startDelaySeconds));
+                        listing.Label("  " + Tr("RimMind.Dialogue.Settings.StartDelayValue", "Start delay: {0}s", s.startDelaySeconds));
                         s.startDelaySeconds = (int)listing.Slider(s.startDelaySeconds, 1f, 60f);
                     }
 
-                    SettingsUIDrawer.DrawSectionHeader(listing, "RimMind.Dialogue.Settings.Section.Display".Translate());
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowNotification".Translate(), ref s.showThoughtNotification,
-                        "RimMind.Dialogue.Settings.ShowNotification.Desc".Translate());
-                    listing.CheckboxLabeled("RimMind.Dialogue.Settings.ShowOverlay".Translate(), ref s.overlayEnabled,
-                        "RimMind.Dialogue.Settings.ShowOverlay.Desc".Translate());
+                    SettingsUIDrawer.DrawSectionHeader(listing, Tr("RimMind.Dialogue.Settings.Section.Display", "Display"));
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.ShowNotification", "Show notification when Thought is injected"),
+                        ref s.showThoughtNotification,
+                        Tr("RimMind.Dialogue.Settings.ShowNotification.Desc", "Display a notification when the dialogue system injects a mood Thought."));
+                    listing.CheckboxLabeled(
+                        Tr("RimMind.Dialogue.Settings.ShowOverlay", "Show dialogue overlay"),
+                        ref s.overlayEnabled,
+                        Tr("RimMind.Dialogue.Settings.ShowOverlay.Desc", "Display a floating panel on screen showing recent dialogue content."));
                     listing.LabelWithTooltip(
-                        "RimMind.Dialogue.Settings.OverlayOpacity".Translate($"{s.overlayOpacity:P0}"),
-                        "RimMind.Dialogue.Settings.OverlayOpacity.Desc".Translate());
+                        Tr("RimMind.Dialogue.Settings.OverlayOpacity", "Overlay opacity: {0}", $"{s.overlayOpacity:P0}"),
+                        Tr("RimMind.Dialogue.Settings.OverlayOpacity.Desc", "Opacity of the dialogue overlay."));
                     s.overlayOpacity = listing.Slider(s.overlayOpacity, 0.1f, 1f);
                     listing.LabelWithTooltip(
-                        "RimMind.Dialogue.Settings.OverlayMaxMessages".Translate(s.overlayMaxMessages),
-                        "RimMind.Dialogue.Settings.OverlayMaxMessages.Desc".Translate());
+                        Tr("RimMind.Dialogue.Settings.OverlayMaxMessages", "Overlay max messages: {0}", s.overlayMaxMessages),
+                        Tr("RimMind.Dialogue.Settings.OverlayMaxMessages.Desc", "Maximum number of dialogue lines shown simultaneously in the overlay."));
                     s.overlayMaxMessages = (int)listing.Slider(s.overlayMaxMessages, 3f, 20f);
                 },
                 onReset: () => ResetToDefaults(s),
@@ -212,6 +238,8 @@ namespace RimMind.Dialogue.Settings
             s.maxDailyDialogueRounds = 6;
             s.globalConcurrency = 3;
             s.showThoughtNotification = false;
+            s.targetDialogueCadenceDays = 3.0f;
+            s.maxStoredDialogueHistory = 200;
             s.enableDialogueReply = true;
             s.maxDailyReplyRounds = 12;
             s.monologueCooldownTicks = 36000;
