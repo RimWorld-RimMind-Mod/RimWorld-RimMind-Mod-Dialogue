@@ -10,10 +10,15 @@ using Verse;
 
 namespace RimMind.Dialogue.Comps
 {
+    [StaticConstructorOnStartup]
+    internal static class DialogueCompIcons
+    {
+        internal static readonly Texture2D? ChatIcon =
+            ContentFinder<Texture2D>.Get("UI/RimMindDialogue_Icon", reportFailure: false);
+    }
+
     public class CompRimMindDialogue : ThingComp
     {
-        private static Texture2D? _cachedChatIcon;
-        private static bool _chatIconLoaded;
         private int _lastTriggerTick = -99999;
 
         private Pawn? PawnOrNull => parent as Pawn;
@@ -228,16 +233,10 @@ namespace RimMind.Dialogue.Comps
             if (!RimMindDialogueSettings.Get().enabled) yield break;
             if (!RimMindDialogueSettings.Get().playerDialogueEnabled) yield break;
 
-            if (!_chatIconLoaded)
-            {
-                _chatIconLoaded = true;
-                _cachedChatIcon = ContentFinder<Texture2D>.Get("UI/RimMindDialogue_Icon", reportFailure: false);
-            }
-
             yield return new Command_Action
             {
                 defaultLabel = RimMindAPI.Text.TrOr("RimMind.Dialogue.UI.Gizmo.ChatWith", "Chat with {0}", parent.LabelShort),
-                icon = _cachedChatIcon,
+                icon = DialogueCompIcons.ChatIcon,
                 action = () => Find.WindowStack.Add(new Window_Dialogue(pawn))
             };
         }
