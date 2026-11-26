@@ -185,6 +185,9 @@ namespace RimMind.Presentation.Api
 
 namespace Verse
 {
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class StaticConstructorOnStartupAttribute : Attribute { }
+
     public static class UnityData
     {
         public static bool IsInMainThread = true;
